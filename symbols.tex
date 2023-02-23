@@ -1,0 +1,485 @@
+%
+% utilities
+%
+\definecolor{hole}{RGB}{162,85,162}
+\definecolor{cursorhighlight}{RGB}{230,255,230}
+\definecolor{cursor}{RGB}{76,170,76}
+\newcommand{\mathcolorbox}[2]{{\fboxsep=1pt\colorbox{#1}{$\displaystyle #2$}}}
+
+%
+% judgments
+%
+
+% judgments
+\newcommand{\judgment}[3]{\inferrule{#1}{#2}~~{\textsc{\small [#3]}}}
+\newcommand{\judgbox}[1]{\noindent \fbox{$#1$}}
+
+% equality
+\newcommand{\equal}[2]{\ensuremath{#1 = #2}}
+\newcommand{\notEqual}[2]{\ensuremath{#1 \neq #2}}
+
+% consistency
+\newcommand{\consistent}[2]{\ensuremath{#1 \sim #2}}
+\newcommand{\inconsistentRel}{\ensuremath{\nsim}}
+\newcommand{\inconsistent}[2]{\ensuremath{#1 \inconsistentRel #2}}
+
+% matching
+\newcommand{\matchedRel}[1]{\ensuremath{\blacktriangleright_{#1}}}
+\newcommand{\notMatchedRel}[1]{\ensuremath{\blacktriangleright_{\centernot#1}}}
+\newcommand{\matchedArrowRel}{\ensuremath{\matchedRel{\to}}}
+\newcommand{\notMatchedArrowRel}{\ensuremath{\notMatchedRel{\to}}}
+\newcommand{\matchedArrow}[3]{\ensuremath{#1 \matchedArrowRel \TArrow{#2}{#3}}}
+\newcommand{\notMatchedArrow}[1]{\ensuremath{#1 \notMatchedArrowRel}}
+\newcommand{\matchedPairRel}{\ensuremath{\matchedRel{\times}}}
+\newcommand{\notMatchedPairRel}{\ensuremath{\notMatchedRel{\times}}}
+\newcommand{\matchedPair}[3]{\ensuremath{#1 \matchedPairRel \TPair{#2}{#3}}}
+\newcommand{\notMatchedPair}[3]{\ensuremath{#1 \notMatchedPairRel \TPair{#2}{#3}}}
+
+% contexts
+\newcommand{\ctx}{\ensuremath{\Gamma}}
+\newcommand{\extendCtx}[3]{\ensuremath{#1 , ~\assignType{#2}{#3}}}
+\DeclareMathOperator{\dom}{dom}
+\newcommand{\inCtx}[3]{\ensuremath{\assignType{#2}{#3} \in #1}}
+\newcommand{\notInCtx}[2]{\ensuremath{#2 \not\in \dom(#1)}}
+\newcommand{\withCtx}[2]{\ensuremath{#1 \vdash #2}}
+
+% typing
+\newcommand{\assignType}[2]{\ensuremath{#1 : #2}}
+\newcommand{\ctxAssignType}[3]{\ensuremath{\withCtx{#1}{\assignType{#2}{#3}}}}
+\newcommand{\synType}[2]{\ensuremath{#1 \Rightarrow #2}}
+\newcommand{\notSynType}[2]{\ensuremath{#1 \not\Rightarrow #2}}
+\newcommand{\ctxSynType}[3]{\ensuremath{\withCtx{#1}{\synType{#2}{#3}}}}
+\newcommand{\ctxNotSynType}[3]{\ensuremath{\withCtx{#1}{\notSynType{#2}{#3}}}}
+\newcommand{\anaType}[2]{\ensuremath{#1 \Leftarrow #2}}
+\newcommand{\notAnaType}[2]{\ensuremath{#1 \not\Leftarrow #2}}
+\newcommand{\ctxAnaType}[3]{\ensuremath{\withCtx{#1}{\anaType{#2}{#3}}}}
+\newcommand{\ctxNotAnaType}[3]{\ensuremath{\withCtx{#1}{\notAnaType{#2}{#3}}}}
+
+% subsumable
+\newcommand{\subsumable}[1]{\ensuremath{#1 ~{\normalfont{\normalfont\textsf{subsumable}}}}}
+
+% mark erasure
+\newcommand{\erase}[1]{\ensuremath{#1^{\square}}}
+\newcommand{\erasesTo}[2]{\ensuremath{#1^{\square} = #2}}
+
+% marking
+\newcommand{\synFixedInto}[3]{\ensuremath{\synType{#1 \looparrowright #2}{#3}}}
+\newcommand{\ctxSynFixedInto}[4]{\ensuremath{\withCtx{#1}{\synFixedInto{#2}{#3}{#4}}}}
+\newcommand{\anaFixedInto}[3]{\ensuremath{\anaType{#1 \looparrowright #2}{#3}}}
+\newcommand{\ctxAnaFixedInto}[4]{\ensuremath{\withCtx{#1}{\anaFixedInto{#2}{#3}{#4}}}}
+
+% marking image
+\newcommand{\image}[1]{\ensuremath{#1^{\circ}}}
+\newcommand{\imageIs}[2]{\ensuremath{\image{#1} = #2}}
+\newcommand{\imageIsNot}[2]{\ensuremath{\image{#1} \neq #2}}
+
+% cursor erasure
+\newcommand{\cursorErase}[1]{\ensuremath{#1^{\diamond}}}
+\newcommand{\cursorErasesTo}[2]{\ensuremath{#1^{\diamond} = #2}}
+
+% zippered expression well-formedness
+\newcommand{\zWellFormed}[1]{\ensuremath{#1 ~{\normalfont\textsf{WF}}}}
+
+% 
+% types
+%
+\newcommand{\TMName}{{\normalfont\textsf{Type}}}
+\newcommand{\TMSet}{\ensuremath{T}}
+\newcommand{\TMV}{\ensuremath{\tau}}
+
+\newcommand{\joinRel}{\sqcup}
+\newcommand{\noJoinRel}{\centernot\sqcup}
+\newcommand{\TJoin}[2]{\ensuremath{#1 \joinRel #2}}
+
+\DeclareMathOperator{\?}{?}
+\newcommand{\TUnknown}{\ensuremath{\?}}
+\newcommand{\TNum}{\ensuremath{{\normalfont\textsf{Num}}}}
+\newcommand{\TBool}{\ensuremath{{\normalfont\textsf{Bool}}}}
+\newcommand{\TArrow}[2]{\ensuremath{#1 \to #2}}
+\newcommand{\TPair}[2]{\ensuremath{#1 \times #2}}
+
+%
+% external expressions
+%
+\newcommand{\EMName}{{\normalfont\textsf{UExp}}}
+\newcommand{\EMSet}{\ensuremath{E}}
+\newcommand{\EMV}{\ensuremath{e}}
+
+% holes
+\newcommand{\EEHole}{\ensuremath{\ECEHole}}
+
+% integers
+\newcommand{\ENum}[1]{\ensuremath{\ECNum{#1}}}
+\newcommand{\ENumMV}{\ensuremath{\ECNumMV}}
+\newcommand{\EOpPlus}{\ensuremath{\ECOpPlus}}
+\newcommand{\EPlus}[2]{\ensuremath{\ECPlus{#1}{#2}}}
+
+% booleans
+\newcommand{\ETrue}{\ensuremath{\ECTrue}}
+\newcommand{\EFalse}{\ensuremath{\ECFalse}}
+\newcommand{\EIf}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
+
+% lambdas
+\newcommand{\ELam}[3]{\ensuremath{\ECLam{#1}{#2}{#3}}}
+\newcommand{\EAp}[2]{\ensuremath{\ECAp{#1}{#2}}}
+
+% pairs
+\newcommand{\EPair}[2]{\ensuremath{\ECPair{#1}{#2}}}
+\newcommand{\EProjL}[1]{\ensuremath{\ECProjL{#1}}}
+\newcommand{\EProjR}[1]{\ensuremath{\ECProjR{#1}}}
+
+% let
+\newcommand{\ELet}[3]{\ensuremath{\ECLet{#1}{#2}{#3}}}
+
+%
+% cursor types
+%
+\newcommand{\ZTMName}{{\normalfont\textsf{ZType}}}
+\newcommand{\ZTMSet}{\ensuremath{\hat{T}}}
+\newcommand{\ZTMV}{\ensuremath{\hat{\tau}}}
+
+% cursor
+\newcommand{\ZTCursor}[1]{\ensuremath{\ZCursor{#1}}}
+
+% arrow
+\newcommand{\ZTArrowL}[2]{\ensuremath{\TArrow{#1}{#2}}}
+\newcommand{\ZTArrowR}[2]{\ensuremath{\TArrow{#1}{#2}}}
+
+%
+% marked expressions
+%
+\newcommand{\ECMName}{{\normalfont\textsf{MExp}}}
+\newcommand{\ECMSet}{\ensuremath{\check{E}}}
+\newcommand{\ECMV}{\ensuremath{\check{e}}}
+
+% holes
+\newcommand{\ECEHole}{\ensuremath{\textcolor{hole}{\bm{\llparenthesis}}\textcolor{hole}{\bm{\rrparenthesis}}}}
+
+% integers
+\newcommand{\ECNum}[1]{\ensuremath{\underline{#1}}}
+\newcommand{\ECNumMV}{\ensuremath{\ECNum{n}}}
+\newcommand{\ECOpPlus}{\ensuremath{+}}
+\newcommand{\ECPlus}[2]{\ensuremath{#1 \ECOpPlus #2}}
+
+% booleans
+\newcommand{\ECTrue}{\ensuremath{{\normalfont\textsf{tt}}}}
+\newcommand{\ECFalse}{\ensuremath{{\normalfont\textsf{ff}}}}
+\newcommand{\ECIf}[3]{\ensuremath{#1 ~?~ #2 : #3}}
+
+% lambdas
+\newcommand{\ECLam}[3]{\ensuremath{\lambda #1 : #2. ~#3}}
+\newcommand{\ECAp}[2]{\ensuremath{#1 ~#2}}
+\newcommand{\ECApNonMatched}[2]{\ensuremath{\ECAp{\ECInconType{#1}}{#2}}}
+\newcommand{\ECApNonMatchedAlt}[2]{\ensuremath{\textcolor{red}{[}\ECAp{#1}{#2}\textcolor{red}{]}}}
+
+% pairs
+\newcommand{\ECPair}[2]{\ensuremath{(#1, #2)}}
+\newcommand{\ECProjL}[1]{\ensuremath{#1.0}}
+\newcommand{\ECProjR}[1]{\ensuremath{#1.1}}
+
+% let
+\newcommand{\ECLet}[3]{\ensuremath{\textsf{let}~ #1 = #2 ~\textsf{in}~ #3}}
+
+% errors
+\newcommand{\MRUnbound}{\ensuremath{\mathsmaller{\mathsmaller{\mathsmaller{\square}}}}}
+\newcommand{\MRInconType}{\ensuremath{\mathsmaller{\inconsistentRel}}}
+\newcommand{\MRInconBr}{\ensuremath{\mathlarger{\noJoinRel}}}
+
+\newcommand{\ECMarked}[2]{\ensuremath{\textcolor{red}{\bm{\llparenthesis}}#1\textcolor{red}{\bm{\rrparenthesis}_{#2}}}}
+\newcommand{\ECMarkedUnbound}[1]{\ensuremath{\ECMarked{#1}{\MRUnbound}}}
+\newcommand{\ECMarkedInconType}[1]{\ensuremath{\ECMarked{#1}{\MRInconType}}}
+\newcommand{\ECMarkedInconBr}[1]{\ensuremath{\ECMarked{#1}{\MRInconBr}}}
+
+\newcommand{\ECUnbound}[1]{\ensuremath{\ECMarkedUnbound{#1}}}
+\newcommand{\ECInconType}[1]{\ensuremath{\ECMarkedInconType{#1}}}
+\newcommand{\ECInconBr}[3]{\ensuremath{\ECMarkedInconBr{\ECIf{#1}{#2}{#3}}}}
+
+\newcommand{\ECInconMatched}[2]{\ensuremath{\ECMarked{#1}{#2}}}
+\newcommand{\ECInconMatchedArrow}[1]{\ensuremath{\ECInconMatched{#1}{\notMatchedArrowRel}}}
+\newcommand{\ECInconMatchedPair}[1]{\ensuremath{\ECInconMatched{#1}{\notMatchedPairRel}}}
+
+%
+% zippered expressions
+%
+\newcommand{\ZMName}{{\normalfont\textsf{ZExp}}}
+\newcommand{\ZMSet}{\ensuremath{\hat{E}}}
+\newcommand{\ZMV}{\ensuremath{\hat{e}}}
+
+% cursor
+\newcommand{\ZCursor}[1]{\ensuremath{\mathcolorbox{cursorhighlight}{\textcolor{cursor}{\bm{\triangleright}}#1\textcolor{cursor}{\bm{\triangleleft}}}}}
+
+% integers
+\newcommand{\ZPlusL}[2]{\ensuremath{\ECPlus{#1}{#2}}}
+\newcommand{\ZPlusR}[2]{\ensuremath{\ECPlus{#1}{#2}}}
+
+% lambdas
+\newcommand{\ZLamT}[3]{\ensuremath{\ECLam{#1}{#2}{#3}}}
+\newcommand{\ZLamE}[3]{\ensuremath{\ECLam{#1}{#2}{#3}}}
+\newcommand{\ZApL}[2]{\ensuremath{\ECAp{#1}{#2}}}
+\newcommand{\ZApR}[2]{\ensuremath{\ECAp{#1}{#2}}}
+\newcommand{\ZApNonMatchedL}[2]{\ensuremath{\ECApNonMatched{#1}{#2}}}
+\newcommand{\ZApNonMatchedR}[2]{\ensuremath{\ECApNonMatched{#1}{#2}}}
+
+% booleans
+\newcommand{\ZIfC}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
+\newcommand{\ZIfL}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
+\newcommand{\ZIfR}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
+\newcommand{\ZInconBrC}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconBrL}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconBrR}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+
+% let
+\newcommand{\ZLetL}[3]{\ensuremath{\ECLet{#1}{#2}{#3}}}
+\newcommand{\ZLetR}[3]{\ensuremath{\ECLet{#1}{#2}{#3}}}
+
+% errors
+\newcommand{\ZUnbound}[1]{\ensuremath{\ECUnbound{#1}}}
+\newcommand{\ZInconType}[1]{\ensuremath{\ECInconType{#1}}}
+\newcommand{\ZInconBr}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+
+%
+% actions
+%
+\newcommand{\movements}[1]{\ensuremath{#1 ~{\normalfont\textsf{movements}}}}
+\newcommand{\tshape}[1]{\ensuremath{#1 ~{\normalfont\textsf{tshape}}}}
+\newcommand{\eshape}[1]{\ensuremath{#1 ~{\normalfont\textsf{eshape}}}}
+
+% actions
+\newcommand{\AMName}{{\normalfont\textsf{Action}}}
+\newcommand{\AMV}{\ensuremath{\alpha}}
+\newcommand{\AMove}[1]{\ensuremath{{\normalfont\textsf{move $#1$}}}}
+\newcommand{\ADel}{\ensuremath{{\normalfont\textsf{del}}}}
+\newcommand{\ACon}[1]{\ensuremath{{\normalfont\textsf{construct $#1$}}}}
+
+% iterated actions
+\newcommand{\AIMName}{{\normalfont\textsf{ActionList}}}
+\newcommand{\AIMV}{\ensuremath{\overline{\alpha}}}
+\newcommand{\AINil}{\ensuremath{\cdot}}
+\newcommand{\AICons}[2]{\ensuremath{#1; #2}}
+
+% directions
+\newcommand{\MMName}{{\normalfont\textsf{Dir}}}
+\newcommand{\MMV}{\ensuremath{\delta}}
+\newcommand{\MChild}[1]{\ensuremath{{\normalfont\textsf{child $#1$}}}}
+\newcommand{\MChildNMV}{\ensuremath{n}}
+\newcommand{\MParent}{\ensuremath{{\normalfont\textsf{parent}}}}
+
+% shapes
+\newcommand{\SMName}{{\normalfont\textsf{Shape}}}
+\newcommand{\SMV}{\ensuremath{\psi}}
+
+\newcommand{\STArrowL}{\ensuremath{{\normalfont\textsf{arrow\textsubscript{L}}}}}
+\newcommand{\STArrowR}{\ensuremath{{\normalfont\textsf{arrow\textsubscript{R}}}}}
+\newcommand{\STNum}{\ensuremath{{\normalfont\textsf{num}}}}
+\newcommand{\STBool}{\ensuremath{{\normalfont\textsf{bool}}}}
+
+\newcommand{\SVar}[1]{\ensuremath{{\normalfont\textsf{var $#1$}}}}
+\newcommand{\SLam}[1]{\ensuremath{{\normalfont\textsf{lam $#1$}}}}
+\newcommand{\SApL}{\ensuremath{{\normalfont\textsf{ap\textsubscript{L}}}}}
+\newcommand{\SApR}{\ensuremath{{\normalfont\textsf{ap\textsubscript{R}}}}}
+\newcommand{\SLetL}[1]{\ensuremath{{\normalfont\textsf{let\textsubscript{L} $#1$}}}}
+\newcommand{\SLetR}[1]{\ensuremath{{\normalfont\textsf{let\textsubscript{R} $#1$}}}}
+\newcommand{\SLit}[1]{\ensuremath{{\normalfont\textsf{lit $#1$}}}}
+\newcommand{\SPlusL}{\ensuremath{{\normalfont\textsf{plus\textsubscript{L}}}}}
+\newcommand{\SPlusR}{\ensuremath{{\normalfont\textsf{plus\textsubscript{R}}}}}
+\newcommand{\STrue}{\ensuremath{{\normalfont\textsf{true}}}}
+\newcommand{\SFalse}{\ensuremath{{\normalfont\textsf{false}}}}
+\newcommand{\SIfC}{\ensuremath{{\normalfont\textsf{if\textsubscript{C}}}}}
+\newcommand{\SIfL}{\ensuremath{{\normalfont\textsf{if\textsubscript{L}}}}}
+\newcommand{\SIfR}{\ensuremath{{\normalfont\textsf{if\textsubscript{R}}}}}
+
+
+%
+% untyped action judgments
+%
+\newcommand{\AUAction}[3]{\ensuremath{#1 \xrightarrow{#3} #2}}
+\newcommand{\AUActionIter}[3]{\ensuremath{#1 \xrightarrow{#3}* #2}}
+
+% movement
+\newcommand{\AUMChild}[3]{\ensuremath{\AUAction{#1}{#2}{\AMove{\MChild{#3}}}}}
+\newcommand{\AUMParent}[2]{\ensuremath{\AUAction{#1}{#2}{\AMove{\MParent}}}}
+
+% deletion
+\newcommand{\AUDel}[2]{\ensuremath{\AUAction{#1}{#2}{\ADel}}}
+
+% construction
+\newcommand{\AUCon}[3]{\ensuremath{\AUAction{#1}{#2}{\ACon{#3}}}}
+
+%
+% type actions
+%
+\newcommand{\AUTAction}[3]{\ensuremath{\AUAction{#1}{#2}{#3}}}
+\newcommand{\AUTActionIter}[3]{\ensuremath{\AUActionIter{#1}{#2}{#3}}}
+
+% movement
+\newcommand{\AUTMChild}[3]{\ensuremath{\AUMChild{\ZTCursor{#1}}{#2}{#3}}}
+\newcommand{\AUTMParent}[2]{\ensuremath{\AUMParent{#1}{\ZTCursor{#2}}}}
+\newcommand{\AUTMArrowChildL}[2]{\ensuremath{\AUTMChild{\TArrow{#1}{#2}}{\ZTArrowL{\ZTCursor{#1}}{#2}}{1}}}
+\newcommand{\AUTMArrowChildR}[2]{\ensuremath{\AUTMChild{\TArrow{#1}{#2}}{\ZTArrowR{#2}{\ZTCursor{#1}}}{2}}}
+\newcommand{\AUTMArrowParentL}[2]{\ensuremath{\AUTMParent{\ZTArrowL{\ZTCursor{#1}}{#2}}{\TArrow{#1}{#2}}}}
+\newcommand{\AUTMArrowParentR}[2]{\ensuremath{\AUTMParent{\ZTArrowR{#2}{\ZTCursor{#1}}}{\TArrow{#1}{#2}}}}
+
+% deletion
+\newcommand{\AUTDel}[1]{\ensuremath{\AUDel{\ZTCursor{#1}}{\ZTCursor{\TUnknown}}}}
+
+% construction
+\newcommand{\AUTConArrowL}[1]{\ensuremath{\AUCon{\ZTCursor{#1}}{\ZTArrowR{#1}{\ZTCursor{\TUnknown}}}{\STArrowL}}}
+\newcommand{\AUTConArrowR}[1]{\ensuremath{\AUCon{\ZTCursor{#1}}{\ZTArrowR{\ZTCursor{\TUnknown}}{#1}}{\STArrowR}}}
+\newcommand{\AUTConNum}{\ensuremath{\AUCon{\ZTCursor{\TUnknown}}{\ZTCursor{\TNum}}{\STNum}}}
+\newcommand{\AUTConBool}{\ensuremath{\AUCon{\ZTCursor{\TUnknown}}{\ZTCursor{\TBool}}{\STBool}}}
+
+%
+% untyped expression actions
+%
+\newcommand{\AUEAction}[3]{\ensuremath{\AUAction{#1}{#2}{#3}}}
+\newcommand{\AUEActionIter}[3]{\ensuremath{\AUActionIter{#1}{#2}{#3}}}
+
+% movement
+\newcommand{\AUEMove}[3]{\ensuremath{\AUEAction{#1}{#2}{\AMove{\MMV}}}}
+\newcommand{\AUEMChild}[3]{\ensuremath{\AUMChild{\ZCursor{#1}}{#2}{#3}}}
+\newcommand{\AUEMParent}[2]{\ensuremath{\AUMParent{#1}{\ZCursor{#2}}}}
+
+\newcommand{\AUEMLamChildT}[3]{\ensuremath{\AUEMChild{\ELam{#1}{#2}{#3}}{\ZLamT{#1}{\ZTCursor{#2}}{#3}}{1}}}
+\newcommand{\AUEMLamChildE}[3]{\ensuremath{\AUEMChild{\ELam{#1}{#2}{#3}}{\ZLamE{#1}{#2}{\ZCursor{#3}}}{2}}}
+\newcommand{\AUEMLamParentT}[3]{\ensuremath{\AUEMParent{\ZLamT{#1}{\ZTCursor{#2}}{#3}}{\ELam{#1}{#2}{#3}}}}
+\newcommand{\AUEMLamParentE}[3]{\ensuremath{\AUEMParent{\ZLamE{#1}{#2}{\ZCursor{#3}}}{\ELam{#1}{#2}{#3}}}}
+\newcommand{\AUEMApChildL}[2]{\ensuremath{\AUEMChild{\EAp{#1}{#2}}{\ZApL{\ZCursor{#1}}{#2}}{1}}}
+\newcommand{\AUEMApChildR}[2]{\ensuremath{\AUEMChild{\EAp{#1}{#2}}{\ZApR{#1}{\ZCursor{#2}}}{2}}}
+\newcommand{\AUEMApParentL}[2]{\ensuremath{\AUEMParent{\ZApL{\ZCursor{#1}}{#2}}{\EAp{#1}{#2}}}}
+\newcommand{\AUEMApParentR}[2]{\ensuremath{\AUEMParent{\ZApR{#1}{\ZCursor{#2}}}{\EAp{#1}{#2}}}}
+\newcommand{\AUEMLetChildL}[3]{\ensuremath{\AUEMChild{\ELet{#1}{#2}{#3}}{\ZLetL{#1}{\ZCursor{#2}}{#3}}{1}}}
+\newcommand{\AUEMLetChildR}[3]{\ensuremath{\AUEMChild{\ELet{#1}{#2}{#3}}{\ZLetR{#1}{#2}{\ZCursor{#3}}}{2}}}
+\newcommand{\AUEMLetParentL}[3]{\ensuremath{\AUEMParent{\ZLetL{#1}{\ZCursor{#2}}{#3}}{\ELet{#1}{#2}{#3}}}}
+\newcommand{\AUEMLetParentR}[3]{\ensuremath{\AUEMParent{\ZLetR{#1}{#2}{\ZCursor{#3}}}{\ELet{#1}{#2}{#3}}}}
+\newcommand{\AUEMPlusChildL}[2]{\ensuremath{\AUEMChild{\EPlus{#1}{#2}}{\ZPlusL{\ZCursor{#1}}{#2}}{1}}}
+\newcommand{\AUEMPlusChildR}[2]{\ensuremath{\AUEMChild{\EPlus{#1}{#2}}{\ZPlusR{#1}{\ZCursor{#2}}}{2}}}
+\newcommand{\AUEMPlusParentL}[2]{\ensuremath{\AUEMParent{\ZPlusL{\ZCursor{#1}}{#2}}{\EPlus{#1}{#2}}}}
+\newcommand{\AUEMPlusParentR}[2]{\ensuremath{\AUEMParent{\ZPlusR{#1}{\ZCursor{#2}}}{\EPlus{#1}{#2}}}}
+\newcommand{\AUEMIfChildC}[3]{\ensuremath{\AUEMChild{\EIf{#1}{#2}{#3}}{\ZIfC{\ZCursor{#1}}{#2}{#3}}{1}}}
+\newcommand{\AUEMIfChildL}[3]{\ensuremath{\AUEMChild{\EIf{#1}{#2}{#3}}{\ZIfL{#1}{\ZCursor{#2}}{#3}}{2}}}
+\newcommand{\AUEMIfChildR}[3]{\ensuremath{\AUEMChild{\EIf{#1}{#2}{#3}}{\ZIfR{#1}{#2}{\ZCursor{#3}}}{3}}}
+\newcommand{\AUEMIfParentC}[3]{\ensuremath{\AUEMParent{\ZIfC{\ZCursor{#1}}{#2}{#3}}{\EIf{#1}{#2}{#3}}}}
+\newcommand{\AUEMIfParentL}[3]{\ensuremath{\AUEMParent{\ZIfL{#1}{\ZCursor{#2}}{#3}}{\EIf{#1}{#2}{#3}}}}
+\newcommand{\AUEMIfParentR}[3]{\ensuremath{\AUEMParent{\ZIfR{#1}{#2}{\ZCursor{#3}}}{\EIf{#1}{#2}{#3}}}}
+
+% deletion
+\newcommand{\AUEDel}[1]{\ensuremath{\AUDel{\ZCursor{#1}}{\ZCursor{\EEHole}}}}
+
+% construction
+\newcommand{\AUEConVar}[1]{\ensuremath{\AUCon{\ZCursor{\EEHole}}{\ZCursor{#1}}{\SVar{#1}}}}
+\newcommand{\AUEConLam}[2]{\ensuremath{\AUCon{\ZCursor{#2}}{\ZLamT{#1}{\ZTCursor{\TUnknown}}{#2}}{\SLam{#1}}}}
+\newcommand{\AUEConApL}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZApR{#1}{\ZCursor{\EEHole}}}{\SApL}}}
+\newcommand{\AUEConApR}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZApR{\ZCursor{\EEHole}}{#1}}{\SApR}}}
+\newcommand{\AUEConLetL}[2]{\ensuremath{\AUCon{\ZCursor{#2}}{\ZLetL{#1}{#2}{\ZCursor{\EEHole}}}{\SLetL{#1}}}}
+\newcommand{\AUEConLetR}[2]{\ensuremath{\AUCon{\ZCursor{#2}}{\ZLetR{#1}{\ZCursor{\EEHole}}{#2}}{\SLetR{#1}}}}
+\newcommand{\AUEConNum}[1]{\ensuremath{\AUCon{\ZCursor{\EEHole}}{\ZCursor{#1}}{\SLit{#1}}}}
+\newcommand{\AUEConPlusL}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZPlusR{#1}{\ZCursor{\EEHole}}}{\SPlusL}}}
+\newcommand{\AUEConPlusR}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZPlusR{\ZCursor{\EEHole}}{#1}}{\SPlusR}}}
+\newcommand{\AUEConTrue}{\ensuremath{\AUCon{\ZCursor{\EEHole}}{\ZCursor{\ETrue}}{\STrue}}}
+\newcommand{\AUEConFalse}{\ensuremath{\AUCon{\ZCursor{\EEHole}}{\ZCursor{\EFalse}}{\SFalse}}}
+\newcommand{\AUEConIfC}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZIfC{#1}{\ZCursor{\EEHole}}{\EEHole}}{\SIfC}}}
+\newcommand{\AUEConIfL}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZIfC{\ZCursor{\EEHole}}{#1}{\EEHole}}{\SIfC}}}
+\newcommand{\AUEConIfR}[1]{\ensuremath{\AUCon{\ZCursor{#1}}{\ZIfC{\ZCursor{\EEHole}}{\EEHole}{#1}}{\SIfC}}}
+
+% typed movement actions
+\newcommand{\ASEMove}[3]{\ensuremath{\AUEMove{#1}{#2}{#3}}}
+\newcommand{\ASEMChild}[3]{\ensuremath{\AUEMChild{#1}{#2}{#3}}}
+\newcommand{\ASEMParent}[2]{\ensuremath{\AUEMParent{#1}{#2}}}
+
+\newcommand{\ASEMLamChildT}[3]{\ensuremath{\ASEMChild{\ECLam{#1}{#2}{#3}}{\ZLamT{#1}{\ZTCursor{#2}}{#3}}{1}}}
+\newcommand{\ASEMLamChildE}[3]{\ensuremath{\ASEMChild{\ECLam{#1}{#2}{#3}}{\ZLamE{#1}{#2}{\ZCursor{#3}}}{2}}}
+\newcommand{\ASEMLamParentT}[3]{\ensuremath{\ASEMParent{\ZLamT{#1}{\ZTCursor{#2}}{#3}}{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ASEMLamParentE}[3]{\ensuremath{\ASEMParent{\ZLamE{#1}{#2}{\ZCursor{#3}}}{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ASEMApChildL}[2]{\ensuremath{\ASEMChild{\ECAp{#1}{#2}}{\ZApL{\ZCursor{#1}}{#2}}{1}}}
+\newcommand{\ASEMApChildR}[2]{\ensuremath{\ASEMChild{\ECAp{#1}{#2}}{\ZApR{#1}{\ZCursor{#2}}}{2}}}
+\newcommand{\ASEMApParentL}[2]{\ensuremath{\ASEMParent{\ZApL{\ZCursor{#1}}{#2}}{\ECAp{#1}{#2}}}}
+\newcommand{\ASEMApParentR}[2]{\ensuremath{\ASEMParent{\ZApR{#1}{\ZCursor{#2}}}{\ECAp{#1}{#2}}}}
+\newcommand{\ASEMLetChildL}[3]{\ensuremath{\ASEMChild{\ECLet{#1}{#2}{#3}}{\ZLetL{#1}{\ZCursor{#2}}{#3}}{1}}}
+\newcommand{\ASEMLetChildR}[3]{\ensuremath{\ASEMChild{\ECLet{#1}{#2}{#3}}{\ZLetR{#1}{#2}{\ZCursor{#3}}}{2}}}
+\newcommand{\ASEMLetParentL}[3]{\ensuremath{\ASEMParent{\ZLetL{#1}{\ZCursor{#2}}{#3}}{\ECLet{#1}{#2}{#3}}}}
+\newcommand{\ASEMLetParentR}[3]{\ensuremath{\ASEMParent{\ZLetR{#1}{#2}{\ZCursor{#3}}}{\ECLet{#1}{#2}{#3}}}}
+\newcommand{\ASEMPlusChildL}[2]{\ensuremath{\ASEMChild{\ECPlus{#1}{#2}}{\ZPlusL{\ZCursor{#1}}{#2}}{1}}}
+\newcommand{\ASEMPlusChildR}[2]{\ensuremath{\ASEMChild{\ECPlus{#1}{#2}}{\ZPlusR{#1}{\ZCursor{#2}}}{2}}}
+\newcommand{\ASEMPlusParentL}[2]{\ensuremath{\ASEMParent{\ZPlusL{\ZCursor{#1}}{#2}}{\ECPlus{#1}{#2}}}}
+\newcommand{\ASEMPlusParentR}[2]{\ensuremath{\ASEMParent{\ZPlusR{#1}{\ZCursor{#2}}}{\ECPlus{#1}{#2}}}}
+\newcommand{\ASEMIfChildC}[3]{\ensuremath{\ASEMChild{\ECIf{#1}{#2}{#3}}{\ZIfC{\ZCursor{#1}}{#2}{#3}}{1}}}
+\newcommand{\ASEMIfChildL}[3]{\ensuremath{\ASEMChild{\ECIf{#1}{#2}{#3}}{\ZIfL{#1}{\ZCursor{#2}}{#3}}{2}}}
+\newcommand{\ASEMIfChildR}[3]{\ensuremath{\ASEMChild{\ECIf{#1}{#2}{#3}}{\ZIfR{#1}{#2}{\ZCursor{#3}}}{3}}}
+\newcommand{\ASEMIfParentC}[3]{\ensuremath{\ASEMParent{\ZIfC{\ZCursor{#1}}{#2}{#3}}{\ECIf{#1}{#2}{#3}}}}
+\newcommand{\ASEMIfParentL}[3]{\ensuremath{\ASEMParent{\ZIfL{#1}{\ZCursor{#2}}{#3}}{\ECIf{#1}{#2}{#3}}}}
+\newcommand{\ASEMIfParentR}[3]{\ensuremath{\ASEMParent{\ZIfR{#1}{#2}{\ZCursor{#3}}}{\ECIf{#1}{#2}{#3}}}}
+\newcommand{\ASEMInconTypeChild}[3]{\ensuremath{\ASEMChild{\ZInconType{#1}}{\ZInconType{#2}}{#3}}}
+\newcommand{\ASEMInconTypeParent}[2]{\ensuremath{\ASEMParent{\ZInconType{#1}}{\ZInconType{#2}}}}
+\newcommand{\ASEMInconBrChildC}[3]{\ensuremath{\ASEMChild{\ECIf{#1}{#2}{#3}}{\ZInconBrC{\ZCursor{#1}}{#2}{#3}}{1}}}
+\newcommand{\ASEMInconBrChildL}[3]{\ensuremath{\ASEMChild{\ECInconBr{#1}{#2}{#3}}{\ZInconBrL{#1}{\ZCursor{#2}}{#3}}{2}}}
+\newcommand{\ASEMInconBrChildR}[3]{\ensuremath{\ASEMChild{\ECInconBr{#1}{#2}{#3}}{\ZInconBrR{#1}{#2}{\ZCursor{#3}}}{3}}}
+\newcommand{\ASEMInconBrParentC}[3]{\ensuremath{\ASEMParent{\ZInconBrC{\ZCursor{#1}}{#2}{#3}}{\ECInconBr{#1}{#2}{#3}}}}
+\newcommand{\ASEMInconBrParentL}[3]{\ensuremath{\ASEMParent{\ZInconBrC{#1}{\ZCursor{#2}}{#3}}{\ECInconBr{#1}{#2}{#3}}}}
+\newcommand{\ASEMInconBrParentR}[3]{\ensuremath{\ASEMParent{\ZInconBrC{#1}{#2}{\ZCursor{#3}}}{\ECInconBr{#1}{#2}{#3}}}}
+
+%
+% synthetic action judgments
+%
+\newcommand{\ASAction}[6]{\ensuremath{\AUAction{\ctxSynType{#1}{#2}{#3}}{\synType{#4}{#5}}{#6}}}
+\newcommand{\ASActionIter}[6]{\ensuremath{\AUActionIter{\ctxSynType{#1}{#2}{#3}}{\synType{#4}{#5}}{#6}}}
+
+% movement
+\newcommand{\ASMove}[6]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{\AMove{\MMV}}}}
+\newcommand{\ASMChild}[6]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{\AMove{\MChild{#6}}}}}
+\newcommand{\ASMParent}[5]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{\AMove{\MParent}}}}
+
+% deletion
+\newcommand{\ASDel}[5]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{\ADel}}}
+
+% construction
+\newcommand{\ASCon}[6]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{\ACon{#6}}}}
+
+%
+% synthetic expression actions
+%
+\newcommand{\ASEAction}[6]{\ensuremath{\ASAction{#1}{#2}{#3}{#4}{#5}{#6}}}
+\newcommand{\ASEActionIter}[6]{\ensuremath{\ASActionIter{#1}{#2}{#3}{#4}{#5}{#6}}}
+
+% deletion
+\newcommand{\ASEDel}[3]{\ensuremath{\ASDel{#1}{\ZCursor{#2}}{#3}{\ZCursor{\ECEHole}}{\TUnknown}}}
+
+% construction
+\newcommand{\ASEConBoundVar}[3]{\ensuremath{\ASCon{#1}{\ZCursor{\ECEHole}}{\TUnknown}{\ZCursor{x}}{#3}{\SVar{#2}}}}
+\newcommand{\ASEConUnboundVar}[2]{\ensuremath{\ASCon{#1}{\ZCursor{\ECEHole}}{\TUnknown}{\ZCursor{\ZUnbound{x}}}{\TUnknown}{\SVar{#2}}}}
+\newcommand{\ASEConLam}[6]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZLamT{#6}{\ZTCursor{\TUnknown}}{#4}}{\TArrow{\TUnknown}{#5}}{\SLam{#6}}}}
+\newcommand{\ASEConApL}[5]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZApL{#4}{\ZCursor{\ECEHole}}}{#5}{\SApL}}}
+\newcommand{\ASEConApR}[5]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZApR{\ZCursor{\ECEHole}}{#4}}{#5}{\SApR}}}
+\newcommand{\ASEConLetL}[5]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZLetL{#5}{#4}{\ZCursor{\ECEHole}}}{\TUnknown}{\SLetL{#5}}}}
+\newcommand{\ASEConLetR}[6]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZLetR{#6}{\ZCursor{\ECEHole}}{#4}}{#5}{\SLetL{#6}}}}
+\newcommand{\ASEConNum}[2]{\ensuremath{\ASCon{#1}{\ZCursor{\ECEHole}}{\TUnknown}{\ZCursor{#2}}{\TNum}{\SLit{#2}}}}
+\newcommand{\ASEConPlusL}[4]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZPlusR{#4}{\ZCursor{\ECEHole}}}{\TNum}{\SPlusL}}}
+\newcommand{\ASEConPlusR}[4]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZPlusL{\ZCursor{\ECEHole}}{#4}}{\TNum}{\SPlusR}}}
+\newcommand{\ASEConIfC}[4]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZIfL{#4}{\ZCursor{\ECEHole}}{\ECEHole}}{\TUnknown}{\SIfC}}}
+\newcommand{\ASEConIfL}[5]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZIfC{\ZCursor{\ECEHole}}{#4}{\ECEHole}}{#5}{\SIfL}}}
+\newcommand{\ASEConIfR}[5]{\ensuremath{\ASCon{#1}{\ZCursor{#2}}{#3}{\ZIfC{\ZCursor{\ECEHole}}{\ECEHole}{#4}}{#5}{\SIfR}}}
+
+%
+% analytic action judgments
+%
+\newcommand{\AAAction}[5]{\ensuremath{\AUAction{\withCtx{#1}{#2}}{\anaType{#3}{#4}}{#5}}}
+\newcommand{\AAActionIter}[5]{\ensuremath{\AUActionIter{\withCtx{#1}{#2}}{\anaType{#3}{#4}}{#5}}}
+
+% movement
+\newcommand{\AAMove}[5]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{\AMove{#5}}}}
+\newcommand{\AAMChild}[5]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{\AMove{\MChild{#5}}}}}
+\newcommand{\AAMParent}[4]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{\AMove{\MParent}}}}
+
+% deletion
+\newcommand{\AADel}[4]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{\ADel}}}
+
+% construction
+\newcommand{\AACon}[5]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{\ACon{#5}}}}
+
+%
+% analytic expression actions
+%
+\newcommand{\AAEAction}[5]{\ensuremath{\AAAction{#1}{#2}{#3}{#4}{#5}}}
+\newcommand{\AAEActionIter}[5]{\ensuremath{\AAActionIter{#1}{#2}{#3}{#4}{#5}}}
+
+% deletion
+\newcommand{\AAEDel}[3]{\ensuremath{\AADel{#1}{\ZCursor{#2}}{\ZCursor{\ECEHole}}{#3}}}
