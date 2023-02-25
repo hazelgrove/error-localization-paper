@@ -5,37 +5,55 @@
 
 %The implementation inserts holes automatically, following the \Hazelnut edit action calculus, to guarantee that every editor state has some (possibly incomplete) type.
 
-\section{Type Hole Inference Introduction}
+\section{Type Hole Inference}
+\subsection{Introduction}
 \label{sec:intro}
-\emph{Bidirectional typing} and \emph{constraint-based type inference} are common approaches to deducing types for partially annotated programs. \emph{Bidirectional typing} is a simple algorithmic system with type information propagating from the outside in \cite{BidirTyping}. This produces clear error messages at the cost of requiring explicit type annotations in certain situations, e.g. top-level functions. \emph{Type inference} allows programmers to omit most or all type annotations, but requires complex constraint solving for type checking, making it difficult for users to reason about types and producing complex error messages \cite{typeinferDif}.
+\emph{Bidirectional typing} and \emph{constraint-based type inference} are common approaches to deducing types for partially annotated programs. 
+\emph{Bidirectional typing} is a simple algorithmic system with type information propagating from the outside in \cite{BidirTyping}. This produces clear error messages at the cost of requiring explicit type annotations in certain situations, e.g. top-level functions. \emph{Type inference} allows programmers to omit most or all type annotations, but requires complex constraint solving for type checking, making it difficult for users to reason about types and producing complex error messages \cite{typeinferDif}.
 This paper develops \emph{type hole inference}, which combines the benefits of bidirectional typing and type inference.\par
 
-In recent work on the \Hazel programming environment, \citet{HazelnutPOPL} assign formal meaning to incomplete programs, i.e. programs with holes, by developing a bidirectional type system with support for expression and type holes. Type holes operate as the unknown types from gradual type theory \cite{GradualTyping}. Our approach takes this type system and adds constraint solving as a layer on top to suggest type hole fillings, without making constraint solving necessary for typing. Take the following \Hazel programs extended with type hole inference as examples: 
+In recent work on the \Hazel programming environment, \citet{HazelnutPOPL} assign formal meaning to incomplete programs, i.e. programs with holes, by developing a bidirectional type system with support for expression and type holes. Type holes operate as the unknown types from gradual type theory \cite{GradualTyping}. Our approach takes this type system and adds constraint solving as a layer on top to suggest type hole fillings, without making constraint solving necessary for typing. 
+
+\par{Contributions} The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section ~\ref{sec:infalg}.
+
+%%%%%%%%%%%%%%%%%%%%%% INTRO TODOS %%%%%%%%%%%%%%%%%%%%%%
+\todo{Center around key goal of representing all error states}
+\todo{Briefly discuss users being core to the blame process to segue into the feedback loop in next section}
+\todo{Reassess discussion of bidirectional typing to make sure it doesn't overlap with background}
+
+\subsection{User Interaction}
+
+\todo{Key Goal: Determine blame from its ground truth: user decision. Have a user feedback loop and augment ability to make decisions by presenting all possible error states. Use this to segue into discussion of possible type sets}
+
+Take the following \Hazel programs extended with type hole inference as examples: 
+
 \begin{figure}[htbp]
 \centering
   \begin{tabular}[b]{cc}
     \begin{tabular}[b]{c}
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/3_1.png}
-        \caption{Example of static error}
+        \includegraphics[width=5.5cm]{images/haz3l-static-error}
+        \caption{static error localized to expression}
         \label{fig:staticerror}
       \end{subfigure}\\
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/4_gray.png}
-        \caption{Example of constraint solving success}
-		\label{fig:unifsuc}
-      \end{subfigure}
+        \includegraphics[width=5.5cm]{images/haz3l-red-grout}
+        \includegraphics[width=5.5cm]{images/haz3l-red-grout-type-set.png}
+          \caption{inference error localized to type hole}
+          \label{fig:uniffail}
+          \end{subfigure}
     \end{tabular}
     &
      \begin{tabular}[b]{c}
-          \begin{subfigure}[b]{0.4\columnwidth}
-      \includegraphics[width=5.5cm]{images/unifyfail_2.png}
-      \caption{Example of constraint solving failure}
-	\label{fig:uniffail}
-	\end{subfigure}\\
+    \begin{subfigure}[b]{0.4\columnwidth}
+        \includegraphics[width=5.5cm]{images/haz3l-ghost}
+        \includegraphics[width=5.5cm]{images/haz3l-ghost-inferred-type.png}
+        \caption{constraint solving success and suggestion}
+        \label{fig:unifsuc}
+    \end{subfigure}\\
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/4_black.png}
-        \caption{Example of filling type holes}
+        \includegraphics[width=5.5cm]{images/haz3l-accepted-ghost.png}
+        \caption{user accepts suggested type annotation}
 		\label{fig:fillholeeg}
       \end{subfigure}
     \end{tabular}
@@ -59,13 +77,12 @@ Figure ~\ref{fig:uniffail} is an example failing in constraint solving. Constrai
 %  To combine type inference with gradual typing, \citet{GradualInfer} came up an inference algorithm with design space under conditions that three straightforward approaches fail. One simple approach that replaces unknown types with a fresh variable and apply type inference does not work because unexpected static error is triggered when an unknown type is equal to multiple types \cite{GradualInfer}. However, starting from static semantics extended with \emph{holes} gives a new insight to this approach. The type holes corresponding to the unknown type can be filled with hole type to keep programs well-typed when unification fails, and delay type checking for those holes to runtime rather than raise a static error. Our approach is easy to implement by introducing holes into the type inference algorithm \cite{TaplBook}.
 
 % We extended static semantics with \emph{type constraints}, and borrow machinery from unification-based type inference to infer types for type holes by identifying the type hole with the type variable. In particular, our system will not report a static error when unification fails but postpone type-checking for type holes to runtime. This provides an approach to combine \emph{gradual typing} and \emph{type inference}. 
-\par{Contributions} The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section ~\ref{sec:infalg}.
 
 %Programmers have to deal with incomplete programs like syntactically malformed edit states during development.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TYPE SYSTEM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Type System for Type Hole Inference}
+\subsection{Type System}
 
 \label{sec:typinf}
 Figure ~\ref{fig:syntax_fig} defines the syntax of H-types and H-expressions. We start from the definition given in \citet{HazelnutPOPL} except two modifications. First, we add an annotated lambda. Second, we attach a unique \emph{type hole identifier}, drawn as a superscript capital letter, to each type hole, such as $\ehole^A$. In this way, type holes are identified as type variables. There are two types of expression holes: empty holes, $\ehole$, standing for missing parts of an incomplete program, and non-empty holes, $\notehole{e}$, operating as membranes around static and dynamic type inconsistencies \cite{HazelLive}. \par
@@ -99,7 +116,13 @@ HExp~~ e & ::= &
 \label{fig:syntax_fig}
 \vspace{-5px}
 \end{figure}
+
+\subsection{Constraint Generation}
 Figure ~\ref{fig:ana-syn} defines a bidirectional typing system extended with type constraint sets. \emph{Type constraint set} $C$ is a set of type consistency relations, namely \emph{type constraints}. We use a union operation, $C \cup C$, corresponding to mathematical set union operation to generate constraints inductively through bidirectional propagation. The type constraint set is solved by the unification algorithm in section ~\ref{sec:infalg}, but importantly, constraint solving is not necessary for typing to succeed. The typing context, $\Gamma$, maps a set of expression variables to their types. Rule ~\ref{rule:syn-ehole} and ~\ref{rule:syn-hole} synthesize expression hole to hole type, with premise, $(n ~ \text{fresh})$, indicating generation of a new \emph{type identifier}. Rule ~\ref{rule:ana-subsume} and ~\ref{rule:ana-lam} have type consistency in their premises, generating new constraints and merging them into constraint sets in the conclusion. Rule ~\ref{rule:syn-ap}, ~\ref{rule:ana-lam} and ~\ref{rule:ana-lamann} have \emph{matched arrow type judgements} defined in figure ~\ref{fig:match-arrow-typ}. They leave the arrow type unchanged and assign the type hole the matched arrow type $\tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}}$ where new holes are uniquely identified by matched arrow provenances generated from the original hole $\tehole^{p}$ and constraint generation links the original hole to its matched counterpart \cite{HazelnutPOPL}.
+
+\todo{Discussion of equivalence, consistency, and the constraint relation more properly}
+We use the symbol $\approx$ to denote that two types are constrained to each other. We refrain from using $=$ since constraints are not always transitive (see $C_{ex1}$ in figure 6 below) and avoid $\sim$ since constraints sometimes do display some characteristics of transitivity (see $C_{ex2}$ in figure 8 below).
+
 \begin{figure}[htbp]
 \vspace{-3px} 
     \begin{multicols}{2}
@@ -271,20 +294,17 @@ Figure ~\ref{fig:ana-syn} defines a bidirectional typing system extended with ty
     \vspace{-2px} 
   \end{figure}
 
+  \emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. The system postpones the remaining type checking to runtime. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
+\par
+Constraints are generated through bidirectional judgements in figure ~\ref{fig:ana-syn}. Take $(\lambda x:\tehole^{1}. x+1)~ \ehole$ as an example. We apply rule ~\ref{rule:syn-ap}, ~\ref{rule:syn-lamann}, ~\ref{rule:syn-num}, ~\ref{rule:ana-subsume} and ~\ref{rule:syn-ehole} to derive a constraint set: $\{\tehole^{1} \approx \tnum;~ \tehole^{1} \approx \tehole^{2}\}$, where $\tehole^{2}$ is a fresh type hole generated in rule \ref{rule:syn-ehole}. 
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INFERENCE ALGORITHM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usetikzlibrary{positioning,calc}
 
-\section{Type Hole Inference Algorithm}
+\subsection{Constraint Solving}
 \label{sec:infalg}
-\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. The system postpones the remaining type checking to runtime. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
-\par
-\par{Constraint Generation} Constraints are generated through bidirectional judgements in figure ~\ref{fig:ana-syn}. Take $(\lambda x:\tehole^{1}. x+1)~ \ehole$ as an example. We apply rule ~\ref{rule:syn-ap}, ~\ref{rule:syn-lamann}, ~\ref{rule:syn-num}, ~\ref{rule:ana-subsume} and ~\ref{rule:syn-ehole} to derive a constraint set: $\{\tehole^{1} \approx \tnum;~ \tehole^{1} \approx \tehole^{2}\}$, where $\tehole^{2}$ is a fresh type hole generated in rule \ref{rule:syn-ehole}. 
-
-We use the symbol $\approx$ to denote that two types are constrained to each other. We refrain from using $=$ since constraints are not always transitive (see $C_{ex1}$ in figure 6 below) and avoid $\sim$ since constraints sometimes do display some characteristics of transitivity (see $C_{ex2}$ in figure 8 below).
-\par
-\par{Constraint Solver} \\
 The problem of determining the solution implied by a type's constraints is widely explored in literature. We look to the standard unification algorithm \cite{RobinUnification} as a base from which to build our solution. This algorithm fails to meet the needs of this application in that upon encountering any types that cannot be equated within the constraints, it typically halts and reports the first error encountered.
 In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide type-related feedback for all edit states. Thus, we propose an algorithm similar to standard unification that, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PossibleTypeSet}, associated with any given type hole.
 
@@ -343,7 +363,7 @@ Only $\tehole^{p}$ or types containing $\tehole^{p}$s can be nodes in our graph.
 
 \begin{figure}[htbp]
 \centering
-\begin{subfigure}{.39\textwidth}
+\begin{subfigure}{.49\textwidth}
   \centering
       \begin{tikzpicture}
       [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
@@ -360,7 +380,7 @@ Only $\tehole^{p}$ or types containing $\tehole^{p}$s can be nodes in our graph.
   \caption{Graph of $C_{ex1} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$}
   \label{fig:sub1}
 \end{subfigure}
-\begin{subfigure}{.39\textwidth}
+\begin{subfigure}{.49\textwidth}
   \centering
   \begin{tikzpicture}
   [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
@@ -473,9 +493,11 @@ let rec construct_graph (graph, constraints) =
 With this abstraction in mind, we find that we can determine the \textit{PossibleTypeSet} of any unknown type $\tehole^{p}$ by either conducting a depth first search of each node in the resulting graph, or using union-find to generate connected components as we link nodes during graph construction. We choose to take the latter approach, as it is a much more natural extension of the graph construction algorithm.
 
 % algorithm
-When a constraint of the form $A \approx B$ is processed, both A and B's \textit{PossibleTypeSet}s are recovered from the graph and then \textit{link}ed. When computing connected components, the link operation may be adjusted to identify a single representative among $A$ and $B$ via union-find. This representative can then be updated with the union of $A$ and $B$'s \textit{PossibleTypeSet}s. As other \textit{link} operations are performed on $A$ or $B$, union-find allows us to update a single \textit{PossibleTypeSet} shared among all members of their known \textit{connected component}. In this manner, the \texit{PossibleTypeSet} associated with any representative can act as an accumulated connected component across the entirety of \textit{construct\_graph}.
+When a constraint of the form $A \approx B$ is processed, both A and B's \textit{PossibleTypeSet}s are recovered from the graph and then \textit{link}ed. When computing connected components, the link operation may be adjusted to identify a single representative among $A$ and $B$ via union-find. This representative can then be updated with the union of $A$ and $B$'s \textit{PossibleTypeSet}s. As other \textit{link} operations are performed on $A$ or $B$, union-find allows us to update a single \textit{PossibleTypeSet} shared among all members of their known \textit{connected component}. In this manner, the \texit{PossibleTypeSet} associated with any representative can act as an accumulated connected component across the entirety of \textit{constructGraph}.
 
 The changes necessary to \textit{link} and \textit{tag} are shown below in figure 11. In order to accommodate this change while ensuring that \textit{PossibleTypeSet}s represented within $Arrow$ \textit{PossibleType}s are also union-found properly, minor adjustments must be made to the type definitions and extension logic discussed above. These are left to Appendix A, where we assume the use of a standard mutable union find library.
+
+\todo{Move this out of the appendix and discuss it properly here}
 
 % If the operand $T$ of a constraint is num, bool, or arrow, its \textit{PossibleTypeSet} would be single($T$). If it's a type hole $\tehole^{p}$, its \textit{PossibleTypeSet} can be found using the Find operation of the union-find algorithm, which finds the representative \textit{PossibleTypeSet} of which $T$ is a member of.
 
@@ -586,6 +608,11 @@ let solve_constraints (constraints) =
 \caption{Constraint solving algorithm of type hole inference}
 \label{fig:algcode}
 \end{figure}
+
+\todo{Fix the figures to behave}
+
+\subsection{Future Work}
+\todo{Discuss other ctors, polymorphism, and higlighting tag sources}
 
 Appendix A: OCaml implementation of a union-find compatible \textit{PossibleTypeSet}
 
