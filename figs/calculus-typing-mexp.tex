@@ -1,0 +1,147 @@
+\begin{figure}[htbp]
+  \judgbox{\ctxSynType{\ctx}{\ECMV}{\TMV}} $\ECMV$ synthesizes type $\TMV$
+
+  \begin{mathpar}
+    % \judgment{ }{
+      % \ctxSynType{\ctx}{\ECEHole}{\TUnknown}
+    % }{MSHole}
+
+    % \judgment{
+      % \inCtx{\ctx}{x}{\TMV}
+    % }{
+      % \ctxSynType{\ctx}{x}{\TMV}
+    % }{MSVar}
+
+    % \judgment{
+      % \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+    % }{
+      % \ctxSynType{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
+    % }{MSLam}
+
+    \judgment{
+      \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
+      \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\\\
+      \ctxAnaType{\ctx}{\ECMV_2}{\TMV_1}
+    }{
+      \ctxSynType{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    }{MSAp1}
+
+    \judgment{
+      \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
+      \notMatchedArrow{\TMV} \\\\
+      \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown}
+    }{
+      \ctxSynType{\ctx}{\ECApNonMatched{\ECMV_1}{\ECMV_2}}{\TUnknown}
+    }{MSAp2}
+
+    % \judgment{
+      % \ctxSynType{\ctx}{\ECMV_1}{\TMV_1} \\
+      % \ctxSynType{\extendCtx{\ctx}{x}{\TMV_1}}{\ECMV_2}{\TMV_2}
+    % }{
+      % \ctxSynType{\ctx}{\ECLet{x}{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    % }{MSLet}
+
+    % \judgment{ }{
+      % \ctxSynType{\ctx}{\ECNumMV}{\TNum}
+    % }{MSNum}
+
+    % \judgment{
+      % \ctxAnaType{\ctx}{\ECMV_1}{\TNum} \\
+      % \ctxAnaType{\ctx}{\ECMV_2}{\TNum}
+    % }{
+      % \ctxSynType{\ctx}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
+    % }{MSPlus}
+
+    % \judgment{ }{
+      % \ctxSynType{\ctx}{\ECTrue}{\TBool}
+    % }{MSTrue}
+
+    % \judgment{ }{
+      % \ctxSynType{\ctx}{\ECFalse}{\TBool}
+    % }{MSFalse}
+
+    % \judgment{
+      % \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\
+      % \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} \\
+      % \ctxSynType{\ctx}{\ECMV_3}{\TMV_2}
+    % }{
+      % \ctxSynType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    % }{MSIf}
+
+    \judgment{
+      \notInCtx{\ctx}{x}
+    }{
+      \ctxSynType{\ctx}{\ECUnbound{x}}{\TUnknown}
+    }{MSUnbound}
+
+    \judgment{
+      \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\
+      \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} \\\\
+      \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} \\
+      \inconsistent{\TMV_1}{\TMV_2}
+    }{
+      \ctxSynType{\ctx}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
+    }{MSInconsistentBranches}
+  \end{mathpar}
+
+  \judgbox{\ctxAnaType{\ctx}{\ECMV}{\TMV}} $\ECMV$ analyzes against type $\TMV$
+
+  \begin{mathpar}
+    \judgment{
+      \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+      \consistent{\TMV}{\TMV_1} \\\\
+      \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+    }{
+      \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
+    }{MALam1}
+
+    \judgment{
+      \notMatchedArrow{\TMV_3} \\
+      \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown}
+    }{
+      \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+    }{MALam2}
+
+    \judgment{
+      \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+      \inconsistent{\TMV}{\TMV_1} \\\\
+      \ctxAnaType{\extendCtx{\ctx}{x}{\TMV_1}}{\ECMV}{\TMV_2}
+    }{
+      \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+    }{MALam3}
+
+    % \judgment{
+      % \ctxSynType{\ctx}{\ECMV_1}{\TMV_1} \\
+      % \ctxAnaType{\extendCtx{\ctx}{x}{\TMV_1}}{\ECMV_2}{\TMV_2}
+    % }{
+      % \ctxAnaType{\ctx}{\ECLet{x}{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    % }{MALet}
+
+    \judgment{
+      \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\\\
+      \ctxAnaType{\ctx}{\ECMV_1}{\TMV} \\
+      \ctxAnaType{\ctx}{\ECMV_2}{\TMV}
+    }{
+      \ctxAnaType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
+    }{MAIf}
+
+    \judgment{
+      \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
+      \inconsistent{\TMV}{\TMV'} \\\\
+      \subsumable{\ECMV}
+    }{
+      \ctxAnaType{\ctx}{\ECInconType{\ECMV}}{\TMV}
+    }{MAInconsistentTypes}
+
+    \judgment{
+      \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
+      \consistent{\TMV}{\TMV'} \\\\
+      \subsumable{\ECMV}
+    }{
+      \ctxAnaType{\ctx}{\ECMV}{\TMV}
+    }{MASubsume}
+  \end{mathpar}
+  %
+  \caption{Selected marked expression type synthesis and analysis rules.}
+  \label{fig:calculus-typing-mexp}
+\end{figure}

@@ -1,0 +1,95 @@
+\begin{figure}[htbp]
+  \begin{mathpar}
+    \judgment{
+      \inCtx{\ctx}{x}{\TMV}
+    }{
+      \ctxSynType{\ctx}{x}{\TMV}
+    }{USVar}
+
+    \judgment{
+      \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\TMV_2}
+    }{
+      \ctxSynType{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\TArrow{\TMV_1}{\TMV_2}}
+    }{USLam}
+
+    \judgment{
+      \ctxSynType{\ctx}{\EMV_1}{\TMV} \\
+      \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\
+      \ctxAnaType{\ctx}{\EMV_2}{\TMV_1}
+    }{
+      \ctxSynType{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\TMV_2}
+    }{USAp}
+
+    \judgment{
+      \ctxSynType{\ctx}{\EMV_1}{\TMV_1} \\
+      \ctxSynType{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV_2}{\TMV_2}
+    }{
+      \ctxSynType{\ctx}{\ELet{x}{\EMV_1}{\EMV_2}}{\TMV_2}
+    }{USLet}
+
+    \judgment{ }{
+      \ctxSynType{\ctx}{\ENumMV}{\TNum}
+    }{USNum}
+
+    \judgment{
+      \ctxAnaType{\ctx}{\EMV_1}{\TNum} \\
+      \ctxAnaType{\ctx}{\EMV_2}{\TNum}
+    }{
+      \ctxSynType{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\TNum}
+    }{USPlus}
+
+    \judgment{ }{
+      \ctxSynType{\ctx}{\ETrue}{\TBool}
+    }{USTrue}
+
+    \judgment{ }{
+      \ctxSynType{\ctx}{\EFalse}{\TBool}
+    }{USFalse}
+
+    \judgment{
+      \ctxAnaType{\ctx}{\EMV_1}{\TBool} \\
+      \ctxSynType{\ctx}{\EMV_2}{\TMV_1} \\
+      \ctxSynType{\ctx}{\EMV_3}{\TMV_2}
+    }{
+      \ctxSynType{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    }{USIf}
+  \end{mathpar}
+
+  \judgbox{\ctxAnaType{\ctx}{\EMV}{\TMV}} $\EMV$ analyzes against type $\TMV$
+
+  \begin{mathpar}
+    \judgment{
+      \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+      \consistent{\TMV}{\TMV_1} \\
+      \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\TMV_2}
+    }{
+      \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\EMV}}{\TMV_3}
+    }{UALam}
+
+    \judgment{
+      \ctxSynType{\ctx}{\EMV_1}{\TMV_1} \\
+      \ctxAnaType{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV_2}{\TMV_2}
+    }{
+      \ctxAnaType{\ctx}{\ELet{x}{\EMV_1}{\EMV_2}}{\TMV_2}
+    }{UALet}
+
+    \judgment{
+      \ctxAnaType{\ctx}{\EMV_1}{\TBool} \\
+      \ctxAnaType{\ctx}{\EMV_1}{\TMV} \\
+      \ctxAnaType{\ctx}{\EMV_2}{\TMV}
+    }{
+      \ctxAnaType{\ctx}{\ECIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TMV}
+    }{UAIf}
+
+    \judgment{
+      \ctxSynType{\ctx}{\EMV}{\TMV'} \\
+      \consistent{\TMV}{\TMV'} \\
+      \subsumable{\EMV}
+    }{
+      \ctxAnaType{\ctx}{\EMV}{\TMV}
+    }{UASubsume}
+  \end{mathpar}
+
+  \caption{Unmarked expression type synthesis and analysis rules.}
+  \label{fig:calculus-typing-uexp}
+\end{figure}

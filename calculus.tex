@@ -1,2 +1,151 @@
+\section{Motivating Examples}
+In this section, we motivate a formal calculus for bidirectional type error localization through a
+number of examples.
+
+% TODO Talk about idea that bidirectional typing makes error localization easy?
+
+\subsection{Unbound Variables}
+% A simple example of an error that may occur in programs is the use of an unbound variable.
+
+\subsection{Inconsistent Types}
+Often, the type an expression \emph{should} be is known. For example, in an expression such as
+$\EPlus{\EMV_1}{\EMV_2}$, both $\EMV_1$ and $\EMV_2$ should have the type $\TNum$. In a
+bidirectional system, $\EMV_1$ and $\EMV_2$ would be analysed against $\TNum$.
+
+\subsection{Inconsistent Branches}
+
 \section{Marking Calculus}
 \label{sec:calculus}
+
+The previous section introduced different error localization cases by example. Now, we formally
+introduce a \emph{marking calculus} for bidirectional type error localization on a lambda calculus
+extended with numbers, conditionals, and let bindings, given by a two-layer system:
+%
+\begin{itemize}
+  \item \textbf{Unmarked expressions} ($\EMName$), which are the surface-level expression syntax.
+    Types classify unmarked expressions according to a standard bidirectional gradual typing
+    semantics. Note that a non-gradual system may be recovered straightforwardly by removing the
+    unknown type and replacing type consistency with equality (discussed in
+    \cref{sec:calculus-non-gradual}).
+
+  \item \textbf{Marked expressions} ($\ECMName$), which mirror the structure of unmarked expressions
+    but are extended with \textbf{error markings}. Every marked expression corresponds to an
+    unmarked expression by \emph{mark erasure}.
+
+  \item \textbf{Mark insertion}, which \textbf{marks} any unmarked expression into a marked
+    expression, inserting error markings where appropriate.
+\end{itemize}
+
+In the interest of space, this overview focuses on the ``interesting'' cases; the whole system,
+alongside the metatheorems discussed have been mechanized in the Agda proof assistant (discussed in
+\cref{sec:calculus-agda}).
+
+\subsection{Unmarked Expressions}
+\label{sec:calculus-uexp}
+
+\Cref{fig:calculus-syntax-uexp} gives the syntax of types, $\TMV$, and unmarked expressions, $\EMV$,
+which extend the simply typed lambda calculus with $\TNum$ and $\TBool$ base types of numbers and
+booleans. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$, and
+there is a single addition operation on numeric expressions. $\ETrue$ and $\EFalse$ correspond to
+the boolean values $\textsf{true}$ and $\textsf{false}$, and the branching expression
+$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives an if-else form.
+
+In addition, types are extended with an \emph{unknown type}, $\TUnknown$, which
+
+\begin{figure}[htbp]
+  \[\begin{array}{rrcl}
+    \TMName  & \TMV  & \Coloneqq & \TUnknown \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \\
+    \EMName  & \EMV  & \Coloneqq & x \mid \ELam{x}{\TMV}{\EMV} \mid \EAp{\EMV}{\EMV} \mid \ELet{x}{\EMV}{\EMV} \\
+             &       & \mid         & \ENumMV \mid \EPlus{\EMV}{\EMV}
+                       \mid           \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
+  \end{array}\]
+  \caption{Syntax of types and unmarked expressions.}
+  \label{fig:calculus-syntax-uexp}
+\end{figure}
+
+Unmarked expressions are governed by a standard bidirectional gradual type system, as given in
+\Cref{fig:calculus-typing-uexp}.
+
+% TODO Not sure how explicitly we want to spell out the type system, in lieu of background
+% section on bidirectional typing?
+
+% \input{figs/calculus-type-judgments.tex}
+% \input{figs/calculus-typing-uexp.tex}
+
+\subsection{Marked Expressions}
+\label{sec:calculus-mexp}
+
+Marked expressions, $\ECMV$, extend the syntax of unmarked expressions with explicit \emph{error
+markings}. As given in the syntax definition of \cref{fig:calculus-syntax-mexp}, there are three
+such forms, which mirror the examples above:
+%
+\begin{itemize}
+  \item $\ECUnbound{x}$, denoting the usage of an unbound variable.
+
+  \item $\ECInconType{\ECMV}$, which occurs when the synthesized type of $\ECMV$ is inconsistent
+    with the required type.
+
+  \item $\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}$, which occurs when the types of the two branches
+    $\ECMV_2$ and $\ECMV_3$ are inconsistent.
+\end{itemize}
+%
+Additional forms may arise as required by the language.
+
+\begin{figure}[htbp]
+  \[\begin{array}{rrcl}
+    \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV} \\
+             &       & \mid         & \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
+                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
+             &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}
+  \end{array}\]
+  \caption{Syntax of marked expressions}
+  \label{fig:calculus-syntax-mexp}
+\end{figure}
+
+Marked expressions are also typed by a bidirectional system, which, for most forms, closely mirrors
+the rules for corresponding unmarked forms. \Cref{fig:calculus-typing-mexp} contains a selection of
+the ``interesting'' cases, particularly those concerned with error markings.
+
+\input{figs/calculus-typing-mexp.tex}
+
+% TODO Not really sure how to explain the syntax and typing of marked expressions in an intuitive
+% way in relation to unmarked expressions.
+
+For unbound variables $\ECUnbound{x}$, nothing may be said about their types; hence, they synthesize
+the unknown type. Inconsistent branch forms behave similarly, as inconsistent types have no join.
+
+There are three rules concerned with the typing of lambda abstractions. MALam1, applies to
+$\ECLam{x}{\TMV}{\ECMV}$ if the type $\TMV_3$ analysed against is a matched arrow type
+$\TArrow{\TMV_1}{\TMV_2}$ and input type $\TMV_1$ is consistent with the binding ascription $\TMV$.
+This corresponds to the lambda rule for unmarked expressions. However, we are additionally concerned
+with the cases when $\TMV_3$ is not a matched arrow type or $\TMV_1$ is inconsistent with $\TMV$.
+These are described by MALam2 and MALam3.
+
+Alongside the standard subsumption rule, in which an expression that synthesizes a type may be
+analysed against any consistent type, MAInconsistentTypes governs most occurrences of the
+inconsistent types marking: $\ECInconType{\ECMV}$ analyzes against any type as long as $\ECMV$
+synthesizes an inconsistent type. In both cases, we stipulate that subsumption may be applied to
+$\ECMV$, written $\subsumable{\ECMV}$. In particular, lambda abstractions and if-else forms are
+\emph{not} subsumable, formalizing these rules as ones of ``last resort'', preserving determinism of
+typing.
+
+Similarly to lambda abstractions, two rules govern application. In the unmarked syntax, the
+application $\EAp{\EMV_1}{\EMV_2}$ was well-typed if the type $\TMV$ synthesized by $\EMV_1$ was a
+matched arrow type. This corresponds to the MSAp1 rule for marked expressions. In the case that
+$\TMV$ is not a matched arrow type, we require an inconsistent types marking around the
+
+\subsection{Mark Insertion}
+
+\subsection{Well-Formedness}
+\label{sec:calculus-wellformedness}
+
+\subsection{Alternative Formulations}
+
+\subsection{Non-Gradual System}
+\label{sec:calculus-non-gradual}
+
+\subsection{Mechanization}
+\label{sec:calculus-agda}
+
+The metatheory of the calculus has been fully mechanized in the Agda proof assistant [citation]. The
+mechanization's documentation contains more details regarding technical decisions made therein.
