@@ -1,0 +1,21 @@
+\begin{figure}[htbp]
+  \newcommand{\erasesToRow}[2]{\erase{#1} & = & #2}
+  \[\begin{array}{rcl}
+    % \erasesToRow{\ECEHole}{\EEHole} \\
+    \erasesToRow{x}{x} \\
+    \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    % \erasesToRow{(\ECLet{x}{\ECMV_1}{\ECMV_2})}{\ELet{x}{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{\ECNumMV}{\ENumMV} \\
+    \erasesToRow{(\ECPlus{\ECMV_1}{\ECMV_2})}{\EPlus{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{\ECTrue}{\ETrue} \\
+    \erasesToRow{\ECFalse}{\EFalse} \\
+    \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    \erasesToRow{\ECUnbound{x}}{x} \\
+    \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
+    \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+  \end{array}\]
+  %
+  \caption{Mark erasure definition.}
+  \label{fig:calculus-mark-erasure}
+\end{figure}

@@ -1,6 +1,7 @@
 \begin{figure}[htbp]
+  \small\raggedright
   \judgbox{\ctxSynType{\ctx}{\ECMV}{\TMV}} $\ECMV$ synthesizes type $\TMV$
-
+  %
   \begin{mathpar}
     % \judgment{ }{
       % \ctxSynType{\ctx}{\ECEHole}{\TUnknown}
@@ -81,11 +82,11 @@
       \inconsistent{\TMV_1}{\TMV_2}
     }{
       \ctxSynType{\ctx}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
-    }{MSInconsistentBranches}
+    }{MSInconsistentBranches} \\
   \end{mathpar}
 
   \judgbox{\ctxAnaType{\ctx}{\ECMV}{\TMV}} $\ECMV$ analyzes against type $\TMV$
-
+  %
   \begin{mathpar}
     \judgment{
       \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
