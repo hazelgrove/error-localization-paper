@@ -1,0 +1,43 @@
+\newpage
+\section{Appendix A: An implementation of union-findable Possible Type Sets}
+
+\begin{figure}[h!]
+\begin{lstlisting}[escapeinside={(*}{*)}]
+open UnionFind
+
+type t = possible_types UnionFind.elem
+and possible_type_set = possible_type list
+and possible_type =
+  | Unknown(provenance)
+  | Num
+  | Bool
+  | Arrow of t * t;
+
+let rec merge_sets_UF (s1: t, s2: t): t =
+    let merged_typs = merge_sets (UnionFind.get s1) (UnionFind.get s2) in
+    let final_rep = UnionFind.union s1 s2 in
+    UnionFind.set final_rep merged_typs;
+    final_rep
+and merge_sets (s1: possible_type_set, s2: possible_type_set): possible_types = 
+    match (s2)
+    | [] -> s1
+    | s2_hd::s2_hd -> merge_sets (add s1 s2_hd) s2_hd
+and add (s: possible_type_set, t: possible_type): possible_type_set =
+    match (s)
+    | [] -> [t]
+    | s_hd::s_tl -> (
+        match (s_hd, t)
+        | (Arrow(s_hd_L, s_hd_R), Arrow(t_L, t_R)) ->
+            let left = merge_sets_UF s_hd_L t_L in
+            let right = merge_sets_UF s_hd_R t_R in
+            Arrow(left, right)::s_tl
+        | _ -> if (s_hd = t) then s else s_hd::(add s_tl t)
+    )
+
+let union => if (UnionFind.eq t1 t2) then () else merge_sets_UF t1 t2;
+\end{lstlisting}
+\vspace{-4px}
+ \hrule
+\caption{An Implementation of \textit{PossibleTypeSet} using UnionFind}
+\label{fig:ufalgcode}
+\end{figure}

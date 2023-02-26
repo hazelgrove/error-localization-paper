@@ -1,2 +1,39 @@
 \section{Introduction}
 \label{sec:introduction}
+
+Type errors are both a boon and a bane to developers.
+At their best, type errors help programmers quickly and accurately identify the location and cause of a genuine problem in their program that is blocking progress on their task. 
+At their worst, type errors mislead the programmer / distract them away from the parts of the program that are of interest, and 
+prevent evaluation and editor services from working, even when the error is benign or located at an irrelevant location in the program. 
+(May be one reason some developers favor dynamic languages, especially when prototyping)
+
+For these reasons, accurate type error localization and robust type error recovery have been a topic of considerable practical interest. 
+Indeed, essentially all widely-used programming environments (often via an underlying language server) have some support for type error 
+localization and many also attempt recovery in some situations. However, the design of these systems has largely remained a matter of folklore or empirical iteration. 
+One reason for this is 
+that type system definitions typically only define the conditions under which an expression is well-typed, e.g. in the style of the simply typed lambda calculus and its derivatives. When there is a type error anywhere in the program, it is everywhere meaningless according to definitions in this style, i.e. there is no direct specification for how to reason within an erroneous program. Different language servers or typecheckers for the same language can and do attempt to localize, report, and recover from these errors in different ways, with little in the way of unifying theory. 
+
+The primary contribution of this paper is to provide these missing theoretical foundations for type error localization and recovery. 
+Start assuming a system with local type inference / bidirectional typing, marked lambda calculus(Give judgement forms right off the bat??) 
+(Mention gradual typing here?)
+
+We build on the foundation of the Hazelnut type system, which allows for local type inconsistencies to be placed within a non-empty hole, 
+e.g. $1 + false$ is meaningless but $1 + \{false\}$ can be given type Num. In other words, the non-empty holes serves as a membrane around type inconsistencies, here between the expected type, Num, and the synthesized type, Bool. Problems:
+
+1. does not handle every kind of error that can arise, e.g. inconsistent branch types, unbound variables, etc.
+
+2. does not provide a general account for how to correctly place the non-empty holes -- in that paper, they assume that a structure editor will be used and show how the structure editor can determine whether a non-empty hole is needed at the cursor after an edit action, but edits that might cause non-local errors to appear are undefined. users can also manually mark these locations, similar to Agda's non-empty holes. (Examples?)
+
+To solve both of these problems, we establish totality of marking -- we prove it to be total (and to insert only marks, without making any other changes), i.e. it must handle 
+every possible syntactically well-formed program and thus every error. Mechanized in Agda.
+
+Marking does not rely on a structure editor, so it is suitable as a foundational calculus for language servers supporting editors of any 
+design, both text editors (with syntax error recovery, a well-studied topic that we consider outside of the scope of this paper) and structure editors. To support this claim, we have implemented the calculus in a version of Hazel built atop tylr, which features both a text editor with explicit syntax for holes (a la Agda, GHC, etc.) and a textual structure editor with syntax error recovery via automatic hole insertion. Maximal liveness guarantee! 
+
+Additional foundational contribution, we have also defined two versions of Hazelnut that eliminate the undefined behavior just mentioned. Composed with marking, this solves the problem. Also briefly consider incremental remarking in the style of Hazelnut.
+
+As we go, we'll discuss various localization design decisions that the language designer should consider when specifying the marked type system for their language. Overall, though, our work validates the folklore that systems that rely on local type inference tend to have an easier time deciding how to localize type errors (Pierce paper). Many modern languages feature local type inference, including .... 
+However, non-local constraint-based type inference is also a common language feature, and it is known to substantially complicate error localization and recovery. 
+Heuristic approaches based on ML-based approaches, weighting, etc.
+In this paper, we consider an alternative approach to incorporating non-local constraints. Rather than ...
+
