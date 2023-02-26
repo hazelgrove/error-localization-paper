@@ -1,0 +1,152 @@
+\begin{figure}[htbp]
+  \small\raggedright
+  %
+  \judgbox{\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}} $\EMV$ is marked into $\ECMV$ and synthesizes type $\TMV$
+  %
+  \begin{mathpar}
+    % \judgment{ }{
+      % \ctxSynFixedInto{\ctx}{\EEHole}{\ECEHole}{\TUnknown}
+    % }{ISHole}
+  
+    \judgment{
+      \inCtx{\ctx}{x}{\TMV}
+    }{
+      \ctxSynFixedInto{\ctx}{x}{x}{\TMV}
+    }{ISVar}
+  
+    \judgment{
+      \notInCtx{\ctx}{x}
+    }{
+      \ctxSynFixedInto{\ctx}{x}{\ECUnbound{x}}{\TUnknown}
+    }{ISUnbound}
+  
+    \judgment{
+      \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\ECMV}{\TMV_2}
+    }{
+      \ctxSynFixedInto{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\ELam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
+    }{ISLam}
+  
+    \judgment{
+      \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
+      \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\\\
+      \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
+    }{
+      \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    }{ISAp1}
+  
+    \judgment{
+      \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
+      \notMatchedArrow{\TMV} \\\\
+      \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
+    }{
+      \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECApNonMatched{\ECMV_1}{\ECMV_2}}{\TUnknown}
+    }{ISAp2}
+  
+    % \judgment{
+      % \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\
+      % \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV_2}{\ECMV_2}{\TMV_2}
+    % }{
+      % \ctxSynFixedInto{\ctx}{\ECLet{x}{\EMV_1}{\EMV_2}}{\ECLet{x}{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    % }{ISLet}
+  
+    \judgment{
+    }{
+      \ctxSynFixedInto{\ctx}{\ENumMV}{\ECNumMV}{\TNum}
+    }{ISNum}
+  
+    \judgment{
+      \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TNum} \\\\
+      \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TNum}
+    }{
+      \ctxSynFixedInto{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
+    }{ISPlus}
+  
+    \judgment{
+    }{
+      \ctxSynFixedInto{\ctx}{\ETrue}{\ECTrue}{\TBool}
+    }{ISTrue}
+  
+    \judgment{
+    }{
+      \ctxSynFixedInto{\ctx}{\EFalse}{\ECFalse}{\TBool}
+    }{ISFalse}
+  
+    \judgment{
+      \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\\\
+      \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
+      \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2}
+    }{
+      \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    }{ISIf}
+  
+    \judgment{
+      \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\
+      \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\\\
+      \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2} \\
+      \inconsistent{\TMV_1}{\TMV_2}
+    }{
+      \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
+    }{ISInconsistentBranches} \\
+  \end{mathpar} \\
+  
+  \judgbox{\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}} $\EMV$ is marked into $\ECMV$ and analyses against type $\TMV$
+  %
+  \begin{mathpar}
+    \judgment{
+      \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+      \consistent{\TMV}{\TMV_1} \\\\
+      \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
+    }{
+      \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
+    }{IALam1}
+  
+    \judgment{
+      \notMatchedArrow{\TMV_3} \\
+      \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TUnknown}
+    }{
+      \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+    }{IALam2}
+  
+    \judgment{
+      \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+      \inconsistent{\TMV}{\TMV_1} \\\\
+      \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
+    }{
+      \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+    }{IALam3}
+  
+    % \judgment{
+      % \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\
+      % \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV_2}{\ECMV_2}{\TMV_2}
+    % }{
+      % \ctxAnaFixedInto{\ctx}{\ECLet{x}{\EMV_1}{\EMV_2}}{\ECLet{x}{\ECMV_1}{\ECMV_2}}{\TMV_2}
+    % }{IALet}
+  
+    \judgment{
+      \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\\\
+      \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV} \\
+      \ctxAnaFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV} \\
+    }{
+      \ctxAnaFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
+    }{IAIf}
+  
+    \judgment{
+      \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'} \\
+      \inconsistent{\TMV}{\TMV'} \\\\
+      \subsumable{\EMV}
+    }{
+      \ctxAnaFixedInto{\ctx}{\EMV}{\ECInconType{\ECMV}}{\TMV}
+    }{IAInconsistentTypes}
+  
+    \judgment{
+      \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'} \\
+      \consistent{\TMV}{\TMV'} \\\\
+      \subsumable{\EMV}
+    }{
+      \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}
+    }{IASubsume}
+  \end{mathpar}
+  %
+  \caption{Mark insertion.}
+  \label{fig:calculus-mark-insertion}
+\end{figure}

@@ -140,7 +140,7 @@ duplication of rules related to arrow types.
 \input{figs/calculus-type-judgments}
 
 The branches of if-else expressions may synthesize different types $\TMV_1$ and $\TMV_2$ as long as
-they are consistent. The entire expression then synthesizes the join, or lowest upper bound,
+they are consistent. The entire expression then synthesizes the \emph{join}
 $\TJoin{\TMV_1}{\TMV_2}$.
 
 \subsection{Marked Expressions}
@@ -246,6 +246,29 @@ to $\ECMV$, written $\subsumable{\ECMV}$, for similar reasons as before.
 
 \subsection{Mark Insertion}
 \label{sec:calculus-marking}
+
+The central component of the calculus is \emph{mark insertion}, a bidirectional system given by the
+following mutually defined judgments. The synthetic insertion judgment
+$\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that under the context $\Gamma$, the
+unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
+$\TMV$. Analogously, the analytic insertion judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
+states that the unmarked expression $\EMV$ is marked into $\ECMV$, which analyses against type
+$\TMV$.
+
+% TODO need to better explain why it is bidirectional
+
+\input{figs/calculus-mark-insertion}
+
+The rules for mark insertion are given in \Cref{fig:calculus-mark-insertion}. Observe that they
+mirror the typing rules for marked expressions closely: all possible outcomes for fallible premises
+are handled and markings are inserted as needed. For example, ISVar and ISUnbound together handle
+variable usages. The former yields the same variable in the marked language when it is bound. The
+latter marks the variable as unbound if it is not found in the context.
+
+We again find two rules governing the marking of function application. ISAp1 corresponds to MSAp1 as
+the ``success case'', recursively marking $\EMV_1$ and $\EMV_2$. Accordingly, ISAp2 parallels MSAp2
+as the ``error case''. Similarly, ISIf and ISInconsistentBranches correspond to MSIf and
+MSInconsistentBranches, and IALam1, IALam2, and IALam3 correspond to MSLam1, MSLam2, and MSLam3.
 
 \subsection{Correctness}
 \label{sec:calculus-correctness}
