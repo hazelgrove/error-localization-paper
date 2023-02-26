@@ -1,3 +1,6 @@
+% TODO standardize naming: marking vs mark insertion, marks vs error marks vs markings
+% TODO uniform style for referencing rules
+
 \section{Motivating Examples}
 \emph{Bidirectional typing} combines type checking, which determines if a program satisfies a given
 type, and type synthesis, which generates a type from the program. This gives a simple algorithmic
@@ -12,6 +15,8 @@ well-typed. However, formal typing semantics usually only give meaning to well-t
 leaving ill-typed ones meaningless. This is insufficient for editor services and language servers,
 which give users feedback on where and why a program is ill-typed. Traditionally, this has been
 performed in an \emph{ad hoc} manner [citations?].
+
+% TODO examples of this ad hoc stuff
 
 In this section, we motivate a formal calculus for bidirectional type error localization by
 exploring different kinds of type errors that may occur.
@@ -47,13 +52,6 @@ given ``blame'' when ill-typed.
 
 \subsection{Inconsistent Branches}
 
-\subsection{Correctness}
-\begin{theorem}[name=Marking Totality]
-  Any syntactically well-formed program may be marked for errors.
-\end{theorem}
-
-In the next section, we will formally develop
-
 \section{Marked Lambda Calculus}
 \label{sec:calculus}
 
@@ -67,10 +65,11 @@ This comes as a two-layer system:
     semantics.
 
   \item \textbf{Marked expressions} (\cref{sec:calculus-mexp}), which mirror the structure of
-    unmarked expressions but are extended with \textbf{error markings}. Every marked expression
+    unmarked expressions but are extended with \textbf{error marks}. Every marked expression
     corresponds to an unmarked expression by \emph{mark erasure}.
+    % TODO more intuition for what marked expressions are?
 
-  \item \textbf{Mark insertion} (\cref{sec:calculus-marking}), which \textbf{marks} any unmarked expression into a marked
+  \item \textbf{Marking} (\cref{sec:calculus-marking}), which \textbf{marks} any unmarked expression into a marked
     expression, inserting error markings where appropriate.
 \end{itemize}
 %
@@ -79,11 +78,20 @@ and define a mapping from ``unmarked'' programs to ``marked'' programs. Note tha
 semantics that follow concern a gradually typed language, a non-gradual system may be recovered
 straightforwardly by removing the unknown type and replacing type consistency with equality.
 
-In \cref{sec:calculus-correctness}, we discuss the metatheory that ensures the system---and any such
-error localization semantics---to be correct. We follow then by extending the calculus with support
-for product types. In the interest of space, this overview focuses on ``interesting'' cases. All
-rules and theorems may be found in the supplementary appendix, alongside a complete mechanization
-(including the extension with products) in the Agda proof assistant, which is discussed in
+Key to ensuring correctness of the system---and, indeed, any such error localization semantics---is
+a metatheorem, \emph{marking totality}, which guides the construction of rules:
+%
+\begin{theorem}[name=Marking Totality]
+  Any syntactically well-formed unmarked expression may be marked into a marked expression.
+\end{theorem}
+%
+We will give a more concrete statement of the metatheorem after formally introducing the components
+of the system.
+
+In \cref{sec:calculus-products}, we follow with an extension of the calculus to support binary
+product types. In the interest of space, this overview focuses on ``interesting'' cases. All rules
+and theorems may be found in the supplementary appendix, alongside a complete mechanization
+(including the extension with binary products) in the Agda proof assistant, which is discussed in
 \cref{sec:calculus-agda}.
 
 % TODO extension to non-typing semantics?
@@ -244,12 +252,12 @@ the inconsistent types mark $\ECInconType{\ECMV}$ analyses against any type as l
 synthesises an inconsistent type. In both cases, we again stipulate that subsumption may be applied
 to $\ECMV$, written $\subsumable{\ECMV}$, for similar reasons as before.
 
-\subsection{Mark Insertion}
+\subsection{Marking}
 \label{sec:calculus-marking}
 
-The central component of the calculus is \emph{mark insertion}, a bidirectional system given by the
+The central component of the calculus is \emph{marking}, a bidirectional system given by the
 following mutually defined judgments. The synthetic insertion judgment
-$\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that under the context $\Gamma$, the
+$\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
 $\TMV$. Analogously, the analytic insertion judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
 states that the unmarked expression $\EMV$ is marked into $\ECMV$, which analyses against type
@@ -259,7 +267,7 @@ $\TMV$.
 
 \input{figs/calculus-mark-insertion}
 
-The rules for mark insertion are given in \Cref{fig:calculus-mark-insertion}. Observe that they
+The rules for mark insertion are given in \cref{fig:calculus-mark-insertion}. Observe that they
 mirror the typing rules for marked expressions closely: all possible outcomes for fallible premises
 are handled and markings are inserted as needed. For example, ISVar and ISUnbound together handle
 variable usages. The former yields the same variable in the marked language when it is bound. The
@@ -269,21 +277,115 @@ We again find two rules governing the marking of function application. ISAp1 cor
 the ``success case'', recursively marking $\EMV_1$ and $\EMV_2$. Accordingly, ISAp2 parallels MSAp2
 as the ``error case''. Similarly, ISIf and ISInconsistentBranches correspond to MSIf and
 MSInconsistentBranches, and IALam1, IALam2, and IALam3 correspond to MSLam1, MSLam2, and MSLam3.
+The rules IAInconsistentTypes and IASubsume, of course, act in parallel to MAInconsistentTypes and
+MASubsume.
 
-\subsection{Correctness}
-\label{sec:calculus-correctness}
+We may now formally restate the critical metatheorem of marking totality:
+%
+\begin{theorem}[name=Marking Totality] \
+  \label{thm:calculus-marking-totality}
+  \begin{enumerate}
+    \item For all $\ctx$ and $\EMV$, there exist $\ECMV$ and $\TMV$ such that
+      $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$.
+  \item For all $\ctx$, $\EMV$, and $\TMV$, there exists $\ECMV$ such that
+    $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$.
+  \end{enumerate}
+\end{theorem}
 
-% Totality
+Additionally, it is important that marking preserves the original syntactic structure modulo error
+marks; it would be trivial to satisfy totality by marking all expressions into numbers, for example.
+This property is ensured by the following well-formedness metatheorem:
+%
+\begin{theorem}[name=Marking Well-Formedness] \
+  \label{thm:calculus-marking-well-formedness}
+  \begin{enumerate}
+    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then $\ctxSynType{\ctx}{\ECMV}{\TMV}$ and
+      $\erasesTo{\ECMV}{\EMV}$.
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then $\ctxAnaType{\ctx}{\ECMV}{\TMV}$ and
+      $\erasesTo{\ECMV}{\EMV}$.
+  \end{enumerate}
+  % TODO split this into two theorems?
+  % TODO not really sure how to intuitively describe the part about types matching up
+\end{theorem}
+%
+In other words, if an unmarked expression is marked into some marked expression, erasing error marks
+from the marked expression gives the original unmarked expression. To ensure that we place error
+marks in the correct spots, we furthermore require the following theorem:
+%
+\begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \ % TODO better name for this
+  \label{thm:calculus-marking-well-ill-typed}
+  \begin{enumerate}
+    \item \begin{enumerate}
+        \item If $\ctxSynType{\ctx}{\EMV}{\TMV}$, then $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
+          such that $\imageIs{\EMV}{\ECMV}$.
+        \item If $\ctxAnaType{\ctx}{\EMV}{\TMV}$, then $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
+          such that $\imageIs{\EMV}{\ECMV}$.
+      \end{enumerate}
 
-% Well-formedness conditions
+    \item \begin{enumerate}
+        \item If there does not exist $\TMV$ such that $\ctxSynType{\ctx}{\EMV}{\TMV}$, then for all
+          $\ECMV$ and $\TMV'$ such that $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$, we have
+          $\imageIsNot{\EMV}{\ECMV}$.
+        \item If there does not exist $\TMV$ such that $\ctxAnaType{\ctx}{\EMV}{\TMV}$, then for all
+          $\ECMV$ and $\TMV'$ such that $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$, we have
+          $\imageIsNot{\EMV}{\ECMV}$.
+      \end{enumerate}
+  \end{enumerate}
+\end{theorem}
+%
+That is, since error marks indicate type errors in the program, a well-typed program should, of
+course, have no error marks. The converse---that marks are inserted into ill-typed programs---is
+also true. We have chosen to formulate the absence of error marks through an inclusion mapping of
+unmarked expressions into marked expressions; alternatively, a predicate over marked expressions
+could be used. % TODO latter is easier to do in Agda, but maybe it is weaker?
 
-% Well-typed expressions have no resulting marks
+Finally, no less importantly, marking is deterministic. This is given by
+\cref{thm:calculus-marking-unicity}.
+%
+\begin{theorem}[name=Marking Unicity] \
+  \label{thm:calculus-marking-unicity}
+  \begin{enumerate}
+    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$ and
+      $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$, then $\ECMV_1 = \ECMV_2$ and $\TMV_1 =
+      \TMV_2$.
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$ and
+      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$, then $\ECMV_1 = \ECMV_2$ and $\TMV_1 =
+      \TMV_2$.
+  \end{enumerate}
+\end{theorem}
+%
+Together with totality, marking may be considered and implemented as a total function.
 
-\subsection{Adding Products}
+\subsection{Adding Binary Products}
 \label{sec:calculus-products}
+
+We now demonstrate how one might extend or adapt the marking calculus for new typing features by
+adding binary product types. First, we extend in \cref{fig:calculus-products-judgments} the syntax
+of types and notions of consistency and join. As with arrow types, we additionally define an
+auxiliary notion of \emph{matched binary product types}: the judgment
+$\matchedPair{\TMV}{\TMV_1}{\TMV_2}$ establishes that $\TMV$ may be considered the binary product
+type $\TPair{\TMV_1}{\TMV_2}$.
+
+\input{figs/calculus-products-judgments}
+
+The unmarked language with a pair constructor and projection operators.
+\Cref{fig:calculus-products-uexp} gives their syntax and typing rules. Similarly to application,
+\textsc{USProjL} and \textsc{USProjR} employ the matched binary product type; a projection
+$\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may be considered to be a pair.
+
+\input{figs/calculus-products-uexp}
+
+\input{figs/calculus-products-mexp}
+
+\input{figs/calculus-products-marking}
 
 \subsection{Mechanization}
 \label{sec:calculus-agda}
 
 The metatheory of the calculus has been fully mechanized in the Agda proof assistant [citation]. The
 mechanization's documentation contains more details regarding technical decisions made therein.
+
+\subsection{Implementation in Hazel}
+
+\subsection{Reified Hazelnut Action Semantics}
+

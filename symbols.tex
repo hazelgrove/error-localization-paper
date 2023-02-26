@@ -11,7 +11,7 @@
 %
 
 % judgments
-\newcommand{\judgment}[3]{\inferrule{#1}{#2}~~{\textsc{[#3]}}}
+\newcommand{\judgment}[3]{\inferrule[#3]{#1}{#2}}
 \newcommand{\judgbox}[1]{\noindent \fbox{$#1$}}
 
 % equality
@@ -175,8 +175,8 @@
 
 % pairs
 \newcommand{\ECPair}[2]{\ensuremath{(#1, #2)}}
-\newcommand{\ECProjL}[1]{\ensuremath{#1.0}}
-\newcommand{\ECProjR}[1]{\ensuremath{#1.1}}
+\newcommand{\ECProjL}[1]{\ensuremath{\pi_0 #1}}
+\newcommand{\ECProjR}[1]{\ensuremath{\pi_1 #1}}
 
 % let
 \newcommand{\ECLet}[3]{\ensuremath{\textsf{let}~ #1 = #2 ~\textsf{in}~ #3}}
