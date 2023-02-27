@@ -1,17 +1,42 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Type errors are both a boon and a bane to developers.
-At their best, type errors help programmers quickly and accurately identify the location and cause of a genuine problem in their program that is blocking progress on their task. 
-At their worst, type errors mislead the programmer / distract them away from the parts of the program that are of interest, and 
-prevent evaluation and editor services from working, even when the error is benign or located at an irrelevant location in the program. 
-(May be one reason some developers favor dynamic languages, especially when prototyping)
+% When a static type checker locates a type error, the hope is that the type error accurately locates a problem that is blocking progress on the task at hand. 
+% However, the reality is that the type error might incorrectly locate the problem, or locate a problem irrelevant to the task at hand. In all cases, the developer must fix all type errors before . These gaps in service can  persist for hours or days at a time, such as when a key type definition is 
+% modified in a way that causes multiple errors to appear throughout a large program. 
+% Until \emph{all} of these errors are fixed, it may be the case that \emph{none} of the changed code paths can be tested at run-time, 
+% and many helpful language services are not fully functional \cite{HazelnutSNAPL}.
+
+Contemporary programming environments provide 
+a wide variety of semantic services that require statically analyzing the type and binding structure of the program being edited, e.g. various semantic navigation services, type hints, semantic code completion, and automated refactoring. 
+
+Language designers typically specify static type systems as a collection of rules 
+stating conditions under which an expression can be judged to be well-typed,
+i.e. completely free of type errors. 
+Provisioning these semantic services for well-typed expressions is well-supported 
+by these definitions. 
+
+When there is a type error, however, these definitions are inadequate. It is therefore left as an implementation decision (1) type error localization: how to localize and explain the type error, and (2) type error recovery: how to recover from the error to find other simultaneous errors and to continue to provision various semantic services, which would often still useful even in the presence of errors. 
+
+Consider, for example, 
+
+let x = 
+  if f(y) then 1 else true
+in 
+  x + 1
+
+
+(compare Elm/OCaml/Haskell and Hazel directly?)
+
+Different language servers or typecheckers for the same language can and do attempt to localize, report, and recover from these errors in different ways, with little in the way of unifying theory. 
 
 For these reasons, accurate type error localization and robust type error recovery have been a topic of considerable practical interest. 
 Indeed, essentially all widely-used programming environments (often via an underlying language server) have some support for type error 
-localization and many also attempt recovery in some situations. However, the design of these systems has largely remained a matter of folklore or empirical iteration. 
+localization and many also attempt recovery of certain services in certain situations. However, the design of these systems has evolved in some part as folklore, as type system definitions have remained silent.
+
+
 One reason for this is 
-that type system definitions typically only define the conditions under which an expression is well-typed, e.g. in the style of the simply typed lambda calculus and its derivatives. When there is a type error anywhere in the program, it is everywhere meaningless according to definitions in this style, i.e. there is no direct specification for how to reason within an erroneous program. Different language servers or typecheckers for the same language can and do attempt to localize, report, and recover from these errors in different ways, with little in the way of unifying theory. 
+that type system definitions typically only define the conditions under which an expression is well-typed, e.g. in the style of the simply typed lambda calculus and its derivatives. When there is a type error anywhere in the program, it is everywhere meaningless according to definitions in this style, i.e. there is no direct specification for how to reason within an erroneous program. 
 
 The primary contribution of this paper is to provide these missing theoretical foundations for type error localization and recovery. 
 Start assuming a system with local type inference / bidirectional typing, marked lambda calculus(Give judgement forms right off the bat??) 
