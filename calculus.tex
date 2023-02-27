@@ -1,7 +1,7 @@
 % TODO standardize naming: marking vs mark insertion, marks vs error marks vs markings
 % TODO uniform style for referencing rules
 
-\section{Marked Lambda Calculus}
+\section{The Marking Calculus}
 \label{sec:calculus}
 
 Programmers often work with program states that are syntactically well-formed but not well-typed.
@@ -455,10 +455,11 @@ rules:
   }{MSAp1}
 \end{mathpar}
 
-Again, to satisfy totality, we must consider the case when $\TMV$ is not a matched arrow type. There
-is no expected type for the argument, so we perform analytic marking on $\EMV_2$ against the
-unknown type. The applied expression is placed inside the inconsistent type mark, which is in
-accordance with the meaning of that mark.
+Again, to satisfy totality, we must consider the case when $\TMV$ is not a matched arrow type, such
+as in the example of \cref{fig:calculus-examples-app-non-lambda}. There is no expected type for the
+argument, so we perform analytic marking on $\EMV_2$ against the unknown type. The applied
+expression is placed inside the inconsistent type mark, which is in accordance with the meaning of
+that mark.
 %
 \begin{mathpar}
   \judgment{
@@ -618,11 +619,11 @@ there is an expected type for both branches, we shift the blame for any errors t
 
 % TODO intuition why we use join
 
+\newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
 \begin{figure}[htbp]
   \raggedright
   \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
   %
-  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
   \[\begin{array}{rcl}
     \joinsTo{\TUnknown}{\TMV}{\TMV} \\
     \joinsTo{\TMV}{\TUnknown}{\TMV} \\
@@ -728,7 +729,7 @@ We also restrict the usage of subsumption to ``subsumable'' syntactic forms, wri
 $\subsumable{\EMV}$. This judgment is defined on all syntactic forms except lambda abstractions and
 conditionals, the only ones with explicit analysis rules. In other words, we restrict
 subsumption to be the analytic rule of ``last resort''. This is critical in establishing that
-marking and typing are deterministic (discussed later in\cref{thm:calculus-marking-unicity}).
+marking and typing are deterministic (discussed later in \cref{thm:calculus-marking-unicity}).
 
 Since we did not provide explicit analytic rules for marking expressions that are not lambda
 abstractions or conditionals (or typing their marked versions) either, we give corresponding
@@ -794,10 +795,10 @@ resulting marked program. Following the logic of constructing marking rules, we 
   \label{thm:calculus-marking-well-ill-typed}
   \begin{enumerate}
     \item \begin{enumerate}
-        \item If $\ctxSynType{\ctx}{\EMV}{\TMV}$, then $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
-          such that $\imageIs{\EMV}{\ECMV}$.
-        \item If $\ctxAnaType{\ctx}{\EMV}{\TMV}$, then $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
-          such that $\imageIs{\EMV}{\ECMV}$.
+        \item If $\ctxSynType{\ctx}{\EMV}{\TMV}$ and $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+          then $\imageIs{\EMV}{\ECMV}$.
+        \item If $\ctxAnaType{\ctx}{\EMV}{\TMV}$ and $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+          then $\imageIs{\EMV}{\ECMV}$.
       \end{enumerate}
 
     \item \begin{enumerate}
@@ -843,35 +844,102 @@ Together with totality, marking may be considered and implemented as a total fun
 \label{sec:calculus-products}
 
 We now demonstrate how one might extend or adapt the marking calculus for new typing features by
-adding binary product types. First, we extend in \cref{fig:calculus-products-judgments} the syntax
-of types and notions of consistency and join. As with arrow types, we additionally define an
-auxiliary notion of \emph{matched binary product types}: the judgment
-$\matchedPair{\TMV}{\TMV_1}{\TMV_2}$ establishes that $\TMV$ may be considered the binary product
-type $\TPair{\TMV_1}{\TMV_2}$.
+adding binary product types. First, we extend the syntax of types and the accompanying notions of
+consistency and join, which closely mirror the definitions for arrow types.
+%
+\[\begin{array}{rrcl}
+  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TPair{\TMV}{\TMV}
+\end{array}\]
 
-\input{figs/calculus-products-judgments}
+We additionally define an auxiliary notion of \emph{matched binary product types} in
+\cref{fig:calculus-matched-product}: the judgment $\matchedPair{\TMV}{\TMV_1}{\TMV_2}$ establishes
+that $\TMV$ may be considered the binary product type $\TPair{\TMV_1}{\TMV_2}$.
 
-The unmarked language with a pair constructor and projection operators.
-\Cref{fig:calculus-products-uexp} gives their syntax and typing rules. Similarly to application,
-\textsc{USProjL} and \textsc{USProjR} employ the matched binary product type; a projection
-$\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may be considered to be a pair.
+\begin{figure}[htbp]
+  \raggedright
+  \judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$
+  %
+  \begin{mathpar}
+    \judgment{ }{
+      \matchedPair{\TUnknown}{\TUnknown}{\TUnknown}
+    }{TMPHole}
 
-\input{figs/calculus-products-uexp}
+    \judgment{ }{
+      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
+    }{TMPProd}
+  \end{mathpar}
+  %
+  \caption{Matched product type.}
+  \label{fig:calculus-matched-product}
+\end{figure}
+
+The unmarked language is extended with a pair constructor and projection operators.
+%
+\[\begin{array}{rrcl}
+  \EMName  & \EMV  & \Coloneqq & \cdots
+                               \mid \EPair{\EMV}{\EMV}
+                               \mid \EProjL{\EMV} \mid \EProjR{\EMV}
+\end{array}\]
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\EMV_1}{\TMV_1} \\
+    \ctxSynType{\ctx}{\EMV_2}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+  }{USPair}
+
+  \judgment{
+    \ctxSynType{\ctx}{\EMV}{\TMV} \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\EProjL{\EMV}}{\TMV_1}
+  }{USProjL}
+
+  \judgment{
+    \ctxSynType{\ctx}{\EMV}{\TMV} \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\EProjR{\EMV}}{\TMV_2}
+  }{USProjR} \\
+\end{mathpar}
+%
+Similarly to application, \textsc{USProjL} and \textsc{USProjR} employ the matched binary product
+type; a projection $\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may be
+considered to be a pair.
 
 \input{figs/calculus-products-mexp}
 
 \input{figs/calculus-products-marking}
 
+\subsection{Polymorphism and Other Typing Features}
+\label{sec:calculus-poly}
+
+We now consider how the calculus might be extended to richer typing features such as parametric
+polymorphism. Specifically, we consider System F-style explicit polymorphism.
+
 \subsection{Mechanization}
 \label{sec:calculus-agda}
 
-The metatheory of the calculus has been fully mechanized in the Agda proof assistant [citation]. The
-mechanization's documentation contains more details regarding technical decisions made therein.
+The semantics and metatheory presented above, including the extension with binary products, have
+been fully mechanized in the Agda proof assistant [citation]. Though the mechanization's
+documentation contains more detailed discussion regarding technical decisions made therein, we
+highlight some important aspects here.
 
-\subsection{Polymorphism and Other Typing Features}
-\label{sec:calculus-poly}
+The standard approach of modeling judgments as inductive datatypes and rules as constructors for
+those datatypes is taken. For marked expressions, we opt for implicitly typed terms [citation],
+which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
+readers interested in browsing the mechanization, all rule names match those presented here.
+
+\section{Marking Calculus in Structured Editing}
+\label{sec:calculus-structured-editing}
+
+The previous section presented a formal calculus for error localization and recovery. We now discuss
+its usage in a structured editing setting. 
+
+In particular, the calculus has been integrated into the Hazel programming environment, a live
+programming environment with support for typed holes.
 
 \subsection{Implementation in Hazel}
 
 \subsection{Reified Hazelnut Action Semantics}
-
