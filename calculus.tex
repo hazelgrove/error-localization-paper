@@ -1,7 +1,51 @@
 % TODO standardize naming: marking vs mark insertion, marks vs error marks vs markings
 % TODO uniform style for referencing rules
 
-\section{Motivating Examples}
+\section{Marked Lambda Calculus}
+\label{sec:calculus}
+
+Programmers often work with program states that are syntactically well-formed but not well-typed.
+\Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
+environment. For example, a simple error that may occur is the use of an unbound variable. As in
+\cref{fig:calculus-examples-unbound}, editor services indicate the usage of unbound $y$ is invalid
+by highlighting it in red.
+
+\input{figs/calculus-examples}
+
+Sometimes, the type an expression \emph{should} be is known. Consider
+\cref{fig:calculus-examples-inconsistent-types}, in which it is expected that both operands of the
+$+$ operator are numbers. Since $\textsf{true}$ is not a number, a type error arises, and Hazel
+indicates a mismatch between the expected and actual types of the operand. The application in
+\cref{fig:calculus-examples-app-non-lambda} of a non-lambda leads to a similar kind of error. In
+this case, however, the expectation is not any singular type, but any member of a family of function
+types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error of inconsistent
+branches: the branches of the if-else expression are of different types. Hazel opts to highlight the
+entire expression in such a situation, while other tools may choose one branch to be ``correct'' and
+indicate a type mismatch error on the other.
+
+% TODO elaborate on this part
+
+Unfortunately, formal typing semantics usually only give meaning to well-typed programs, leaving
+such ill-typed ones meaningless. This is insufficient for editor services and language servers,
+which must provide users feedback on where and why a program is ill-typed. Moreover, they must
+continue providing editor services even when an error is encountered. Indeed, similarly to
+error-recovering parsers, real-world type checkers must recover from type errors. Traditionally,
+this has been performed in an \emph{ad hoc} manner [citations?], with different languages and tools
+adopting varying approaches in the localization, reportage, and recovery from errors. 
+
+% TODO examples of this ad hoc stuff
+
+The key contribution of this section is a formal calculus, called the \emph{marking calculus}, for
+type error localization in bidirectional systems, a judgmental framework provides a unified theory
+for the design of typing semantics that supports ill-typed programs. \Cref{sec:calculus-calculus}
+describes its form and metatheory by example on a minimal gradually typed lambda calculus, extending
+with binary product types in \cref{sec:calculus-products}. All rules and theorems may be found in
+the supplementary appendix, alongside a complete mechanization in the Agda proof assistant, which is
+discussed in \cref{sec:calculus-agda}. Finally, in \cref{sec:calculus-poly}, we consider how the
+system might be extended to more complex typing features, such as System F-style polymorphism.
+
+% TODO not really sure when to start talking about bidirectional typing
+
 \emph{Bidirectional typing} combines type checking, which determines if a program satisfies a given
 type, and type synthesis, which generates a type from the program. This gives a simple algorithmic
 system in which type information is recursively propagated through terms and allows for local type
@@ -10,103 +54,20 @@ inference.
 % TODO talk about idea that bidirectional typing makes error localization easy? i.e. why choose
 % bidirectional?
 
-Often, programmers are working with program states that are syntactically well-formed but not
-well-typed. However, formal typing semantics usually only give meaning to well-typed programs,
-leaving ill-typed ones meaningless. This is insufficient for editor services and language servers,
-which give users feedback on where and why a program is ill-typed. Traditionally, this has been
-performed in an \emph{ad hoc} manner [citations?].
+\subsection{The Calculus}
+\label{sec:calculus-calculus}
 
-% TODO examples of this ad hoc stuff
+% TODO outline the structure of this section at the beginning
+% TODO make it clear unmarked/marked languages share same types
 
-In this section, we motivate a formal calculus for bidirectional type error localization by
-exploring different kinds of type errors that may occur.
-
-% TODO state goals: prefer fine-grained over coarser blaming/marking
-
-\subsection{Unbound Variables}
-A simple and common example of an error that may occur in programs is the use of an unbound
-variable. In this case, editor services often indicate visually that such usages are invalid.
-
-% TODO image of an editor for this example? not sure what else to say about this
-
-\subsection{Inconsistent Types}
-Often, the type an expression \emph{should} be is known. Both operands of an addition expression
-$\EPlus{\ETrue}{\ENumMV}$, for example, should have the type $\TNum$. In a bidirectional system,
-$\ETrue$ and $\ENumMV$ would be analysed against $\TNum$, in which the former check would fail:
-$\ETrue$ synthesises $\TBool$, which is inconsistent with $\TNum$.
-
-% An editor may indicate such an error in different ways. Two obvious ones are considered below: (1)
-% indicating an error on $\ETrue$, or (2) indicating an error on the entire expression
-% $\EPlus{\ETrue}{\ENumMV}$.
-% \[%
-  % \EPlus{\ETrue}{\ENumMV} \qquad \EPlus{\ETrue}{\ENumMV}
-% \]%
-% The former ``blames'' the error on the operand,
-
-% Since the ``fault'' of the error 
-
-% TODO cite real editor/language?
-
-Since expressions typed in analytic mode are checked to satisfy a correct, known type, they are
-given ``blame'' when ill-typed.
-
-\subsection{Inconsistent Branches}
-
-\section{Marked Lambda Calculus}
-\label{sec:calculus}
-
-The previous section surveyed different type error cases. Now, we formally introduce a \emph{marking
-calculus} for bidirectional type error localization on the gradually typed lambda calculus above.
-This comes as a two-layer system:
-%
-\begin{itemize}
-  \item \textbf{Unmarked expressions} (\cref{sec:calculus-uexp}), which compose the surface-level
-    syntax. Types classify unmarked expressions according to a standard bidirectional gradual typing
-    semantics.
-
-  \item \textbf{Marked expressions} (\cref{sec:calculus-mexp}), which mirror the structure of
-    unmarked expressions but are extended with \textbf{error marks}. Every marked expression
-    corresponds to an unmarked expression by \emph{mark erasure}.
-    % TODO more intuition for what marked expressions are?
-
-  \item \textbf{Marking} (\cref{sec:calculus-marking}), which \textbf{marks} any unmarked expression into a marked
-    expression, inserting error markings where appropriate.
-\end{itemize}
-%
-That is, we extend the ordinary typing semantics of a language with a secondary ``marked'' language
-and define a mapping from ``unmarked'' programs to ``marked'' programs. Note that while the
-semantics that follow concern a gradually typed language, a non-gradual system may be recovered
-straightforwardly by removing the unknown type and replacing type consistency with equality.
-
-Key to ensuring correctness of the system---and, indeed, any such error localization semantics---is
-a metatheorem, \emph{marking totality}, which guides the construction of rules:
-%
-\begin{theorem}[name=Marking Totality]
-  Any syntactically well-formed unmarked expression may be marked into a marked expression.
-\end{theorem}
-%
-We will give a more concrete statement of the metatheorem after formally introducing the components
-of the system.
-
-In \cref{sec:calculus-products}, we follow with an extension of the calculus to support binary
-product types. In the interest of space, this overview focuses on ``interesting'' cases. All rules
-and theorems may be found in the supplementary appendix, alongside a complete mechanization
-(including the extension with binary products) in the Agda proof assistant, which is discussed in
-\cref{sec:calculus-agda}.
-
-% TODO extension to non-typing semantics?
-
-\subsection{Unmarked Expressions}
-\label{sec:calculus-uexp}
-
-We consider a gradually typed lambda calculus extended with numbers and conditionals, whose syntax
-and bidirectional typing are given in \cref{fig:calculus-syntax-example} and
-\cref{fig:calculus-typing-example}, respectively. The base types $\TNum$ and $\TBool$ classify
-number and boolean expressions. The number literal corresponding to the mathematical number $n$ is
-given by $\ENumMV$, and there is a single addition operation on numeric expressions. $\ETrue$ and
-$\EFalse$ correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, and
+We now formally introduce the \emph{marking calculus} through its application to a gradually typed
+lambda calculus extended with numbers and booleans. Consider the syntax for such a language, as
+shown in \cref{fig:calculus-syntax-uexp}. The base types $\TNum$ and $\TBool$ classify number and
+boolean expressions. The number literal corresponding to the mathematical number $n$ is given by
+$\ENumMV$, and there is a single addition operation on numeric expression. $\ETrue$ and $\EFalse$
+correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
 $\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives an if-else structure. In addition to these forms, $\TUnknown$
-indicates an unknown type.
+is the unknown type from gradual type theory.
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
@@ -119,168 +80,61 @@ indicates an unknown type.
   \label{fig:calculus-syntax-uexp}
 \end{figure}
 
-Bidirectional typing employs two mutually defined judgments. \emph{Type synthesis}, written
-$\ctxSynType{\ctx}{\EMV}{\TMV}$, establishes that, under the typing context $\ctx$, the expression
-$\EMV$ synthesises or infers the type $\TMV$. \emph{Type analysis}, written
+The language is typed bidirectionally, which employs two mutually defined judgments. \emph{Type
+synthesis}, written $\ctxSynType{\ctx}{\EMV}{\TMV}$, establishes that, under the typing context
+$\ctx$, the expression $e$ synthesises or infers the type $\TMV$. \emph{Type analysis}, written
 $\ctxAnaType{\ctx}{\EMV}{\TMV}$, states that the expression $\EMV$ may appear where an expression of
-type $\TMV$ is expected.
+type $\TMV$ is expected. We may give these typing semantics traditionally, without considering error
+localization and recovery.
 
-The \emph{subsumption} rule (ASubsume) states that if an expression synthesises a type, it may be
-analysed against that type or any \emph{consistent} type. To invoke subsumption, the expression
-$\EMV$ must be ``subsumable'', written $\subsumable{\EMV}$, a judgment defined on all forms except
-lambda abstractions and if-else expressions. This restricts the usage of subsumption to a rule of
-``last resort'', admitting the unicity of typing.
-
-% \begin{theorem}[name=Unmarked Expression Typing Unicity] \
-  % If $\ctxSynType{\ctx}{\EMV}{\TMV}$ and $\ctxSynType{\ctx}{\EMV}{\TMV'}$, then $\TMV = \TMV'$.
-% \end{theorem}
-
-\input{figs/calculus-typing-uexp}
-
-The \emph{consistency} judgment $\consistent{\TMV}{\TMV'}$ that appears in the subsumption rule
-defines a reflexive and symmetric (but not transitive) relation between types. The unknown type is
-additionally consistent with any other type, and arrow types are consistent if their components are.
-The USAp and UALam rules for application and lambda abstractions are nearly standard, but employ the
-judgment $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$, which gives that $\TMV$ is a \emph{matched arrow
-type}, i.e. it may be considered an arrow type. It is purely a technical mechanism to avoid
-duplication of rules related to arrow types.
-
-\input{figs/calculus-type-judgments}
-
-The branches of if-else expressions may synthesize different types $\TMV_1$ and $\TMV_2$ as long as
-they are consistent. The entire expression then synthesizes the \emph{join}
-$\TJoin{\TMV_1}{\TMV_2}$.
-
-\subsection{Marked Expressions}
-\label{sec:calculus-mexp}
-
-Marked expressions, $\ECMV$, extend the syntax of unmarked expressions with \emph{explicit error
-marks}. As given in the syntax definition of \cref{fig:calculus-syntax-mexp}, there are three such
-forms, which mirror the examples discussed previously:
+The \emph{marking calculus} builds atop these typing semantics into a two-layer system:
 %
-\begin{itemize} % TODO not the snappiest names
-  \item $\ECUnbound{x}$, the \emph{unbound variable mark}, denotes the usage of an unbound variable.
+\begin{itemize}
+  \item The \textbf{unmarked language}, which is the original language. Expressions of this language
+    are \emph{unmarked expressions}.
 
-  \item $\ECInconType{\ECMV}$, the \emph{inconsistent types mark}, occurs when the synthesised type
-    of $\ECMV$ is inconsistent with the required type.
+  \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
+    extended with explicit \emph{error marks}. We call expressions of this language to be
+    \emph{marked expressions}, denoted $\ECMV$.
+    % TODO more intuition for what marked expressions are?
 
-  \item $\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}$, the \emph{inconsistent branches mark}, corresponds
-    to an if-else expression where the types of the two branches $\ECMV_2$ and $\ECMV_3$ are
-    inconsistent.
+  \item \textbf{Marking}, which \emph{marks} any unmarked expression into a marked expression,
+    inserting error markings where appropriate.
 \end{itemize}
 %
-Additional forms may arise as required by the language.
+In other words, we extend the ordinary typing semantics of a language with a secondary ``marked''
+language and ``mark'' unmarked programs into marked ones. This corresponds to a type checking
+process with error localization and recovery.
 
-% TODO examples of such?
+% TODO more intuition
 
+We give, for now, only part of the marked expression syntax in \cref{fig:calculus-syntax-mexp-part}.
+Throughout the remainder of this section, as we consider the formulation of marking, we will add the
+necessary error mark forms.
+
+% TODO include holes
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
     \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV} \\
              &       & \mid         & \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
                        \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
-             &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}
+             &       & \mid         & \cdots
+             % &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}
   \end{array}\]
-  \caption{Syntax of marked expressions}
-  \label{fig:calculus-syntax-mexp}
+  \caption{Partial syntax of marked expressions}
+  \label{fig:calculus-syntax-mexp-part}
 \end{figure}
 
-The unmarked version of a marked expression $\ECMV$ may be recovered through \emph{mark erasure},
-given by $\erase{\ECMV}$. As in \Cref{fig:calculus-mark-erasure}, this total function may be defined
-inductively in a straightforward manner. Observe that erasing the inconsistent branches mark gives
-an if-else expression with sub-expression marks recursively erased.
-
-\input{figs/calculus-mark-erasure}
-
-Marked expressions are also typed by a bidirectional system, which, for most forms, closely mirrors
-the rules for corresponding unmarked forms. Additional rules handle the cases when certain premises
-are not met, requiring then that expressions be wrapped in appropriate error marks.
-\Cref{fig:calculus-typing-mexp} contains a selection of these ``interesting'' cases.
-
-In parallel with the rule governing bound variables, MSUnbound types unbound variables. Such
-variables must be marked unbound, and since nothing may be said about their types, they synthesise
-the unknown type. MSInconsistentBranches corresponds to the USIf, handling the case that the
-branches synthesise inconsistent types and hence have no join. Such forms are required to be marked
-as such.
-
-\input{figs/calculus-typing-mexp}
-
-% TODO Not really sure how to explain the syntax and typing of marked expressions in an intuitive
-% way in relation to unmarked expressions.
-
-In addition to a synthesis rule for lambda abstractions that mirrors USLam, observe that there are
-three, instead of one, analytic lambda rules. MALam1 applies to $\ECLam{x}{\TMV}{\ECMV}$ if the type
-$\TMV_3$ analysed against is a matched arrow type $\TArrow{\TMV_1}{\TMV_2}$ and the input type
-$\TMV_1$ is consistent with the binding ascription $\TMV$. This corresponds to UALam.
-
-However, we are additionally concerned with the cases when $\TMV_3$ is not a matched arrow type or
-$\TMV_1$ is inconsistent with $\TMV$. These are described by MALam2 and MALam3. The absence of a
-matched arrow type means that $\TMV_3$ must be inconsistent the type synthesised by the lambda, so
-the former appropriately requires that the lambda be inside an inconsistent types mark. In this
-case, as no output type is known, the body is analysed against the unknown type. Similarly,
-inconsistency between the matched input type and binding ascription also implies that $\TMV_3$ is
-inconsistent with the synthesised type; MALam3 also requires that the lambda be marked inconsistent,
-and the body is analysed against $\TMV_2$.
-
-% TODO mention that every expression synthesises?
-
-Two synthesis rules govern application. In the unmarked language, the application
-$\EAp{\EMV_1}{\EMV_2}$ is well-typed if the type $\TMV$ synthesised by $\EMV_1$ is a matched arrow
-type $\TArrow{\TMV_1}{\TMV_2}$ and the argument $\EMV_2$ analyses against $\TMV_1$. This corresponds
-to the MSAp1 rule for marked expressions. In the case that $\TMV$ is not a matched arrow type, i.e.
-it may not be applied, we require $\ECMV_1$ to be inside an inconsistent types mark. In this way, the
-blame is placed upon $\ECMV_1$, and this approach is in accordance with the meaning of the
-inconsistent types mark.
-
-It is worth noting, however, that $\ECMV_1$ is not actually in analytic position but in synthetic
-position. Treating such ``constrained synthetic'' mode specially, we may instead designate a
-specialized mark, written $\ECInconMatchedArrow{\ECMV_1}$, for such applications. This yields the
-following rule:
-\[%
-  \judgment{
-    \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
-    \notMatchedArrow{\TMV} \\
-    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown}
-  }{
-    \ctxSynType{\ctx}{\ECApNonMatchedAltAlt{\ECMV_1}{\ECMV_2}}{\TUnknown}
-  }{MSAp2'}
-\]%
-It then becomes natural to extend this to other elimination forms that require the handling of
-unmatched types, such as products. We demonstrate such an extension in \cref{sec:calculus-products}.
-
-Finally, alongside the standard subsumption rule, MAInconsistentTypes governs most occurrences of
-the inconsistent types mark $\ECInconType{\ECMV}$ analyses against any type as long as $\ECMV$
-synthesises an inconsistent type. In both cases, we again stipulate that subsumption may be applied
-to $\ECMV$, written $\subsumable{\ECMV}$, for similar reasons as before.
-
-\subsection{Marking}
-\label{sec:calculus-marking}
-
-The central component of the calculus is \emph{marking}, a bidirectional system given by the
-following mutually defined judgments. The synthetic insertion judgment
+The marked language possesses its own typing semantics, also formulated bidirectionally. We write
+$\ctxSynType{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaType{\ctx}{\ECMV}{\TMV}$ for analysis.
+Finally, marking is bidirectional as well. The synthetic marking judgment
 $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
-$\TMV$. Analogously, the analytic insertion judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
-states that the unmarked expression $\EMV$ is marked into $\ECMV$, which analyses against type
-$\TMV$.
+$\TMV$. Analogously, the analytic marking judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
+states that $\EMV$ is marked into $\ECMV$, which analyses against $\TMV$.
 
-% TODO need to better explain why it is bidirectional
-
-\input{figs/calculus-mark-insertion}
-
-The rules for mark insertion are given in \cref{fig:calculus-mark-insertion}. Observe that they
-mirror the typing rules for marked expressions closely: all possible outcomes for fallible premises
-are handled and markings are inserted as needed. For example, ISVar and ISUnbound together handle
-variable usages. The former yields the same variable in the marked language when it is bound. The
-latter marks the variable as unbound if it is not found in the context.
-
-We again find two rules governing the marking of function application. ISAp1 corresponds to MSAp1 as
-the ``success case'', recursively marking $\EMV_1$ and $\EMV_2$. Accordingly, ISAp2 parallels MSAp2
-as the ``error case''. Similarly, ISIf and ISInconsistentBranches correspond to MSIf and
-MSInconsistentBranches, and IALam1, IALam2, and IALam3 correspond to MSLam1, MSLam2, and MSLam3.
-The rules IAInconsistentTypes and IASubsume, of course, act in parallel to MAInconsistentTypes and
-MASubsume.
-
-We may now formally restate the critical metatheorem of marking totality:
+How can we ensure that the marking procedure is correctly defined? There are two critical
+metatheorems to keep in mind as we continue. The first is a \emph{totality} of marking:
 %
 \begin{theorem}[name=Marking Totality] \
   \label{thm:calculus-marking-totality}
@@ -291,10 +145,13 @@ We may now formally restate the critical metatheorem of marking totality:
     $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$.
   \end{enumerate}
 \end{theorem}
-
-Additionally, it is important that marking preserves the original syntactic structure modulo error
-marks; it would be trivial to satisfy totality by marking all expressions into numbers, for example.
-This property is ensured by the following well-formedness metatheorem:
+%
+That is, we may mark, i.e. type check and localize errors for \emph{any} syntactically well-formed
+program. Furthermore, marking should preserve the syntactic structure of programs, modulo error
+marks. Thus, we must define a notion of \emph{mark erasure}, which converts marked expressions back
+into unmarked expression by removing error marks. \Cref{fig:calculus-mark-erasure-part} gives the
+definition of mark erasure, written $\erase{\ECMV}$, for our initial marked expression syntax. Then,
+we may define a \emph{well-formedness} criterion for marking:
 %
 \begin{theorem}[name=Marking Well-Formedness] \
   \label{thm:calculus-marking-well-formedness}
@@ -309,9 +166,630 @@ This property is ensured by the following well-formedness metatheorem:
 \end{theorem}
 %
 In other words, if an unmarked expression is marked into some marked expression, erasing error marks
-from the marked expression gives the original unmarked expression. To ensure that we place error
-marks in the correct spots, we furthermore require the following theorem:
+from the marked expression gives the original unmarked expression. We also ensure that marking gives
+marked expressions that are well-typed; indeed, their types should match the types synthesised or
+analysed against in marking. % TODO more intuition for this theorem
+
+\input{figs/calculus-mark-erasure-part}
+
+In the remainder of this subsection, we consider the different type errors that may arise in the
+unmarked language; in this way, the typing semantics of the unmarked language guide the construction
+of the marking process.
+
+\subsubsection{Variables}
+\label{sec:calculus-variables}
+
+% TODO subsumption is discussed later...
+The typing of unmarked variables in the gradually typed lambda calculus is standard. Because of
+subsumption, we need only define a synthesis rule:
+\[%
+  \judgment{
+    \inCtx{\ctx}{x}{\TMV}
+  }{
+    \ctxSynType{\ctx}{x}{\TMV}
+  }{USVar}
+\]%
+If $x$ is bound to a type in the typing context, it synthesizes that type. Straightforwardly,
+marking would convert the unmarked $x$ into the same marked $x$ via the following marking and typing
+rules:
 %
+\begin{mathpar}
+  \judgment{
+    \inCtx{\ctx}{x}{\TMV}
+  }{
+    \ctxSynFixedInto{\ctx}{x}{x}{\TMV}
+  }{ISVar}
+
+  \judgment{
+    \inCtx{\ctx}{x}{\TMV}
+  }{
+    \ctxSynType{\ctx}{x}{\TMV}
+  }{MSVar}
+\end{mathpar}
+% TODO more intuition on why this makes sense?
+
+But what happens a variable, such as $y$ in \cref{fig:calculus-examples-unbound}, is \emph{not}
+bound? Then, \textsc{USVar} does not apply, and the typing semantics say nothing about such
+expressions. To satisfy totality, such a possibility motivates an \emph{unbound variable mark}:
+%
+\[\begin{array}{rrcl}
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECUnbound{x}
+\end{array}\]
+%
+accompanied by the following rules:
+%
+\begin{mathpar}
+  \judgment{
+    \notInCtx{\ctx}{x}
+  }{
+    \ctxSynFixedInto{\ctx}{x}{\ECUnbound{x}}{\TUnknown}
+  }{ISUnbound}
+
+  \judgment{
+    \notInCtx{\ctx}{x}
+  }{
+    \ctxSynType{\ctx}{\ECUnbound{x}}{\TUnknown}
+  }{MSUnbound}
+\end{mathpar}
+%
+\textsc{ISUnbound} states that an variable unbound in the context is marked into that variable
+inside an unbound variable mark. \textsc{MSUnbound} then gives the typing of unbound variable marks.
+Since nothing may be said about their types, we synthesize the unknown type, which allows type
+checking to continue---instead of simply failing.
+
+To prove \cref{thm:calculus-marking-well-formedness}, we extend the definition of mark erasure to
+handle the new mark:
+%
+\[\begin{array}{rcl}
+  & \cdots & \\
+  \erasesToRow{\ECUnbound{x}}{x}
+\end{array}\]
+
+\subsubsection{Lambda Abstractions}
+\label{sec:calculus-lambda-abstractions}
+
+There are explicit synthesis and analysis rules for lambda abstractions:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\TArrow{\TMV_1}{\TMV_2}}
+  }{USLam}
+
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+    \consistent{\TMV}{\TMV_1} \\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\TMV_2}
+  }{
+    \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\EMV}}{\TMV_3}
+  }{UALam}
+\end{mathpar}
+%
+The synthesis rule is standard. In the premises of \textsc{UALam}, we use the notion of
+\emph{type consistency} from gradual type theory, which defines a reflexive and symmetric (but not
+transitive) relation between types, writing $\consistent{\TMV_1}{\TMV_2}$ to mean that $\TMV_1$ is
+consistent with $\TMV_2$. This replaces the notion of \emph{type equality} to relate the unknown
+type to all other types. The analysis rule also employs the judgment
+$\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$, which establishes that $\TMV$ is a \emph{matched arrow type},
+i.e. it may be considered an arrow type. This notion is purely a technical mechanism to avoid
+duplication of rules related to arrow types. \Cref{fig:calculus-consistency-matched-arrow} gives the
+rules for both judgments.
+
+% TODO mention explicitly that by inductive hypothesis, the marking of body cannot fail?
+% TODO more intuition on these two judgments
+% TODO more intuition on USLam and UALam
+
+\begin{figure}[htbp]
+  \raggedright
+  \judgbox{\ensuremath{\consistent{\TMV_1}{\TMV_2}}} $\TMV_1$ is consistent with $\TMV_2$
+  %
+  \begin{mathpar}
+    \judgment{ }{
+      \consistent{\TUnknown}{\TMV}
+    }{TCUnknown1}
+
+    \judgment{ }{
+      \consistent{\TMV}{\TUnknown}
+    }{TCUnknown2}
+
+    \judgment{ }{
+      \consistent{\TMV}{\TMV}
+    }{TCRefl}
+
+    \judgment{
+      \consistent{\TMV_1}{\TMV_1'} \\
+      \consistent{\TMV_2}{\TMV_2'} \\
+    }{
+      \consistent{\TArrow{\TMV_1}{\TMV_2}}{\TArrow{\TMV_1'}{\TMV_2'}}
+    }{TCArr} \\
+  \end{mathpar}
+
+  \judgbox{\ensuremath{\matchedArrow{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched arrow type $\TArrow{\TMV_1}{\TMV_2}$
+  %
+  \begin{mathpar}
+    \judgment{ }{
+      \matchedArrow{\TUnknown}{\TUnknown}{\TUnknown}
+    }{TMAHole}
+
+    \judgment{ }{
+      \matchedArrow{\TArrow{\TMV}{\TMV}}{\TMV}{\TMV}
+    }{TMAArr}
+  \end{mathpar}
+  %
+  \caption{Type consistency and matched arrow types.}
+  \label{fig:calculus-consistency-matched-arrow}
+\end{figure}
+
+The synthesis rule for marking intuitively follows \textsc{USLam} closely. We should recursively
+mark the body with an extended context binding $x$ to $\TMV$ and construct a new marked lambda
+abstraction:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\ECMV}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\ELam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
+  }{ISLam}
+
+  \judgment{
+    \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
+  }{MSLam}
+\end{mathpar}
+%
+Similarly, we construct corresponding analytic rules:
+%
+\begin{mathpar}
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+    \consistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
+  }{
+    \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
+  }{IALam1}
+
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+    \consistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+  }{
+    \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
+  }{MALam1}
+\end{mathpar}
+%
+However, recalling totality, we look again to the premises of \textsc{UALam} to see what type errors
+may arise. First, what if $\TMV_3$ is not a matched arrow type? This would be the case if it were
+$\TNum$, for example, and the lambda abstraction would be inconsistent with the expected type. Thus,
+to the syntax we add an \emph{inconsistent type mark}, which indicates that the expression does not
+synthesize a type consistent with the expected type:
+%
+\[\begin{array}{rrcl}
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECInconType{\ECMV}
+\end{array}\]
+%
+along with the following rules, where the lambda abstraction is placed inside the inconsistent type
+mark.
+%
+\begin{mathpar}
+  \judgment{
+    \notMatchedArrow{\TMV_3} \\
+    \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TUnknown}
+  }{
+    \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+  }{IALam2}
+
+  \judgment{
+    \notMatchedArrow{\TMV_3} \\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown}
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+  }{MALam2*}
+\end{mathpar}
+%
+Though no expected output type is known, we still need to check and mark the body; it is thus
+analysed against the unknown type in \textsc{IALam2}.
+
+A similar situation arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
+$\inconsistent{\TMV}{\TMV_1}$, i.e. the expected input type is inconsistent with the actual input
+type, giving the last pair of analytic rules for lambda abstractions:
+%
+\begin{mathpar}
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+    \inconsistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
+  }{
+    \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+  }{IALam3}
+
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
+    \inconsistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
+  }{MALam3}
+\end{mathpar}
+
+Finally, as with the unbound variable mark, we extend mark erasure:
+%
+\[\begin{array}{rcl}
+  & \cdots & \\
+  \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}}
+\end{array}\]
+
+\subsubsection{Applications}
+\label{sec:calculus-applications}
+
+The case of application is somewhat interesting. In the unmarked language, only a synthesis rule is
+necessary:
+\[%
+  \judgment{
+    \ctxSynType{\ctx}{\EMV_1}{\TMV} \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaType{\ctx}{\EMV_2}{\TMV_1}
+  }{
+    \ctxSynType{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\TMV_2}
+  }{USAp}
+\]%
+Following the same methodology, we can straightforwardly give the following marking and typing
+rules:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
+  }{
+    \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}
+  }{ISAp1}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_1}
+  }{
+    \ctxSynType{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}
+  }{MSAp1}
+\end{mathpar}
+
+Again, to satisfy totality, we must consider the case when $\TMV$ is not a matched arrow type. There
+is no expected type for the argument, so we perform analytic marking on $\EMV_2$ against the
+unknown type. The applied expression is placed inside the inconsistent type mark, which is in
+accordance with the meaning of that mark.
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
+    \notMatchedArrow{\TMV} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECApNonMatched{\ECMV_1}{\ECMV_2}}{\TUnknown}
+  }{ISAp2}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
+    \notMatchedArrow{\TMV} \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxSynType{\ctx}{\ECApNonMatched{\ECMV_1}{\ECMV_2}}{\TUnknown}
+  }{MSAp2}
+\end{mathpar}
+
+It is worth noting, however, that $\EMV_1$ is not actually in analytic position, but in a synthetic
+position where any arrow type is expected. Treating such ``constrained synthetic'' cases specially,
+we may instead designate a specialized mark, written $\ECApNonMatchedAltAlt{\ECMV}$. This yields the
+following alternative rules:
+%
+\[\begin{array}{rrcl}
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECApNonMatchedAltAlt{\ECMV}
+\end{array}\]
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
+    \notMatchedArrow{\TMV} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECAp{\ECApNonMatchedAltAlt{\ECMV_1}}{\ECMV_2}}{\TUnknown}
+  }{ISAp2'}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
+    \notMatchedArrow{\TMV} \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxSynType{\ctx}{\ECApNonMatchedAltAlt{\ECMV_1}{\ECMV_2}}{\TUnknown}
+  }{MSAp2'}
+\end{mathpar}
+
+It is natural to extend this approach to other elimination forms that require the handling of
+unmatched types, such as binary products. Indeed, in \cref{sec:calculus-products}, we opt for this
+approach. Another approach is to mark an error around the entire application expression.
+
+\subsubsection{Numbers}
+\label{sec:calculus-numbers}
+
+The marking and typing of numbers is straightforward:
+%
+\begin{mathpar}
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ENumMV}{\TNum}
+  }{USNum}
+
+  \judgment{
+  }{
+    \ctxSynFixedInto{\ctx}{\ENumMV}{\ECNumMV}{\TNum}
+  }{ISNum}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECNumMV}{\TNum}
+  }{MSNum}
+\end{mathpar}
+
+For addition expressions, we simply recursively mark each operand, which must analyse against
+$\TNum$, and build the marked addition expression. In this way, blame for type errors is shift into
+the operands:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxAnaType{\ctx}{\EMV_1}{\TNum} \\\\
+    \ctxAnaType{\ctx}{\EMV_2}{\TNum}
+  }{
+    \ctxSynType{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\TNum}
+  }{USPlus}
+
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TNum} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TNum}
+  }{
+    \ctxSynFixedInto{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
+  }{ISPlus}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TNum} \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TNum}
+  }{
+    \ctxSynType{\ctx}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
+  }{MSPlus}
+\end{mathpar}
+%
+Again, we need only synthetic rules; subsumption handles the analytic case.
+
+\subsubsection{Booleans}
+\label{sec:calculus-booleans}
+
+Boolean values are similarly straightforward:
+%
+\begin{mathpar}
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ETrue}{\TBool}
+  }{USTrue}
+
+  \judgment{
+  }{
+    \ctxSynFixedInto{\ctx}{\ETrue}{\ECTrue}{\TBool}
+  }{ISTrue}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECTrue}{\TBool}
+  }{MSTrue} \\
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\EFalse}{\TBool}
+  }{USFalse}
+
+  \judgment{
+  }{
+    \ctxSynFixedInto{\ctx}{\EFalse}{\ECFalse}{\TBool}
+  }{ISFalse}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECFalse}{\TBool}
+  }{MSFalse}
+\end{mathpar}
+
+If-else expressions, however, offer another interesting case. In the unmarked language, we have
+both explicit synthetic and analytic rules:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxAnaType{\ctx}{\EMV_1}{\TBool} \\\\
+    \ctxSynType{\ctx}{\EMV_2}{\TMV_1} \\
+    \ctxSynType{\ctx}{\EMV_3}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+  }{USIf}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\EMV_1}{\TBool} \\\\
+    \ctxAnaType{\ctx}{\EMV_1}{\TMV} \\
+    \ctxAnaType{\ctx}{\EMV_2}{\TMV}
+  }{
+    \ctxAnaType{\ctx}{\ECIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TMV}
+  }{UAIf}
+\end{mathpar}
+%
+In synthetic position, conditionals synthesize the \emph{join} of the branch types $\TMV_1$ and
+$\TMV_2$, which we define inductively in \cref{fig:calculus-type-join}. In analytic position, since
+there is an expected type for both branches, we shift the blame for any errors to them.
+
+% TODO intuition why we use join
+
+\begin{figure}[htbp]
+  \raggedright
+  \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+  %
+  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
+  \[\begin{array}{rcl}
+    \joinsTo{\TUnknown}{\TMV}{\TMV} \\
+    \joinsTo{\TMV}{\TUnknown}{\TMV} \\
+    \joinsTo{\TNum}{\TNum}{\TNum} \\
+    \joinsTo{\TBool}{\TBool}{\TBool} \\
+    \joinsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+  \end{array}\]
+  %
+  \caption{Type join.}
+  \label{fig:calculus-type-join}
+\end{figure}
+% TODO intuition for type join?
+
+Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking and typing rules.
+Similar to previous cases, we simply recursively mark the guard and branch expressions and construct
+the marked if-else expression from the results.
+%
+\begin{mathpar}
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\\\
+    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
+    \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+  }{ISIf}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\\\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} \\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+  }{MSIf} \\
+
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV} \\
+  }{
+    \ctxAnaFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
+  }{IAIf}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\\\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV} \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV}
+  }{
+    \ctxAnaType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
+  }{MAIf}
+\end{mathpar}
+
+However, in synthetic mode, it may be the case that the two branch types have no join. This occurs,
+in fact, when they are inconsistent. This motivates \emph{the inconsistent branches mark}:
+%
+\[\begin{array}{rrcl}
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}
+\end{array}\]
+
+Then, adding the following rules ensures marking totality on conditionals:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\
+    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\\\
+    \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2} \\
+    \inconsistent{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
+  }{ISInconsistentBranches}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} \\\\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} \\
+    \inconsistent{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
+  }{MSInconsistentBranches}
+\end{mathpar}
+
+The extension of mark erasure is again straightforward:
+%
+\[\begin{array}{rcl}
+  & \cdots & \\
+  \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}}
+\end{array}\]
+
+\subsubsection{Subsumption}
+\label{sec:calculus-subsumption}
+
+Finally, we consider the subsumption rule in typing unmarked expressions, which states that if an
+expression synthesizes a type, it may also be analysed against that type or any consistent type.
+\[%
+  \judgment{
+    \ctxSynType{\ctx}{\EMV}{\TMV'} \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\EMV}
+  }{
+    \ctxAnaType{\ctx}{\EMV}{\TMV}
+  }{UASubsume}
+\]%
+We also restrict the usage of subsumption to ``subsumable'' syntactic forms, written
+$\subsumable{\EMV}$. This judgment is defined on all syntactic forms except lambda abstractions and
+conditionals, the only ones with explicit analysis rules. In other words, we restrict
+subsumption to be the analytic rule of ``last resort''. This is critical in establishing that
+marking and typing are deterministic (discussed later in\cref{thm:calculus-marking-unicity}).
+
+Since we did not provide explicit analytic rules for marking expressions that are not lambda
+abstractions or conditionals (or typing their marked versions) either, we give corresponding
+subsumption rules:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'} \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\EMV}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}
+  }{IASubsume}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECMV}{\TMV}
+  }{MASubsume}
+\end{mathpar}
+%
+Note that we define a analogous notion of ``subsumability'' for marked expressions, written
+$\subsumable{\ECMV}$.
+
+However, it may be the case that the expression is inconsistent with the expected type. Recalling
+the example of \cref{fig:calculus-examples-inconsistent-types}, subsumption would used to analyse
+$\ETrue$ against $\TNum$ in $\EPlus{\ETrue}{5}$, which fails since $\inconsistent{\TNum}{\TBool}$,
+and $\ETrue$ should be marked with an inconsistent type mark. Hence, the following final set of
+rules is required to handle such cases:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'} \\
+    \inconsistent{\TMV}{\TMV'} \\\\
+    \subsumable{\EMV}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EMV}{\ECInconType{\ECMV}}{\TMV}
+  }{IAInconsistentTypes}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
+    \inconsistent{\TMV}{\TMV'} \\\\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECMV}}{\TMV}
+  }{MAInconsistentTypes}
+\end{mathpar}
+%
+These rules complete the development of the marking calculus for the gradually typed lambda
+calculus.
+
+% TODO mini conclusion on methodology
+
+To conclude this section, we present two more metatheorems that help ensure correctness of the
+system. Though \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
+the syntactic structure of a program, it makes no statement about the presence of error marks in the
+resulting marked program. Following the logic of constructing marking rules, we have
+\cref{thm:calculus-marking-well-ill-typed}.
+
 \begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \ % TODO better name for this
   \label{thm:calculus-marking-well-ill-typed}
   \begin{enumerate}
@@ -333,11 +811,11 @@ marks in the correct spots, we furthermore require the following theorem:
   \end{enumerate}
 \end{theorem}
 %
-That is, since error marks indicate type errors in the program, a well-typed program should, of
-course, have no error marks. The converse---that marks are inserted into ill-typed programs---is
-also true. We have chosen to formulate the absence of error marks through an inclusion mapping of
-unmarked expressions into marked expressions; alternatively, a predicate over marked expressions
-could be used. % TODO latter is easier to do in Agda, but maybe it is weaker?
+That is, since error marks indicate type errors in the program, no marks should be inserted
+into a well-typed program. The converse---that at least one mark is inserted into ill-typed
+programs---is also true. We have chosen to formulate the absence of error marks through an inclusion
+mapping of unmarked expressions into marked expressions; alternatively, a predicate over marked
+expressions may be used. % TODO latter is easier to do in Agda, but maybe it is weaker?
 
 Finally, no less importantly, marking is deterministic. This is given by
 \cref{thm:calculus-marking-unicity}.
@@ -348,13 +826,18 @@ Finally, no less importantly, marking is deterministic. This is given by
     \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$ and
       $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$, then $\ECMV_1 = \ECMV_2$ and $\TMV_1 =
       \TMV_2$.
-    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$ and
-      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$, then $\ECMV_1 = \ECMV_2$ and $\TMV_1 =
-      \TMV_2$.
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV}$ and
+      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV}$, then $\ECMV_1 = \ECMV_2$.
   \end{enumerate}
 \end{theorem}
 %
 Together with totality, marking may be considered and implemented as a total function.
+
+% TODO non-gradual semantics?
+
+% Note that while the semantics that follow concern a gradually typed language, a non-gradual system
+% may be recovered straightforwardly by removing the unknown type and replacing type consistency with
+% equality.
 
 \subsection{Adding Binary Products}
 \label{sec:calculus-products}
@@ -384,6 +867,9 @@ $\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may be consi
 
 The metatheory of the calculus has been fully mechanized in the Agda proof assistant [citation]. The
 mechanization's documentation contains more details regarding technical decisions made therein.
+
+\subsection{Polymorphism and Other Typing Features}
+\label{sec:calculus-poly}
 
 \subsection{Implementation in Hazel}
 
