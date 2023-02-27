@@ -599,36 +599,34 @@ PotentialType~~ t & ::=
 \end{figure}
 Here, we take a more general approach to representing binary types. Namely, a \emph{PotentialType} may be the combination of two \emph{PotentialType}s through any \emph{BinaryOperator} $\square$. The rules for extension follow the same logic as before, where we enforce that extension of a \emph{PotentialTypeSet} containing $s_1 ~\square_{\alpha}~ s_2$ with $s_3 ~\square_{\alpha}~ s_4$ simply merges the left and right \emph{PotentialTypeSet}s, thus yielding $(s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)$. Additionally, we choose to represent type variables as a ground type, thus enforcing that type variables are inconsistent with other ground types and consistent with type holes and each other. 
 
-One thing we may be tempted to do is generalize \emph{PossibleTypeSet}s containing only type holes to a new type variable. However, there are a few subtle issues to be cautious of when considering this extension.
-
-Consider the following simple program:
+In a system with parametric polymorphism, one thing we may be tempted to do is generalize \emph{PossibleTypeSet}s containing only type holes to a new type variable. However, there are a few subtle issues to be cautious of when considering this extension. Consider the following simple program:
 
 \begin{center}
-    \begin{lstlisting}[escapeinside={(*}{*)}]
+    \begin{lstlisting}[escapeinside={(*}{*)}, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth]
         let x : (*$?^1$*) = (*$\tehole^2$*) in
         x
     \end{lstlisting}
 \end{center}
 
-It is clear that x is never constrained to any complete types. In fact, the only constraint in this program is that $?^1 \approx \tehole^2$. Suppose that we were to suggest the type variable $'a$ as a type hole filling for $?^1$ and it were accepted. We'd end up with the following program:
+We can see that x is never constrained to any complete types. In fact, the only constraint in this program is that $?^1 \approx \tehole^2$. Suppose that we were to suggest the type variable \lstinline{'a} as a type hole filling for $?^1$ and the user accepted this suggestion. We'd end up with the following program:
 
 \begin{center}
-    \begin{lstlisting}[escapeinside={(*}{*)}]
+    \begin{lstlisting}[escapeinside={(*}{*)}, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth]
         let x : 'a = (*$\tehole^2$*) in
         x
     \end{lstlisting}
 \end{center}
 
-However, we've run into a stark issue: the only possible expressions that can replace $\tehole^2$ are expressions that analyze against $'a$! This is far from ideal: from the initial program, it is clear that the user didn't express any clear intention for $\tehole^2$ to be strictly polymorphic. 
+However, we've run into a stark issue: the only possible expressions that can replace $\tehole^2$ are expressions that analyze against \lstinline{'a}! This is far from ideal: we can see in the initial program that the user didn't express any clear intention for $\tehole^2$ to be strictly polymorphic.
 
-We generalize this notion and make the following observation: whenever the user creates expression holes, there are any number of potential "unknown" constraints that could spawn from the expression hole after it is filled. Indeed, rather than such expression holes being polymorphic, which would effectively represent a lack of constraints on type apart from other unconstrained polymorphic types, expression holes can be constrained to \emph{any} single type after being filled. This status could be effectively represented in a new type of constraint: the \emph{ANY} constraint. If a type hole $?^p$ is constrained to \emph{ANY}, it cannot be generalized to a type variable. In order to concretize this notion and allow it to be represented in our constraint graph, we update rules 1f and 1g in Figure \ref{fig:ana-syn} as follows:
+We generalize this notion and make the following observation: whenever the user creates expression holes, there are any number of potential "unknown" constraints that could spawn from the expression hole after it is filled. Indeed, rather than such expression holes being polymorphic, which would effectively represent a lack of constraints on type apart from other unconstrained polymorphic types, they can be constrained to \emph{any} type after being filled. This status can be effectively represented in a new type of constraint: the \emph{ANY} constraint. If a type hole $?^p$ is constrained to \emph{ANY}, it cannot be generalized to a type variable. On the other hand, if a type hole is never constrained to \emph{ANY}, it \emph{can} be generalized to a type hole. In order to concretize this notion and allow it to be represented in our constraint graph, we update rules 1f and 1g in Figure \ref{fig:ana-syn} as follows:
 
 \begin{equation}
     \inferrule[]{ }{
         \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{\{ \tehole^n \approx \emph{ANY} \}}
       }
 \end{equation}
-\\
+\vspace{-3px}
 \begin{equation}
     \inferrule[]{
         (n~\text{fresh}) \\
@@ -637,9 +635,9 @@ We generalize this notion and make the following observation: whenever the user 
          \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{C \cup \{ \tehole^n \approx \emph{ANY} \}}
        }
 \end{equation}
-
-Such that expression holes synthesize type holes that are constrained to the unknown type. The definition of \emph{PossibleType}s can also be adjusted slightly to account for this change:
-
+\\
+These changes ensure that expression holes synthesize type holes that are constrained to the \emph{ANY} type. These type holes and any other type holes constrained to them can never be generalized to type variables. The definition of \emph{PossibleType}s can also be adjusted slightly to account for this change:
+\begin{center}
 $\arraycolsep=4pt\begin{array}{lll}
 PotentialType~~ t & ::= 
   \tnum ~\vert~
@@ -650,6 +648,7 @@ PotentialType~~ t & ::=
   s ~\square~ s
   \\
 \end{array}$
+\end{center}
 
 \subsubsection{User Interaction and Conflict Highlighting}
 To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.

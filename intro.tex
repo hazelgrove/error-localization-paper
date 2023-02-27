@@ -8,12 +8,13 @@
 % and many helpful language services are not fully functional \cite{HazelnutSNAPL}.
 
 Contemporary programming environments provide 
-a wide variety of semantic services that require statically analyzing the type and binding structure of the program being edited, e.g. various semantic navigation services, type hints, semantic code completion, and automated refactoring. 
+a variety of semantic services that require statically analyzing the type and binding structure of the program being edited, e.g. semantic navigation, type hints, semantic code completion, and automated refactoring. However, during the editing process,
+it is common for programs to be ill-typed. 
 
 Language designers typically specify static type systems as a collection of rules 
 stating conditions under which an expression can be judged to be well-typed,
 i.e. completely free of type errors. 
-Provisioning these semantic services for well-typed expressions is well-supported 
+ is well-supported 
 by these definitions. 
 
 When there is a type error, however, these definitions are inadequate. It is therefore left as an implementation decision (1) type error localization: how to localize and explain the type error, and (2) type error recovery: how to recover from the error to find other simultaneous errors and to continue to provision various semantic services, which would often still useful even in the presence of errors. 
