@@ -23,7 +23,7 @@ We define "solving" the constraints associated with a given type hole as the pro
 
 \emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. The system postpones the remaining type checking to runtime. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
 
-Through the constraint solving layer of \emph{Type Hole Inference}, the user is given suggestions for type holes which are \textit{solvable}. In addition, \emph{type hole inference} provides debug information for \emph{unsolvable} type holes by presenting a \emph{PossibleTypeSet} containing all possible substitutions. When the user selects an \emph{unsolvable} type hole, rather than blaming one particular expression, the editor highlights the origins of all types that rendered it \emph{unsolvable}. Error localization feedback is visual and updated as edits occur, allowing the user to interactively repair their program.
+Through the constraint solving layer of \emph{Type Hole Inference}, the user is given suggestions for type holes which are \textit{solvable}. In addition, \emph{type hole inference} provides debug information for \emph{unsolvable} type holes by presenting a \emph{PotentialTypeSet} containing all possible substitutions. When the user selects an \emph{unsolvable} type hole, rather than blaming one particular expression, the editor highlights the origins of all types that rendered it \emph{unsolvable}. Error localization feedback is visual and updated as edits occur, allowing the user to interactively repair their program.
 
 \par{Contributions} The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section without failure upon hitting unsolvable constraints ~\ref{sec:infalg}.
 
@@ -115,6 +115,10 @@ We leverage Hazel's type system to generate constraints inductively through bidi
 
 % \includegraphics[width=5.5cm]{images/constraint_gen_example2.png}
 
+\todo{add an example of a correct program for constraint generation}
+\todo{add a setence explaining that a lot of the bidirectional typing rules don't add constraints, just recursively gather them from subexpressions and propogate them further}
+\todo{add a typing rule for let since it's used in examples}
+\todo{condense transitivity discussion}
 We use the symbol $\approx$ to represent the constraint relation where if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ are \textit{allegedly} the same type, and share the same solution. We refrain from using $=$ because, to our constraint solver, the relation is not transitive. 
 For example, consider the constraint set $C_{ex1} = \{ \tehole^{1} \approx \tnum, ~ \tnum \approx~ \tehole^{2}\}$. Even though $\tehole^{1}$ and $\tehole^{2}$ are both constrained to $\tnum$, the constraint solver would not consider $\tehole^{1}$ and $\tehole^{2}$ to have the same solution. To make this more concrete, consider the following program:
 \begin{center}
@@ -248,40 +252,6 @@ Additionally, the constraint relation $\approx$ is distinct from the consistency
 \end{figure}
 
 \begin{figure}[h!]
-   \fbox{$\tau \sim \tau $}~~\text{$\tau$ is consistent to $\tau$}\hfill
-    \begin{subequations}\label{eqns:consistency}
-    \begin{mathpar}
-      \hfill
-        \inferrule[]{
-            }{
-              \tnum \sim \tnum
-            }
-            \hfill
-    \inferrule[]{
-        }{
-        \tehole^p \sim \tau
-        }
-        \hfill
-    \inferrule[]{
-        }{
-        \tau \sim \tehole^p
-        }
-        \hfill
-    \inferrule[]{
-        \tau_1 \sim \tau_3 \\
-        \tau_2 \sim \tau_4
-        }{
-        \tarr{\tau_1}{\tau_2} \sim \tarr{\tau_3}{\tau_4}
-        }\hfill \text{\hspace{-2px}(\ref*{eqns:consistency}a-d)}
-    \end{mathpar}
-  \end{subequations}
-  \hrule
-  \caption{H-type consistency.}
-  \label{fig:type-consistency}
-  \vspace{-3px}
-\end{figure}
-
-\begin{figure}[h!]
     \fbox{$\tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C}$}~~\text{$\tau$ has matching arrow type $\tarr{\tau_{in}}{\tau_{out}}$}\hfill
     \begin{subequations}\label{eqns:matcharrow}
       \begin{minipage}{0.43\linewidth}
@@ -317,45 +287,65 @@ Constraints are generated through bidirectional judgements in figure ~\ref{fig:a
 
 \subsection{Constraint Solving}
 \label{sec:infalg}
-The problem of inferring types from constraints has been widely explored in the literature. We look to Huet's union-find based unification algorithm \cite{G. Huet} as a base from which to build our solution. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Thus, we present a variant of Huet's algorithm which, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PossibleTypeSet}, for all type holes in the program.
+The problem of inferring types from constraints has been widely explored in the literature. We look to Huet's union-find based unification algorithm \cite{G. Huet} as a base from which to build our solution. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Thus, we present a variant of Huet's algorithm which, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PotentialTypeSet}, for all type holes in the program.
 
+\todo{Jump straight into a graph example}
 % Hence, we utilize the union-find algorithm for constraint solving like Huet. 
-A \textit{PossibleTypeSet} is a recursive data structure representing the possible solutions for a type hole, inferred from type constraints. The problem of determining the \textit{PossibleTypeSet} for every type hole can be re-framed as finding all connected components in a graph of types, where nodes are connected by constraint relations. After every constraint has been processed, every type hole is associated with one \textit{PossibleTypeSet}. We provide a formalization of \textit{PossibleTypeSet}, \textit{PossibleType}, and their extension below in Figure \ref{fig:possible_type_sets}.
+A \textit{PotentialTypeSet} is a recursive data structure representing the possible solutions for a type hole, inferred from type constraints. The problem of determining the \textit{PotentialTypeSet} for every type hole can be re-framed as finding all connected components in a graph of types, where nodes are connected by constraint relations. After every constraint has been processed, every type hole is associated with one \textit{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in Figure \ref{fig:possible_type_sets}.
 
 \begin{figure}[h!]
 \centering
 \vspace{-3px} 
 $\arraycolsep=4pt\begin{array}{lll}
-PossibleTypeSet~~ s & ::= 
-single(t) ~\vert~ 
-cons(t, s)
+PotentialTypeSet~~ s & = list(PotentialType)
 \\
-PossibleType~~ t & ::= 
+PotentialType~~ t & ::= 
   \tnum ~\vert~
   \tbool ~\vert~
   \ehole^p ~\vert~
   \tarr{s}{s}
   \\
+% old NeList version:
+% PotentialTypeSet~~ s & ::= 
+% single(t) ~\vert~ 
+% cons(t, s)
+% \\
+% PotentialType~~ t & ::= 
+%   \tnum ~\vert~
+%   \tbool ~\vert~
+%   \ehole^p ~\vert~
+%   \tarr{s}{s}
+%   \\
 \end{array}$
 \label{fig:syntax_possible_type_sets}
-\caption{Syntax of PossibleTypeSets and PossibleTypes}
-\vspace{5px} 
+\caption{Syntax of PotentialTypeSets and PotentialTypes}
+\vspace{5px}
 \hrule
 \[\begin{array}{rcl}
-    single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
-    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
-    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
-    cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
-    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+    % base case: empty list
+    s \amalg [] & = & s \\
+    % both heads are the same, keep one
+    \left[t,...s\right] ~\amalg~ \left[t,...s'\right] & = & \left[t,...s\right] ~\amalg~ s' \\
+    % both heads are arrows, combine their children
+    \left[\tarr{s_L}{s_R},...s_{tl}\right] ~\amalg~ \left[\tarr{s'_L}{s'_R},...s'_{tl}\right] & = & \left[\tarr{(s_L ~\amalg~ s'_L)}{(s'_R ~\amalg~ s'_R)},...s_{tl}\right] ~\amalg~ s'_{tl} \\
+    % both heads are different (but not arrows), keep both
+    \left[t,...s\right] ~\amalg~ \left[t',...s'\right] & = & \left[t',t,...s\right] ~\amalg~ s' \\
+    
+    % \\ old NeList version: \\
+    % single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
+    % single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+    % cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+    % cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
+    % cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
 \end{array}\] 
-\caption{Merging PossibleTypeSets}
+\caption{Merging PotentialTypeSets}
 \vspace{5px} 
 \hrule
 \label{fig:possible_type_sets}
 \vspace{-5px}
 \end{figure}
 
-The set of constraints generated through static analysis can be used to construct a graph of \textit{PossibleType}s. Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PossibleTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PossibleTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PossibleTypeSet}.
+The set of constraints generated through static analysis can be used to construct a graph of \textit{PotentialType}s. Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
 
 \begin{figure}[h!]
 \centering
@@ -434,13 +424,13 @@ Upon encountering a constraint between two arrow $\tarr{}{}$ types, the constrai
 \label{fig:arrowgraph}
 \end{figure}
 
-We provide pseudocode for a graph construction algorithm in Figure \ref{fig:algcode_construct_graph}.  We assume a basic \emph{link\_nodes} and \emph{tag\_nodes} definition that connects nodes by retrieving a type hole's associated \emph{PossibleTypeSet} from the graph before extending it with some supplied type. We also assume the existence of a \emph{Map.add} function that adds a new element to the supplied map if it does not already exist, and otherwise does not change any values.
+We provide pseudocode for a graph construction algorithm in Figure \ref{fig:algcode_construct_graph}.  We assume a basic \emph{link\_nodes} and \emph{tag\_nodes} definition that connects nodes by retrieving a type hole's associated \emph{PotentialTypeSet} from the graph before extending it with some supplied type. We also assume the existence of a \emph{Map.add} function that adds a new element to the supplied map if it does not already exist, and otherwise does not change any values.
 
 % A Union-Find implementation can use the following helper functions defined in \ref{fig:algcode_construct_graph_helpers}:
 % \begin{enumerate}
-%   \item add\_node() wraps an $Htyp$ in singleton PossibleTypeSet and adds it to the graph if not already present, and returns the updated graph.
-%   \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PossibleTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
-%   \item tag\_node() uses the Find operation of Union-Find to get the representative of a node, and adds $\tau$ to its \textit{PossibleTypeSet}.
+%   \item add\_node() wraps an $Htyp$ in singleton PotentialTypeSet and adds it to the graph if not already present, and returns the updated graph.
+%   \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PotentialTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
+%   \item tag\_node() uses the Find operation of Union-Find to get the representative of a node, and adds $\tau$ to its \textit{PotentialTypeSet}.
 % \end{enumerate}
 
 % \begin{figure}[h!]
@@ -498,22 +488,22 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
 \label{fig:algcode_construct_graph}
 \end{figure}
 
-% When a constraint of the form $A \approx B$ is processed, both A and B's \textit{PossibleTypeSet}s are recovered from the graph and then \textit{link}ed. When computing connected components, the link operation may be adjusted to identify a single representative among $A$ and $B$ via union-find. This representative can then be updated with the union of $A$ and $B$'s \textit{PossibleTypeSet}s. As other \textit{link} operations are performed on $A$ or $B$, union-find allows us to update a single \textit{PossibleTypeSet} shared among all members of their known \textit{connected component}. In this manner, the \texit{PossibleTypeSet} associated with any representative can act as an accumulated connected component across the entirety of \textit{constructGraph}. The changes necessary to \textit{link} and \textit{tag} are shown below in Figure ~\ref{fig:algocode_construct_graph}.
+% When a constraint of the form $A \approx B$ is processed, both A and B's \textit{PotentialTypeSet}s are recovered from the graph and then \textit{link}ed. When computing connected components, the link operation may be adjusted to identify a single representative among $A$ and $B$ via union-find. This representative can then be updated with the union of $A$ and $B$'s \textit{PotentialTypeSet}s. As other \textit{link} operations are performed on $A$ or $B$, union-find allows us to update a single \textit{PotentialTypeSet} shared among all members of their known \textit{connected component}. In this manner, the \texit{PotentialTypeSet} associated with any representative can act as an accumulated connected component across the entirety of \textit{constructGraph}. The changes necessary to \textit{link} and \textit{tag} are shown below in Figure ~\ref{fig:algocode_construct_graph}.
 
-The function construct\_graph builds a mapping from each type hole to a \emph{PossibleTypeSet} containing its adjacency list. This \textit{PossibleTypeSet} is only an adjacency list, a subset of the full solution for the type hole. A depth-first search can be used to determine all nodes in the graph which can be reached from a type hole using this adjacency list.
+The function construct\_graph builds a mapping from each type hole to a \emph{PotentialTypeSet} containing its adjacency list. This \textit{PotentialTypeSet} is only an adjacency list, a subset of the full solution for the type hole. A depth-first search can be used to determine all nodes in the graph which can be reached from a type hole using this adjacency list.
 
 Alternatively, a Union-Find implementation can use the following definitions for these helper functions defined in \ref{fig:algcode_construct_graph_helpers}:
 \begin{enumerate}
-  \item add\_node() wraps an $Htyp$ in singleton PossibleTypeSet and adds it to the graph if not already present, and returns the updated graph.
-  \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PossibleTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
-  \item tag\_node() uses the Find operation of Union-Find to get the representative of a node, and adds $\tau$ to its \textit{PossibleTypeSet}.
+  \item add\_node() wraps an $Htyp$ in singleton PotentialTypeSet and adds it to the graph if not already present, and returns the updated graph.
+  \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PotentialTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
+  \item tag\_node() uses the Find operation of Union-Find to get the representative of a node, and adds $\tau$ to its \textit{PotentialTypeSet}.
 \end{enumerate}
-Using these helper functions, the graph returned by construct\_graph will contain the full \textit{PossibleTypeSet} for each type hole, not just an adjacency-list.
+Using these helper functions, the graph returned by construct\_graph will contain the full \textit{PotentialTypeSet} for each type hole, not just an adjacency-list.
 
 \begin{figure}[h!]
 \begin{lstlisting}[escapeinside={(*}{*)}]
 let add_node (graph, t) =
-    graph.add(graph, t, PossibleTypeSet.single(t))
+    graph.add(graph, t, [])
 let link_nodes (graph, t1, t2) =
     let (rep1, rep2) = (UnionFind.find(t1), UnionFind.find(t2)) in
     let (s1, s2) = (graph.find(rep1), graph.find(rep2)) in
@@ -523,7 +513,7 @@ let link_nodes (graph, t1, t2) =
 let tag_node (graph, t1, t2) =
     let rep1 = UnionFind.find(t1) in
     let s = graph.get(rep1) in
-    let s' = s (*$\amalg_{UF}$*) UnionFind.elem(single(t2)) in
+    let s' = s (*$\amalg_{UF}$*) UnionFind.elem([t2]) in
     Map.update(graph, t1, s')
 \end{lstlisting}
 \vspace{-2px}
@@ -532,9 +522,13 @@ let tag_node (graph, t1, t2) =
 \label{fig:algcode_construct_graph_helpers}
 \end{figure}
 
-In order to accommodate this change while ensuring that \textit{PossibleTypeSet}s represented within $Arrow$ \textit{PossibleType}s are also union-found properly, minor adjustments must be made to the type definitions and extension logic discussed above. However, the definitions is somewhat redundant, and are consequently left to Appendix A for reference.
+In order to accommodate this change while ensuring that the left and right children of $\tarr{}{}$ \textit{PotentialType}s are also merged properly, minor adjustments must be made to the definitions presented in Figure \ref{fig:possible_type_sets}. However, the definitions are somewhat redundant, and are consequently left to Appendix A for reference.
 
-An additional step is taken to mark type holes with an error if they fail the occurs check. If a type hole's \textit{PossibleTypeSet} contains an Arrow containing that type hole, it must contain itself and therefore fails the occurs check. This is done by simply assessing all \textit{PossibleTypeSet}s to ensure that they are acyclic. The end result of constraint solving is a mapping from every type hole to its \textit{PossibleTypeSet}. If the user has made no errors when writing their program, each type hole's \textit{PossibleTypeSet} should be acyclic and contain no conflicting ground types. However, if a program is incomplete or erroneous, the list of suggestions for a type hole may contain multiple types, which have all been constrained to the type hole at some point during constraint generation. The user can then inspect the set of type suggestions and assess which one is correct, and based on the incorrect types suggested, make corrections to the program.
+An additional step is taken to mark type holes with an error if they occur within their own \textit{PotentialTypeSet}. In Hindley-Milner type inference this is referred to as the occurs-check. In the context of \textit{PotentialTypeSet}s, this problem can be re-framed as determining if a \textit{PotentialTypeSet} has a cycle.
+
+Type holes are considered solvable if their \textit{PotentialTypeSet} contains a single type. If a type hole's \textit{PotentialTypeSet} contains multiple, conflicting types, or contains no types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases, helpful visual feedback can be provided to the user.
+
+% The end result of constraint solving is a mapping from every type hole to its \textit{PotentialTypeSet}. If the user has made no errors when writing their program, each type hole's \textit{PotentialTypeSet} should be acyclic and contain no conflicting ground types. However, if a program is incomplete or erroneous, the list of suggestions for a type hole may contain multiple types, which have all been constrained to the type hole at some point during constraint generation. The user can then inspect the set of type suggestions and assess which one is correct, and based on the incorrect types suggested, make corrections to the program.
 
 \begin{figure}[h!]
 \begin{lstlisting}[escapeinside={(*}{*)}]
@@ -556,7 +550,7 @@ let handle_occurs_check (graph) =
 
 \subsection{Future Work}
 \subsubsection{Other Binary Types and Parametric Polymorphism}
-In order to extend our definitions of \emph{PossibleTypeSet}s to other binary types like $\tau_1 \times \tau_2$ or $\tau_1 + \tau_2$ and allow parametric polymorphism, we simply update our definition of \emph{PossibleTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets}
+In order to extend our definitions of \emph{PotentialTypeSet}s to other binary types like $\tau_1 \times \tau_2$ or $\tau_1 + \tau_2$ and allow parametric polymorphism, we simply update our definition of \emph{PotentialTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets}
 
 \begin{figure}[h!]
 \centering
@@ -567,11 +561,9 @@ BinaryOperator~~ \square & ::=~~~~~
 \times  ~\vert~ 
 +
 \\
-PossibleTypeSet~~ s & ::= 
-single(t) ~\vert~ 
-cons(t, s)
+PotentialTypeSet~~ s & = list(PotentialType)
 \\
-PossibleType~~ t & ::= 
+PotentialType~~ t & ::= 
   \tnum ~\vert~
   \tbool ~\vert~
   \TVar ~\vert~
@@ -580,25 +572,78 @@ PossibleType~~ t & ::=
   \\
 \end{array}$
 \label{fig:syntax_possible_type_sets}
-\caption{Extended syntax of PossibleTypeSets and PossibleTypes}
+\caption{Extended syntax of PotentialTypeSets and PotentialTypes}
 \hrule
 \[\begin{array}{rcl}
-    single(s_1 ~\square_{\alpha}~ s_2) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & single((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)) \\
-    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
-    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
-    cons(s_1 ~\square_{\alpha}~ s_2, s) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & cons((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4), s) \\
-    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+    % base case: empty list
+    s \amalg [] & = & s \\
+    % both heads are the same, keep one
+    \left[t,...s\right] ~\amalg~ \left[t,...s'\right] & = & \left[t,...s\right] ~\amalg~ s' \\
+    % both heads are arrows, combine their children
+    \left[s_L ~ \square_{\alpha} ~ s_R,...s_{tl}\right] ~\amalg~ \left[s'_L ~ \square_{\alpha} ~ s'_R,...s'_{tl}\right] & = & \left[(s_L ~\amalg~ s'_L) ~ \square_{\alpha} ~ (s'_R ~\amalg~ s'_R),...s_{tl}\right] ~\amalg~ s'_{tl} \\
+    % both heads are different (but not arrows), keep both
+    \left[t,...s\right] ~\amalg~ \left[t',...s'\right] & = & \left[t',t,...s\right] ~\amalg~ s' \\
+
+    % old NeList version:
+    % single(s_1 ~\square_{\alpha}~ s_2) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & single((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)) \\
+    % single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+    % cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+    % cons(s_1 ~\square_{\alpha}~ s_2, s) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & cons((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4), s) \\
+    % cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
 \end{array}\] 
-\caption{Extended rules for merging PossibleTypeSets}
+\caption{Extended rules for merging PotentialTypeSets}
 \vspace{5px} 
 \hrule
 \label{fig:extended_merging_possible_type_sets}
 \vspace{-5px}
 \end{figure}
-Here, we take a more general approach to representing binary types. Namely, a \emph{PossibleType} may be the combination of two \emph{PossibleType}s through any \emph{BinaryOperator} $\square$. The rules for extension follow the same logic as before, where we enforce that extension of a \emph{PossibleTypeSet} containing $s_1 ~\square_{\alpha}~ s_2$ with $s_3 ~\square_{\alpha}~ s_4$ simply merges the left and right \emph{PossibleTypeSet}s, thus yielding $(s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)$. Additionally, we choose to represent type variables as a ground type, thus enforcing that type variables are inconsistent with other ground types and consistent with type holes and each other. 
+Here, we take a more general approach to representing binary types. Namely, a \emph{PotentialType} may be the combination of two \emph{PotentialType}s through any \emph{BinaryOperator} $\square$. The rules for extension follow the same logic as before, where we enforce that extension of a \emph{PotentialTypeSet} containing $s_1 ~\square_{\alpha}~ s_2$ with $s_3 ~\square_{\alpha}~ s_4$ simply merges the left and right \emph{PotentialTypeSet}s, thus yielding $(s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)$. Additionally, we choose to represent type variables as a ground type, thus enforcing that type variables are inconsistent with other ground types and consistent with type holes and each other. 
+
+One thing we may be tempted to do is generalize \emph{PossibleTypeSet}s containing only type holes to a new type variable. However, there are a few subtle issues to be cautious of when considering this extension.
+
+Consider the following simple program:
+
+\begin{center}
+    \begin{lstlisting}[escapeinside={(*}{*)}]
+        let x : (*$?^1$*) = (*$\tehole^2$*) in
+        x
+    \end{lstlisting}
+\end{center}
+
+It is clear that x is never constrained to any complete types. In fact, the only constraint in this program is that $?^1 \approx \tehole^2$. Suppose that we were to suggest the type variable $'a$ as a type hole filling for $?^1$ and it were accepted. We'd end up with the following program:
+
+\begin{center}
+    \begin{lstlisting}[escapeinside={(*}{*)}]
+        let x : 'a = (*$\tehole^2$*) in
+        x
+    \end{lstlisting}
+\end{center}
+
+However, we've run into a stark issue: the only possible expressions that can replace $\tehole^2$ are expressions that analyze against $'a$! This is far from ideal: from the initial program, it is clear that the user didn't express any clear intention for $\tehole^2$ to be strictly polymorphic. 
+
+We generalize this notion and make the following observation: whenever the user creates expression holes, there are any number of potential "unknown" constraints that could spawn from the expression hole after it is filled. Indeed, rather than such expression holes being polymorphic, which would effectively represent a lack of constraints on type apart from other unconstrained polymorphic types, expression holes can be constrained to \emph{any} single type after being filled. This status could be effectively represented in a new type of constraint: the \emph{ANY} constraint. If a type hole $?^p$ is constrained to \emph{ANY}, it cannot be generalized to a type variable. In order to concretize this notion and allow it to be represented in our constraint graph, we update rules 1f and 1g in Figure \ref{fig:ana-syn} as follows:
+
+\begin{equation}
+    \inferrule[]{ }{
+        \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{\{ \tehole^n \approx \emph{ANY} \}}
+      }
+\end{equation}
+\\
+\begin{equation}
+    \inferrule[]{
+        (n~\text{fresh}) \\
+        \consexptyp{\Gamma}{e}{\tau}{C}
+       }{
+         \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{C \cup \{ \tehole^n \approx \emph{ANY} \}}
+       }
+\end{equation}
+
+Such that expression holes synthesize type holes that are constrained to the unknown type. The definition of \emph{PossibleType}s can also be adjusted slightly to account for this change
+
 
 \subsubsection{User Interaction and Conflict Highlighting}
-With the goal of more effectively aiding the user in assigning blame and repairing their program, it would be useful to use constraint graphs and \emph{PossibleTypeSet}s to indicate potential sources of blame to the user. Expressions whose synthesis or analysis spawned conflicting constraints can be highlighted to the user, allowing them to see why exactly the inference system has determined a specific type hole to be unsolved. In order to allow this, constraints may be labeled with information on the contexts that generated them. These labels effectively act as reasons for edges within our constraint graph, thus enabling us to describe the exact series of reasons that caused the inference algorithm to conclude a type hole's solution status.
+To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.
+%These identifiers effectively act as reasons for edges within our constraint graph, enabling us to describe the exact series of reasons that caused the inference algorithm to conclude a type hole's solution status.
 
 
 
