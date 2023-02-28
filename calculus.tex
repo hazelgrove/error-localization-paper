@@ -93,7 +93,7 @@ calculus.
 
 Types classify expressions by a \emph{bidirectional type system}, which employs two mutually defined
 judgments. \emph{Type synthesis}, written $\ctxSynType{\ctx}{\EMV}{\TMV}$, establishes that, under
-the typing context $\ctx$, the expression $e$ synthesises or infers the type $\TMV$. \emph{Type
+the typing context $\ctx$, the expression $e$ synthesizes or infers the type $\TMV$. \emph{Type
 analysis}, written $\ctxAnaType{\ctx}{\EMV}{\TMV}$, states that the expression $\EMV$ may appear
 where an expression of type $\TMV$ is expected. We may give these typing semantics traditionally,
 without considering error localization and recovery.
@@ -147,7 +147,7 @@ Finally, marking is bidirectional as well. The synthetic marking judgment
 $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
 $\TMV$. Analogously, the analytic marking judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
-states that $\EMV$ is marked into $\ECMV$, which analyses against $\TMV$.
+states that $\EMV$ is marked into $\ECMV$, which analyzes against $\TMV$.
 
 How can we ensure that the marking procedure is correctly defined? There are two critical
 metatheorems to keep in mind as we continue. The first is a \emph{totality} of marking:
@@ -184,7 +184,7 @@ removing error marks. Then, \cref{thm:calculus-marking-well-formedness} provides
 %
 In other words, if an unmarked expression is marked into some marked expression, erasing error marks
 from the marked expression gives the original unmarked expression. We also ensure that marking gives
-well-typed marked expressions; indeed, their types should match the types synthesised or analysed
+well-typed marked expressions; indeed, their types should match the types synthesized or analyzed
 against in marking. % TODO more intuition for this theorem
 
 \input{figs/calculus-mark-erasure}
@@ -222,7 +222,7 @@ only need the following rules for marking unmarked numbers and typing marked num
 \end{mathpar}
 
 In addition expressions, the type of both operands should be $\TNum$. In a bidirectional system, we
-thus analyse the operands against $\TNum$, giving the following rule:
+thus analyze the operands against $\TNum$, giving the following rule:
 %
 \begin{mathpar}
   \judgment{
@@ -449,7 +449,7 @@ following rules, in which the lambda abstraction is placed inside the inconsiste
 \end{mathpar}
 %
 Though no expected output type is known, we still need to check and mark the body; it is thus
-analysed against the unknown type in \textsc{IALam2}.
+analyzed against the unknown type in \textsc{IALam2}.
 
 A similar situation arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
 $\inconsistent{\TMV}{\TMV_1}$, i.e. the expected input type is inconsistent with the actual input
@@ -708,7 +708,7 @@ conditionals:
 \label{sec:calculus-subsumption}
 
 Finally, we consider the subsumption rule in typing unmarked expressions, which states that if an
-expression synthesizes a type, it may also be analysed against that type or any consistent type.
+expression synthesizes a type, it may also be analyzed against that type or any consistent type.
 \[%
   \judgment{
     \ctxSynType{\ctx}{\EMV}{\TMV'} \\
@@ -750,7 +750,7 @@ Note that we define a analogous notion of ``subsumability'' for marked expressio
 $\subsumable{\ECMV}$.
 
 However, it may be the case that the expression is inconsistent with the expected type. Recalling
-the example of \cref{fig:calculus-examples-inconsistent-types}, subsumption would used to analyse
+the example of \cref{fig:calculus-examples-inconsistent-types}, subsumption would used to analyze
 $\ETrue$ against $\TNum$ in $\EPlus{\ETrue}{5}$, which fails since $\inconsistent{\TNum}{\TBool}$,
 and $\ETrue$ should be marked with an inconsistent type mark. Hence, the following final set of
 rules is required to handle such cases:
