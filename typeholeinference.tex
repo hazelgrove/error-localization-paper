@@ -29,9 +29,18 @@ Through the constraint solving layer of \emph{Type Hole Inference}, the user is 
 
 \subsection{User Interaction}
 
-Taking advantage of the interactiveness of live programming, rather than guessing sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired. 
+Taking advantage of the interactive nature of live programming, rather than guessing sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired. 
 
-Take the following \Hazel programs extended with type hole inference as examples: 
+%%%% new UI example
+
+\begin{tabular}[b]{c}
+\includegraphics[width=12cm]{images/example_holes.png} \\
+\includegraphics[width=12cm]{images/example_holes_CI.png}
+\end{tabular}
+
+%%%% END new UI example
+
+Take the following \Hazel programs extended with type hole inference as examples: \todo{update screenshots to a more incremental flow and discuss it accordingly in narrative style}
 
 \begin{figure}[h!]
 \centering
@@ -135,7 +144,7 @@ This program can be associated with the constraints $C = \{ \tehole^{x} \approx 
 \subsubsection{Subsumption Constraints}
 With this in mind, let us begin to explore how constraints are generated. As discussed earlier, constraints constitute a series of expectations for what different types should be. One key mechanism by which we facilitate our accumulation of these expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this, consider subsumption. 
 
-Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. In order to more concretely track this expectation as a constraint, we extend the rule MASubsume \todo{fix styling on rule names so its consistent with Eric's} as follows so that it generates the constraint $\tau \approx \tau'$:
+Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. In order to more concretely track this expectation as a constraint, we extend the rule MASubsume as follows so that it generates the constraint $\tau \approx \tau'$:
 \begin{mathpar}
   \judgment{
     \ctxSynType{\ctx}{\ECMV}{\TMV'} ~|~ C \\
@@ -481,18 +490,21 @@ The remaining rules are all axiomatic and need not accumulate any constraints or
 \usetikzlibrary{positioning,calc}
 
 \subsection{Constraint Solving}
+\todo{fix this section to use terminology discussed}
 \label{sec:infalg}
 The problem of inferring types from constraints has been widely explored in the literature. We look to Huet's union-find based unification algorithm \cite{G. Huet} as a base from which to build our solution. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Thus, we present a variant of Huet's algorithm which, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PotentialTypeSet}, for all type holes in the program.
 
 \todo{Jump straight into a graph example}
 % Hence, we utilize the union-find algorithm for constraint solving like Huet. 
-A \textit{PotentialTypeSet} is a recursive data structure representing the possible solutions for a type hole, inferred from type constraints. The problem of determining the \textit{PotentialTypeSet} for every type hole can be re-framed as finding all connected components in a graph of types, where nodes are connected by constraint relations. After every constraint has been processed, every type hole is associated with one \textit{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in Figure \ref{fig:possible_type_sets}.
+A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. The problem of determining the \textit{PotentialTypeSet} for every type hole can be re-framed as finding all connected components in a graph of types, where nodes are connected by constraint relations. After every constraint has been processed, every type hole is associated with one \textit{PotentialTypeSet}. A \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of the nodes used to transition, we continuously extend some \emph{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in Figure \ref{fig:possible_type_sets}.
 
 \begin{figure}[h!]
 \centering
 \vspace{-3px} 
 $\arraycolsep=4pt\begin{array}{lll}
-PotentialTypeSet~~ s & = list(PotentialType)
+PotentialTypeSet~~ s & ::= 
+single(t) ~\vert~ 
+cons(t, s)
 \\
 PotentialType~~ t & ::= 
   \tnum ~\vert~
@@ -500,38 +512,17 @@ PotentialType~~ t & ::=
   \tehole^p ~\vert~
   \tarr{s}{s}
   \\
-% old NeList version:
-% PotentialTypeSet~~ s & ::= 
-% single(t) ~\vert~ 
-% cons(t, s)
-% \\
-% PotentialType~~ t & ::= 
-%   \tnum ~\vert~
-%   \tbool ~\vert~
-%   \tehole^p ~\vert~
-%   \tarr{s}{s}
-%   \\
 \end{array}$
 \label{fig:syntax_possible_type_sets}
 \caption{Syntax of PotentialTypeSets and PotentialTypes}
 \vspace{5px}
 \hrule
 \[\begin{array}{rcl}
-    % base case: empty list
-    s \amalg [] & = & s \\
-    % both heads are the same, keep one
-    \left[t,...s\right] ~\amalg~ \left[t,...s'\right] & = & \left[t,...s\right] ~\amalg~ s' \\
-    % both heads are arrows, combine their children
-    \left[\tarr{s_L}{s_R},...s_{tl}\right] ~\amalg~ \left[\tarr{s'_L}{s'_R},...s'_{tl}\right] & = & \left[\tarr{(s_L ~\amalg~ s'_L)}{(s'_R ~\amalg~ s'_R)},...s_{tl}\right] ~\amalg~ s'_{tl} \\
-    % both heads are different (but not arrows), keep both
-    \left[t,...s\right] ~\amalg~ \left[t',...s'\right] & = & \left[t',t,...s\right] ~\amalg~ s' \\
-    
-    % \\ old NeList version: \\
-    % single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
-    % single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
-    % cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
-    % cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
-    % cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+    single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
+    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+    cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
+    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
 \end{array}\] 
 \caption{Merging PotentialTypeSets}
 \vspace{5px} 
@@ -548,9 +539,9 @@ The set of constraints generated through static analysis can be used to construc
   \centering
       \begin{tikzpicture}
       [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-      \node (n1) at (3,3) {$\tehole^{1}$};
-      \node (n2) at (1,3)  {$\tehole^{2}$};
-      \node[rectangle] (i) at (3,1)  {$\tnum$};
+      \node[rectangle,minimum size=0.85cm] (n1) at (3,3) {$\tehole^{1}$};
+      \node[rectangle,minimum size=0.85cm] (n2) at (1,3)  {$\tehole^{2}$};
+      \node[minimum size=0.85cm] (i) at (3,1)  {$\tnum$};
     
       \foreach \from/\to in {n1/n2}
         \draw (\from) -- (\to);
@@ -565,11 +556,11 @@ The set of constraints generated through static analysis can be used to construc
   \centering
   \begin{tikzpicture}
   [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-  \node (n1) at (2,3) {$\tehole^{1}$};
-  \node (n2) at (4,3)  {$\tehole^{2}$};
-  \node[rectangle] (i1) at (4,1)  {$\tnum$};
-  \node[rectangle] (i2) at (2,1)  {$\tnum$};
-  \node[rectangle] (i3) at (0,3)  {$\tbool$};
+  \node[rectangle,minimum size=0.85cm] (n1) at (2,3) {$\tehole^{1}$};
+  \node[rectangle,minimum size=0.85cm] (n2) at (4,3)  {$\tehole^{2}$};
+  \node[minimum size=0.85cm] (i1) at (4,1)  {$\tnum$};
+  \node[minimum size=0.85cm] (i2) at (2,1)  {$\tnum$};
+  \node[minimum size=0.85cm] (i3) at (0,3)  {$\tbool$};
 
    \foreach \from/\to in {n1/i3, n1/i2, n2/i1}
     \draw[dashed] (\from) -- (\to);
@@ -587,8 +578,8 @@ Upon encountering a constraint between two arrow $\tarr{}{}$ types, the constrai
 \begin{figure}[h!]
 \centering
 \begin{tikzpicture}[remember picture,
-  inner/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt},
-  innerrect/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt},
+  inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+  innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
   outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
   ]
   \node[outer,draw=green] (A) {
@@ -606,7 +597,7 @@ Upon encountering a constraint between two arrow $\tarr{}{}$ types, the constrai
         $Arrow$\\
         \begin{tikzpicture}
           \node [inner] (n3)  {$\tehole^{3}$};
-          \node [innerrect,right=of n3] (i) {$\tnum$};
+          \node [innercirc,right=of n3] (i) {$\tnum$};
           % \draw[red,thick,->] (n3) -- (i);
         \end{tikzpicture}
     }
@@ -615,7 +606,7 @@ Upon encountering a constraint between two arrow $\tarr{}{}$ types, the constrai
   \draw[dashed] (n2) -- (i);
    \draw[thick] (A) -- (B);
 \end{tikzpicture}
-\caption{Expanded constraint graph of $C_{ex3}$}
+\caption{Expanded constraint graph of $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
 \label{fig:arrowgraph}
 \end{figure}
 
@@ -745,33 +736,18 @@ let handle_occurs_check (graph) =
 
 \subsection{Future Work}
 \subsubsection{Other Binary Types and Parametric Polymorphism}
-In order to extend our definitions of \emph{PotentialTypeSet}s to other binary types like $\tau_1 \times \tau_2$ or $\tau_1 + \tau_2$ and allow parametric polymorphism, we simply update our definitions of hole provenances and \emph{PotentialTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets}
+In order to extend our definitions of \emph{PotentialTypeSet}s to other binary types like $\tau_1 \times \tau_2$ and allow parametric polymorphism, we simply update our definitions of hole provenances and \emph{PotentialTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets} and define new constraint generating matched product judgements.
 
-\todo{Discuss other needed provenances and matched rules}
+\todo{After the marked pair section is done, type up the rules Raef has written for pair syn/ana constraints}
 
 \begin{figure}[h!]
 \centering
-$\arraycolsep=4pt\begin{array}{lll}
-HProv~~ p & ::= & 
-    n ~\vert~ 
-    \rightarrow_{L}(p) ~\vert~ 
-    \rightarrow_{R}(p) ~\vert~ 
-    \times_{L}(p) ~\vert~ 
-    \times_{R}(p) ~\vert~ 
-    \mathtt{+}_{L}(p) ~\vert~ 
-    \mathtt{+}_{R}(p)
-    \\
-HTyp~~ \tau & ::= &
-  \tnum ~\vert~
-  \tbool ~\vert~
-  \tarr{\tau}{\tau} ~\vert~
-  \tau_1 \times \tau_2 ~\vert~
-  \tau_1 + \tau_2 ~\vert~
-  \tehole^p
-  \\
-\end{array}$
+\[\begin{array}{rrcl}
+    \Prov & \Provp & \Coloneqq & n \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_{L}(p) \mid \times_{R}(p) \\
+    \TMName  & \TMV  & \Coloneqq & \TUnknown^p \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \tau_1 \times \tau_2 \\
+  \end{array}\]
 \label{fig:syntax_possible_type_sets}
-\caption{Extended syntax of HProv and HTyp}
+\caption{Extended syntax of provenances and types}
 \hrule
 $\arraycolsep=4pt\begin{array}{lll}
 BinaryOperator~~ \square & ::=~~~~~
@@ -779,7 +755,9 @@ BinaryOperator~~ \square & ::=~~~~~
 \times  ~\vert~ 
 \mathtt{+}
 \\
-PotentialTypeSet~~ s & = list(PotentialType)
+PotentialTypeSet~~ s & ::=
+single(t) ~\vert~
+cons(t, s)
 \\
 PotentialType~~ t & ::= 
   \tnum ~\vert~
@@ -794,21 +772,11 @@ PotentialType~~ t & ::=
 \vspace{5px}
 \hrule
 \[\begin{array}{rcl}
-    % base case: empty list
-    s \amalg [] & = & s \\
-    % both heads are the same, keep one
-    \left[t,...s\right] ~\amalg~ \left[t,...s'\right] & = & \left[t,...s\right] ~\amalg~ s' \\
-    % both heads are arrows, combine their children
-    \left[s_L ~ \square_{\alpha} ~ s_R,...s_{tl}\right] ~\amalg~ \left[s'_L ~ \square_{\alpha} ~ s'_R,...s'_{tl}\right] & = & \left[(s_L ~\amalg~ s'_L) ~ \square_{\alpha} ~ (s'_R ~\amalg~ s'_R),...s_{tl}\right] ~\amalg~ s'_{tl} \\
-    % both heads are different (but not arrows), keep both
-    \left[t,...s\right] ~\amalg~ \left[t',...s'\right] & = & \left[t',t,...s\right] ~\amalg~ s' \\
-
-    % old NeList version:
-    % single(s_1 ~\square_{\alpha}~ s_2) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & single((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)) \\
-    % single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
-    % cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
-    % cons(s_1 ~\square_{\alpha}~ s_2, s) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & cons((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4), s) \\
-    % cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+    single(s_1 ~\square_{\alpha}~ s_2) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & single((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)) \\
+    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+    cons(s_1 ~\square_{\alpha}~ s_2, s) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & cons((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4), s) \\
+    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
 \end{array}\] 
 \caption{Extended rules for merging PotentialTypeSets}
 \vspace{5px} 
@@ -816,6 +784,25 @@ PotentialType~~ t & ::=
 \label{fig:extended_merging_possible_type_sets}
 \vspace{-5px}
 \end{figure}
+
+\begin{figure}[h!]
+  \raggedright
+  \judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$ with constraints $C$
+  %
+  \begin{mathpar}
+    \judgment{ }{
+      \matchedPair{\TUnknown^p}{\TUnknown}{\TUnknown} ~|~ \{ \TUnknown^p \approx \TPair{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}
+    }{TMPHole-C}
+
+    \judgment{ }{
+      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2} ~|~ \{\}
+    }{TMPProd-C}
+  \end{mathpar}
+  %
+  \caption{Constraint generating matched product type.}
+  \label{fig:extended-calculus-matched-product}
+\end{figure}
+
 Here, we take a more general approach to representing binary types. Namely, a \emph{PotentialType} may be the combination of two \emph{PotentialType}s through any \emph{BinaryOperator} $\square$. The rules for extension follow the same logic as before, where we enforce that extension of a \emph{PotentialTypeSet} containing $s_1 ~\square_{\alpha}~ s_2$ with $s_3 ~\square_{\alpha}~ s_4$ simply merges the left and right \emph{PotentialTypeSet}s, thus yielding $(s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)$. Additionally, we choose to represent type variables as a ground type, thus enforcing that type variables are inconsistent with other ground types and consistent with type holes and each other. 
 
 In a system with parametric polymorphism, one thing we may be tempted to do is generalize \emph{PossibleTypeSet}s containing only type holes to a new type variable. However, there are a few subtle issues to be cautious of when considering this extension. Consider the following simple program:
@@ -867,6 +854,7 @@ PotentialType~~ t & ::=
 \end{center}
 
 \todo{solution when ANY with num and ANY with var}
+\todo{fix examples to fit with the marked lambda calculus}
 
 \subsubsection{User Interaction and Conflict Highlighting}
 To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.
