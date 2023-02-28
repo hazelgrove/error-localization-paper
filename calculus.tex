@@ -17,7 +17,7 @@ Sometimes, the type an expression \emph{should} be is known. Consider
 $+$ operator are numbers. Since $\textsf{true}$ is not a number, a type error arises, and Hazel
 indicates a mismatch between the expected and actual types of the operand. The application in
 \cref{fig:calculus-examples-app-non-lambda} of a non-lambda leads to a similar kind of error. In
-this case, however, the expectation is not any singular type, but any member of a family of function
+this case, however, the expectation is not a singular type, but any member of a family of function
 types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error of inconsistent
 branches: the branches of the if-else expression are of different types. Hazel opts to highlight the
 entire expression in such a situation, while other tools may choose one branch to be ``correct'' and
@@ -831,19 +831,39 @@ Together with totality, marking may be considered and implemented as a total fun
 \label{sec:calculus-products}
 
 We now demonstrate how one might extend or adapt the marking calculus for new typing features by
-adding binary product types. First, we extend the syntax of types and the accompanying notions of
-consistency and join, which closely mirror the definitions for arrow types.
+adding binary product types. First, in \cref{fig:calculus-product-judgments}, we extend the syntax
+of types and the accompanying notions of consistency and join, which closely mirror the definitions
+for arrow types.
 %
 \[\begin{array}{rrcl}
   \TMName  & \TMV  & \Coloneqq & \cdots \mid \TPair{\TMV}{\TMV}
 \end{array}\]
 
-We additionally define an auxiliary notion of \emph{matched binary product types} in
-\cref{fig:calculus-matched-product}: the judgment $\matchedPair{\TMV}{\TMV_1}{\TMV_2}$ establishes
-that $\TMV$ may be considered the binary product type $\TPair{\TMV_1}{\TMV_2}$.
+We additionally define an auxiliary notion of \emph{matched binary product types}: the judgment
+$\matchedPair{\TMV}{\TMV_1}{\TMV_2}$ establishes that $\TMV$ may be considered the binary product
+type $\TPair{\TMV_1}{\TMV_2}$.
 
 \begin{figure}[htbp]
   \raggedright
+  \judgbox{\ensuremath{\consistent{\TMV_1}{\TMV_2}}} $\TMV_1$ is consistent with $\TMV_2$
+  %
+  \begin{mathpar}
+    \judgment{
+      \consistent{\TMV_1}{\TMV_1'} \\
+      \consistent{\TMV_2}{\TMV_2'} \\
+    }{
+      \consistent{\TPair{\TMV_1}{\TMV_2}}{\TPair{\TMV_1'}{\TMV_2'}}
+    }{TCProd} \\
+  \end{mathpar}
+
+  \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+  %
+  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
+  \[\begin{array}{rcl}
+    & \cdots & \\
+    \joinsTo{(\TPair{\TMV_1}{\TMV_2})}{(\TPair{\TMV_1'}{\TMV_2'})}{\TPair{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+  \end{array}\]
+
   \judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$
   %
   \begin{mathpar}
@@ -856,11 +876,14 @@ that $\TMV$ may be considered the binary product type $\TPair{\TMV_1}{\TMV_2}$.
     }{TMPProd}
   \end{mathpar}
   %
-  \caption{Matched product type.}
-  \label{fig:calculus-matched-product}
+  \caption{Binary product consistency, join, and matched product type.}
+  \label{fig:calculus-product-judgments}
 \end{figure}
 
-The unmarked language is extended with a pair constructor and projection operators.
+The unmarked language is extended with a pair constructor and projection operators. In addition to
+the synthesis rules, we have explicit analysis rules. If an expected type is known for a pair
+expression, the responsibility for type errors is given to the components. Likewise, we shift blame
+to the projected expression when analysing projections.
 %
 \[\begin{array}{rrcl}
   \EMName  & \EMV  & \Coloneqq & \cdots
@@ -889,15 +912,186 @@ The unmarked language is extended with a pair constructor and projection operato
   }{
     \ctxSynType{\ctx}{\EProjR{\EMV}}{\TMV_2}
   }{USProjR} \\
+
+  \judgment{
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaType{\ctx}{\EMV_1}{\TMV_1} \\
+    \ctxAnaType{\ctx}{\EMV_2}{\TMV_2}
+  }{
+    \ctxAnaType{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TMV}
+  }{UAPair}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\EMV}{\TPair{\TMV}{\TUnknown}}
+  }{
+    \ctxAnaType{\ctx}{\EProjL{\EMV}}{\TMV}
+  }{UAProjL}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\EMV}{\TPair{\TUnknown}{\TMV}}
+  }{
+    \ctxAnaType{\ctx}{\EProjR{\EMV}}{\TMV}
+  }{UAProjR}
 \end{mathpar}
 %
 Similarly to application, \textsc{USProjL} and \textsc{USProjR} employ the matched binary product
-type; a projection $\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may be
-considered to be a pair.
+type judgment; a projection $\EProjL{\EMV}$ or $\EProjR{\EMV}$ is then well-typed if the $\EMV$ may
+be considered to be a pair.
 
-\input{figs/calculus-products-mexp}
+The marked language is extended with the same forms, and we devise the following marking rules,
+again modelling off the above unmarked typing rules:
+%
+\[\begin{array}{rrcl}
+  \ECMName & \ECMV & \Coloneqq & \cdots
+                               \mid \ECPair{\ECMV}{\ECMV}
+                               \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
+                               \mid \ECInconMatchedPair{\ECMV}
+\end{array}\]
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\\\
+    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+  }{ISPair}
 
-\input{figs/calculus-products-marking}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV_1}
+  }{ISProjL1}
+
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV_2}
+  }{ISProjR1} \\
+
+  \judgment{
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
+  }{IAPair1}
+
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TPair{\TMV}{\TUnknown}}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV}
+  }{IAProjL}
+
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TPair{\TMV}{\TUnknown}}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV}
+  }{IAProjR}
+\end{mathpar}
+%
+accompanied by corresponding typing rules for marked expressions:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV_1} \\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+  }{MSPair}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECMV}}{\TMV_1}
+  }{MSProjL1}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECMV}}{\TMV_2}
+  }{MSProjR1}
+
+  \judgment{
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV_1} \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxAnaType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
+  }{MAPair1}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TMV}{\TUnknown}}
+  }{
+    \ctxAnaType{\ctx}{\ECProjL{\ECMV}}{\TMV}
+  }{MAProjL}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TUnknown}{\TMV}}
+  }{
+    \ctxAnaType{\ctx}{\ECProjR{\ECMV}}{\TMV}
+  }{MAProjR}
+\end{mathpar}
+
+However, as with lambda abstractions and application seen previously, two sets of rules are further
+necessary to satisfy totality. Firstly, the premise in \textsc{UAPair} that $\TMV$ is a matched
+binary product may fail, requiring marking and typing rules to handle that case:
+%
+\begin{mathpar}
+  \judgment{
+    \notMatchedPair{\TMV} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TUnknown} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECInconType{\ECPair{\ECMV_1}{\ECMV_2}}}{\TMV}
+  }{IAPair2}
+
+  \judgment{
+    \notMatchedPair{\TMV} \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TUnknown} \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECPair{\ECMV_1}{\ECMV_2}}}{\TMV}
+  }{MAPair2}
+\end{mathpar}
+
+The other kind of error may arise when the subject of a projection does not synthesize a matched
+product type. As in our development of marking for applications, we may place the subject in an
+inconsistent type mark, or we may treat it as a special ``constrained synthesis'' mode, utilising a
+new error mark $\ECInconMatchedPair{\ECMV}$. The latter approach leads to the following rules:
+%
+\begin{mathpar}
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECInconMatchedPair{\ECMV}}}{\TMV_1}
+  }{ISProjL2}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECInconMatchedPair{\ECMV}}}{\TUnknown}
+  }{MSProjL2} \\
+
+  \judgment{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECInconMatchedPair{\ECMV}}}{\TMV_2}
+  }{ISProjR2}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECInconMatchedPair{\ECMV}}}{\TUnknown}
+  }{MSProjR2}
+\end{mathpar}
 
 \input{let}
 
