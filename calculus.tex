@@ -21,35 +21,38 @@ this case, however, the expectation is not a singular type, but any member of a 
 types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error of inconsistent
 branches: the branches of the if-else expression are of different types. Hazel opts to highlight the
 entire expression in such a situation, while other tools may choose one branch to be ``correct'' and
-indicate a type mismatch error on the other.
+``blame'' the type mismatch error on the other.
 
 % TODO elaborate on this part
 
 Unfortunately, formal typing semantics usually only give meaning to well-typed programs, leaving
 such ill-typed ones meaningless. This is insufficient for editor services and language servers,
 which must provide users feedback on where and why a program is ill-typed. Moreover, they must
-continue providing editor services even when an error is encountered. Indeed, similarly to
-error-recovering parsers, real-world type checkers must recover from type errors. Traditionally,
-this has been performed in an \emph{ad hoc} manner [citations?], with different languages and tools
-adopting varying approaches in the localization, reportage, and recovery from errors. 
+continue providing semantic services even when an error is encountered. Indeed, similarly to
+error-recovering parsers, real-world type checkers must robustly recover from type errors.
+Traditionally, this has been performed in an \emph{ad hoc} manner [citations?], with different
+languages and tools adopting varying approaches in the localization, reportage, and recovery of
+errors.
 
 % TODO examples of this ad hoc stuff
 
-The key contribution of this section is a formal calculus, called the \emph{marking calculus}, for
-type error localization in bidirectional systems, a judgmental framework that provides a unified
-theory for the design of typing semantics that supports ill-typed programs.
-\Cref{sec:calculus-calculus} describes its form and metatheory by example on a minimal gradually
-typed lambda calculus. All rules and theorems may be found in the supplementary appendix, alongside
-a complete mechanization in the Agda proof assistant, which is discussed in
-\cref{sec:calculus-agda}. Finally, in \cref{sec:calculus-poly}, we consider how the system might be
-extended to more complex typing features, such as System F-style polymorphism.
+The key contribution of this section is the \emph{marking calculus}, a formal calculus for type
+error localization in bidirectional systems. Namely, the calculus provides a judgmental framework
+with a unified theory for the design of typing semantics that support ill-typed programs.
+\Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
+lambda calculus, extending it with binary product types in \cref{sec:calculus-products}. All rules
+and theorems may be found in the supplementary appendix, alongside a complete mechanization in the
+Agda proof assistant, which is discussed briefly in \cref{sec:calculus-agda}. With products, we then
+consider how error localization is complicated by patterned let expressions in
+\cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how the system might be extended
+to more complex typing features, such as System F-style polymorphism.
 
 % TODO not really sure when to start talking about bidirectional typing
 
-\emph{Bidirectional typing} combines type checking, which determines if a program satisfies a given
-type, and type synthesis, which generates a type from the program. This gives a simple algorithmic
-system in which type information is recursively propagated through terms and allows for local type
-inference.
+% \emph{Bidirectional typing} combines type checking, which determines if a program satisfies a given
+% type, and type synthesis, which generates a type from the program. This gives a simple algorithmic
+% system in which type information is recursively propagated through terms and allows for local type
+% inference.
 
 % TODO talk about idea that bidirectional typing makes error localization easy? i.e. why choose
 % bidirectional?
@@ -67,21 +70,24 @@ boolean expressions. The number literal corresponding to the mathematical number
 $\ENumMV$, and there is a single addition operation on numeric expressions. $\ETrue$ and $\EFalse$
 correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
 $\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives a conditional structure. In addition to these forms,
-$\TUnknown$ is the unknown type from gradual type theory.
+$\TUnknown$ is the unknown type from gradual type theory. $\EEHole$ denotes an \emph{expression
+hole}, which are used to model syntactically incomplete programs---but are not critical within the
+calculus.
 
-% TODO include holes
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
     \TMName  & \TMV  & \Coloneqq & \TUnknown \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \\
     \EMName  & \EMV  & \Coloneqq & x \mid \ELam{x}{\TMV}{\EMV} \mid \EAp{\EMV}{\EMV}
                        \mid           \ENumMV \mid \EPlus{\EMV}{\EMV}
-                       \mid           \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV} \\
+                       \mid           \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
+                       \mid           \EEHole \\
     \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
                        \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
-                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
+                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
+                       \mid           \EEHole \\
              &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}
   \end{array}\]
-  \caption{Syntax of the extended gradually typed lambda calculus}
+  \caption{Syntax of an extended gradually typed lambda calculus.}
   \label{fig:calculus-syntax}
 \end{figure}
 
@@ -1114,7 +1120,7 @@ those datatypes is taken. For marked expressions, we opt for implicitly typed te
 which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
 readers interested in browsing the mechanization, all rule names match those presented here.
 
-\section{Marking Calculus in Structured Editing}
+\section{The Marking Calculus in Structured Editing}
 \label{sec:calculus-structured-editing}
 
 The previous section presented a formal calculus for error localization and recovery. We now discuss
@@ -1124,6 +1130,22 @@ In particular, the calculus has been integrated into the Hazel programming envir
 programming environment with support for typed holes.
 
 \subsection{Implementation in Hazel}
+\label{sec:calculus-hazel}
 
 \subsection{Reified Hazelnut Action Semantics}
 \label{sec:calculus-hazelnut}
+
+The Hazelnut action calculus introduced by \citet{HazelnutPOPL} give a structure editing scheme that
+ensures programs are statically meaningful.
+% TODO say something more about Hazelnut, especially in relation to error holes
+
+Hazelnut, however, is unable to cope with actions that require non-local hole fixes. % TODO example of this
+Such actions remain undefined, i.e. unperformable.
+
+By applying the marking calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
+from the typing semantics. Under this new system, the action calculus is concerned only with the
+manipulation of syntax, and the marking procedure yields statically meaningful terms with error
+holes inserted at the appropriate positions. Furthermore, marking solves the problem of non-local
+hole fixes; actions may be performed anywhere (as long as they are of the correct sort), and marking
+totality ensures that they give meaningful terms.
+% TODO this is not strictly true, only for 'wrapping' actions
