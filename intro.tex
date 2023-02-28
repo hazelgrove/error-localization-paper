@@ -7,33 +7,51 @@
 % Until \emph{all} of these errors are fixed, it may be the case that \emph{none} of the changed code paths can be tested at run-time, 
 % and many helpful language services are not fully functional \cite{HazelnutSNAPL}.
 
-Contemporary programming environments provide 
-a variety of semantic services that require statically analyzing the type and binding structure of the program being edited, e.g. semantic navigation, type hints, semantic code completion, and automated refactoring. However, during the editing process,
-it is common for programs to be ill-typed. 
+Modern programming environments provide 
+a variety of semantic services that require statically analyzing the type and binding structure of the program being edited, e.g. semantic navigation, type hints, semantic code completion, and automated refactoring. 
+These semantic services are often packaged into language servers that front-end
+editors and editor extensions can interface with\todo{cites}.
 
-Language designers typically specify static type systems as a collection of rules 
-stating conditions under which an expression can be judged to be well-typed,
-i.e. completely free of type errors. 
- is well-supported 
-by these definitions. 
+The problem that animates this paper is that during program editing, 
+it is common for the program being edited to be ill-typed. These ill-typed states sometimes persist over long periods of time, e.g. a change to a type definition can cause errors to arise at all usage sites in a large program, which can take hours or days to address. Language servers often exhibit gaps in service during these periods, because in the conventional formal account of type systems, only well-typed programs have a well-defined type and binding structure. As soon as a type error occurs \emph{anywhere}, the program is formally meaningless \emph{everywhere}.
 
-When there is a type error, however, these definitions are inadequate. It is therefore left as an implementation decision (1) type error localization: how to localize and explain the type error, and (2) type error recovery: how to recover from the error to find other simultaneous errors and to continue to provision various semantic services, which would often still useful even in the presence of errors. 
 
-Consider, for example, 
 
+Developers demand that these gaps in service be minimized or eliminated, so there has been considerable practical interest in (1)~\textbf{type error localization}: mechanisms for directing the developer to 
+the location(s) in a program that may be erroneous, and (2) \textbf{type error recovery}: 
+mechanisms that allow the language server to continue past the first localized error and provision downstream semantic services even when there in the presence of localized type errors.
+Indeed, essentially all widely-used programming systems have some support for type error 
+localization, e.g. via compiler error messages or the language server.
+Many also attempt recovery of certain services in certain situations. 
+However, the design of these mechanisms has evolved in some part as folklore, because type system definitions have remained silent about how to reason in the presence of errors. Different type checkers for the same language can and do attempt to localize, report, and recover from these errors in different ways, with little in the way of unifying theory. 
+
+Consider, for example, the following program in a typed functional language with only local type inference, for simplicity, 
+\begin{lstlisting}[numbers=none]
 let x = 
   if f(y) then 1 else true
 in 
   x + 1
+\end{lstlisting}
+There are several certain errors here: \li{f} and \li{y} are unbound, and the two branches of the conditional expression have inconsistent types. There may or may not be an error in the use of \li{x} on Line 4, depending on which branch type is intended.
+
+A type checker with no support for error localization or recovery would simply report that this program is ill-typed, and indeed this behavior is enough to satisfy the language specification, if given in the conventional style (e.g. following the simply typed lambda calculus and its derivatives). A more helpful and common approach is to localize the error that causes type checking to initially fail, e.g. here the system might report that the variable \li{f} is unbound and highlight its location in the error message or with an editor decoration (i.e. without attempting recovery).
+This is the approach taken in many production type checkers, e.g. XXX.\todo{examples}
+
+A first attempt at error recovery might continue past this first error to also report that \li{y} is unbound, then ignore the fact that guard of the conditional cannot therefore be confirmed to be a boolean expression and nevertheless continue into its branches. Here, the system might observe that the two branches have inconsistent types, \li{int} and \li{bool}. How should this error be localized? There are many possible approaches here.
+One approach would be to assume that the first branch is correct, so the error can be localized to the second branch. This is \emph{ad hoc}, and the system might just as well assume the second branch is correct, localizing the error to the first branch.
+A third approach might be to report the inconsistency between the two types as an error localized to the conditional expression itself. 
+
+Which choice is made affects how error recovery will proceed into the body of the let expression, \li{x + 1}. In particular, if the system assumes that the conditional should have \li{int} type, then \li{x : int} and no error needs to be reported here. 
+If the system assumes it should have \li{bool} type, then an error does need to be reported. 
+If the system reports only the inconsistency between the two branches, then it is not clear what type \li{x} should have, and so it becomes difficult to continue to recover.
 
 
 (compare Elm/OCaml/Haskell and Hazel directly?)
 
-Different language servers or typecheckers for the same language can and do attempt to localize, report, and recover from these errors in different ways, with little in the way of unifying theory. 
+
 
 For these reasons, accurate type error localization and robust type error recovery have been a topic of considerable practical interest. 
-Indeed, essentially all widely-used programming environments (often via an underlying language server) have some support for type error 
-localization and many also attempt recovery of certain services in certain situations. However, the design of these systems has evolved in some part as folklore, as type system definitions have remained silent.
+
 
 
 One reason for this is 
