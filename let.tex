@@ -1,22 +1,143 @@
 \subsection{Let with Composite Patterns}
 \label{sec:calculus-let}
 
+%TODO(andrew): justification, examples
+
+We augment our type system with a new variant on the unknown type which can trigger a swtich from analysis to synthesis. The new type $\TUnknownSwitch$ behaves idenitically to $\TUnknown$ with respect to type consistency, the marched arrow and product judgements, and the join metafunction:
+%
+\[\begin{array}{rrcl}
+  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch
+\end{array}\]
+
+The unmarked language is extended by let expressions with composite patterns:
+%
+\[\begin{array}{rrcl}
+  \EMName  & \EMV  & \Coloneqq & \cdots
+                               \mid \ELet{\PMV}{\EMV}{\EMV}
+\end{array}\]
+\[\begin{array}{rrcl}
+  \PMName  & \PMV  & \Coloneqq x 
+                               \mid \_
+                               \mid (p_1,p_2)
+                               \mid p : \TMV
+                               
+\end{array}\]
+%
+Let expression have the following semantics:
+\begin{mathpar}
+    \judgment{
+     \ctxSynPat{\ctx}{\PMV}{\TMV_p}
+     \\
+     \ctxAnaType{\ctx}{\EMV_{def}}{\TMV_p}
+     \\
+     \ctxSynType{\ctx}{\EMV_{def}}{\TMV_{def}}
+     \\\\
+     \ctxAnaPat{\ctx}{\PMV}{\TMV_{def}}{\ctx_{b}}
+     \\
+     \ctxSynType{\ctx_{b}}{\EMV_{b}}{\TMV}
+   }{
+     \ctxSynType{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\TMV}
+   }{USLet}
+   \\
+   \judgment{
+     \ctxSynPat{\ctx}{\PMV}{\TMV_p}
+     \\
+     \ctxAnaType{\ctx}{\EMV_{def}}{\TMV_p}
+     \\
+     \ctxSynType{\ctx}{\EMV_{def}}{\TMV_{def}}
+     \\\\
+     \ctxAnaPat{\ctx}{\PMV}{\TMV_{def}}{\ctx_{b}}
+     \\
+     \ctxAnaType{\ctx_{b}}{\EMV_{b}}{\TMV}
+   }{
+     \ctxAnaType{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\TMV}
+   }{UALet}
+\end{mathpar}
+Additionally, we add a rule governing the switch from analysis to synthesis, triggered by analysis against the new SynSwitch type:
+\begin{mathpar}
+    \judgment{
+     \ctxSynType{\ctx}{\EMV}{_}
+   }{
+     \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
+   }{SynSwitch}
+    
+\end{mathpar}
+
+
+
 \begin{figure}[htbp]
   \raggedright
-  \judgbox{\ensuremath{\ctxSynType{\Gamma_{in}}{p}{\tau ; \Gamma_{out}}}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$
+  \judgbox{\ensuremath{\ctxSynPat{\Gamma}{\PMV}{\TMV}}} Pattern $\PMV$ synthesizes type $\TMV$
   %
   \begin{mathpar}
-    \judgment{ }{
-      \matchedPair{\TUnknown}{\TUnknown}{\TUnknown}
-    }{TMPHole}
 
-    \judgment{ }{
-      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
-    }{TMPProd}
+   \judgment{ }{\ctxSynPat{\ctx}{\_}{\TUnknownSwitch}}{USPatWild}
+   
+   \judgment{ }{\ctxSynPat{\ctx}{x}{\TUnknownSwitch}}{USPatVar}
+   
+   %\judgment{ }{\ctxSynPat{\Gamma}{\hehole{}}{\TUnknownSwitch}}{USPatHole}
+   \judgment{
+     \ctxAnaPat{\ctx}{\PMV{}}{\tau}{\_}
+   }{
+        \ctxSynPat{\ctx}{\PMV : \tau}{}{\tau}
+    }{USPatAnn}
+
+   \\\\
+   \judgment{
+     \ctxSynPat{\ctx}{\PMV_1}{\TMV_1} \\
+     \ctxSynPat{\ctx}{\PMV_2}{\TMV_2}
+   }{
+     \ctxSynPat{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+   }{USPatPair}
+
+   \judgment{
+     \ctxSynPat{\ctx}{\PMV{}}{\_}
+   }{
+        \ctxSynPat{\ctx}{\ECMarkedInconType{\PMV}{}}{\TUnknownSwitch}
+    }{USPatErr}
+
   \end{mathpar}
   %
-  \caption{Matched product type.}
-  \label{fig:calculus-matched-product}
+  \caption{Pattern Synthesis}
+  \label{fig:calculus-pattern-synthesis}
+\end{figure}
+
+\begin{figure}[htbp]
+  \raggedright
+  \judgbox{\ensuremath{\ctxAnaPat{\ctx_{in}}{\PMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against type $\TMV$ producing context $\Gamma_{out}$
+  %
+  \begin{mathpar}
+   \judgment{ }{\ctxAnaPat{\ctx}{\_}{\TMV}{\ctx}}{UAPatWild}
+   
+   \judgment{ }{\ctxAnaPat{\Gamma}{x}{\TMV}{\ctx, x:\TMV}}{UAPatVar}
+   
+   %\judgment{ }{\ctxAnaPat{\ctx}{\hehole{}}{\tau}}{UAPatHole}{\ctx}
+   \judgment{
+     \ctxAnaPat{\ctx}{\PMV{}}{\tau'}{\ctx'}
+     \\
+     \consistent{\tau}{\tau'}
+   }{
+        \ctxAnaPat{\ctx}{\PMV : \tau'}{\tau}{\ctx'}
+    }{UAPatAnn}
+
+   \\\\
+   \judgment{
+      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
+      \ctxAnaPat{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
+      \ctxAnaPat{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
+    }{
+      \ctxAnaPat{\ctx}{\ECPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
+    }{UAPatPair}
+
+   \judgment{
+     \ctxSynPat{\ctx}{\PMV{}}{\_}
+   }{
+        \ctxAnaPat{\ctx}{\ECMarkedInconType{\PMV}{}}{\tau}{\ctx}
+    }{UAPatErr}
+  \end{mathpar}
+  %
+  \caption{Pattern Analysis}
+  \label{fig:calculus-pattern-analysis}
 \end{figure}
 
 %TODO:andrew

@@ -54,8 +54,13 @@
 \newcommand{\notAnaType}[2]{\ensuremath{#1 \not\Leftarrow #2}}
 \newcommand{\ctxAnaType}[3]{\ensuremath{\withCtx{#1}{\anaType{#2}{#3}}}}
 \newcommand{\ctxNotAnaType}[3]{\ensuremath{\withCtx{#1}{\notAnaType{#2}{#3}}}}
+
+% typing patterns
 \newcommand{\ctxSynPat}[3]{\ensuremath{\withCtx{#1}{\synType{#2}{#3}}}}
-\newcommand{\ctxAnaPat}[4]{\ensuremath{\withCtx{#1}{\synType{#2}{#3 ; #4}}}}
+\newcommand{\ctxAnaPat}[4]{\ensuremath{\withCtx{#1}{\anaType{#2}{#3 ; #4}}}}
+\newcommand{\PMV}{\ensuremath{p}}
+\newcommand{\PMName}{{\normalfont\textsf{UPat}}}
+\newcommand{\TUnknownSwitch}{\ensuremath{\?^{\Rightarrow}}}
 
 % subsumable
 \newcommand{\subsumable}[1]{\ensuremath{#1 ~{\normalfont{\normalfont\textsf{subsumable}}}}}

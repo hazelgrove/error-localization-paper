@@ -111,16 +111,164 @@ HExp~~ e & ::= &
 \end{figure}
 
 \subsection{Constraint Generation}
-Central to any type inference system is constraint generation. This topic has been widely explored in literature and is commonly completed alongside type checking (citation needed \todo{cite tapl and expand slightly}). We approach constraint generation from a notion of enforcing our expectations of various expressions and their types as we perform synthesis and analysis. 
+\todo{this section assumes eholes have ids; edit section above to permit this}
+Central to any type inference system is constraint generation. This topic has been widely explored in literature and is commonly completed alongside type checking (citation needed \todo{cite tapl and expand slightly}). We approach constraint generation from a notion of enforcing our expectations of various expressions and their types as we perform synthesis and analysis. Constraints can be accumulated across uses of bidirectional typing judgements after expression marking to generate a final set of constraints. To facilitate this, we extend our previous judgement forms for the synthesis and analysis of matched expressions as follows:
+$$\ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C$$ 
+$$\ctxAnaType{\ctx}{\ECMV}{\TMV} ~|~ C$$
+Here, the set of constraints the judgement occurs under is captured in $C$.
 
-At the core of expectations in typechecking expressions is analysis: when we expect something should have some type, we commonly analyze it against that type. For example, we analyze the scrutinees of if expressions against $\tbool$ and analyze the operands of addition against $\tnum$ as we expect they will have these types. Consequently, it is crucial that our analysis rules encapsulate these expectations in our constraints. For example, consider the following expression
+In some sense, the set of constraints $C$ represents all expected consistencies in a program. One key mechanism by which we facilitate our accumulation of expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this let us explore subsumption. In situations where we expect a subsumable marked expression to analyze against a type $\tau$, the type $\tau'$ it synthesizes to is expected to be consistent with the input. This is checked with a premise assessing consistency. In order to more concretely track this as a constraint, we extend the rule MASubsume \todo{fix styling on rule names so its consistent with Eric's} as follows:
 
-For instance, consider the if expression $\EIf{\ECTrue}{\ehole^1}{\underlinenum{2}}$. When synthesizing its type, we expect that the scrutinee be of type $\tbool$ and thus analyze it against $\tbool$. We also expect that both branches of the if expression synthesize the consistent types and return their lower bound. 
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} ~|~ C \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECMV}{\TMV} ~|~ C \cup \{ \TMV \approx \TMV' \}
+  }{MASubsume-C}
+\end{mathpar}
 
-when writing an if expression, we expect that both branches have the same or consistent types.
+Here, we concretize out expectation of $\tau ~ \tau'$ by generating a new constraint: $\tau \approx \tau'$. Additionally, we accumulate constraints generated in each premise in our conclusion
 
-This leaves a few other cases (discuss matched arrow)
+However, one key question is how we manage constraints whenever marked expressions are wrapped in holes. Should expectations of types pass through the hole membrane and render expressions inside unsolved? On a similar tack, should a program inside some hole membrane seep out and affect the rest of the program? We assert that the answer to both of these questions is no. Nonempty holes act as quarantines that allow the programmer to reason as if expressions inside them are unaffected by and do not affect the program around them.
 
+With this guiding principle in hand, let us approach constraint generation for subsumption when the argument of analysis $\tau$ is different from the result of synthesis $\tau'$ by extending MAInconsistentTypes:
+
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} ~|~ C  \\
+    \inconsistent{\TMV}{\TMV'} \\\\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECMV}^n}{\TMV} ~|~ C \cup \{ \TMV \approx \tehole^n \}
+  }{MAInconsistentTypes-C}
+\end{mathpar}
+
+Here we accumulate constraints from our premises just as before. However, instead of expecting that the type of \ECMV~ be the consistent with the type $\tau$ when this is clearly impossible, we prevent the external conflict from $\tau$ reaching beyond our type hole. Rather we enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
+
+Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that branches have consistent types, and assess this implicitly by attempting to compute their lower bound. This leads to the following constraint generating rule for if expression synthesis:
+
+\begin{mathpar}
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1  \\\\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_2 \\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} ~|~ C_3
+  }{
+    \ctxSynType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}
+  }{MSIf-C}
+\end{mathpar}
+
+Here, we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$. 
+
+Our logic for when the branches of an if expression have no lower bound is somewhat trickier, but follows the same logic as before. Inconsistency among branches can be considered an error that lies within the hole surrounding our marked expression. Consequently, we can constrain $\TMV_1 \approx \TMV_2$ as before:
+
+\begin{mathpar}
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1 \\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_2 \\\\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} ~|~ C_3 \\
+    \inconsistent{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}
+  }{MSInconsistentBranches-C}
+\end{mathpar}
+
+How might we approach lambdas or the application of lambdas? While the procedure for approaching these types of is much the same as those we've discussed, before defining new rules for them we must adjust our definition of the matched arrow judgement. 
+
+When we generate a matched arrow form for a type hole, we are expecting that the original type hole be equal to the arrow type outputted by the judgement. This straightforward constraint can be represented as follows:
+
+\begin{mathpar}
+\judgment{ }{
+  \matchedArrow{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} ~|~ \{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}
+}{TMAHole-C}
+\end{mathpar}
+
+With this new definition of matched arrow in hand, we can approach lambdas and their application. When synthesizing the type of an annotated lambda expression, we don't exert any expectation on the results of synthesis. This leads to this straightforward extension of our previous synthesis rule:
+
+\begin{mathpar}
+    \judgment{
+        \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C
+    }{
+        \ctxSynType{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}} ~|~ C
+    }{MSLam-C}
+\end{mathpar}
+
+Our rule for analysis of annotated lambdas when no local errors are present is similar, but encodes one key difference. Here, we assert that the annotation \TMV be consistent with the input type of the argument to analysis:
+
+\begin{mathpar}
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} ~|~ C_1\\
+    \consistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TMV \approx \TMV_1 \}
+  }{MALam1-C}
+\end{mathpar}
+
+Our rules for the remaining two lambda analysis cases where the lambda expression is wrapped in a hole are trickier. Let us begin by assessing the case where the analyzed type has no matched arrow form. In such cases, we previously analyzed the body of the lambda against the unknown type to ensure its validity \todo{ask why we do this}. However, which unknown type are we analyzing the body against? As discussed earlier, performing analysis imparts the expectation that the type of the expression is consistent with the argument of analysis. If we were to simply analyze against the type of the hole membrane we use to surround the marked lambda, we'd impart the expectation that the inside of the lambda be consistent with the hole itself. This would subvert our goal of separating the program outside the hole with that inside! In fact, any hole we choose would impart some invalid expectation with respect to the goals we've outlined. Consequently, we introduce the anonymous type hole: this type hole is represented by the provenance $anon$ and will have its constraints ignored by the constraint solver when we later explore unification.
+
+\begin{center}
+    $\arraycolsep=4pt\begin{array}{lll}
+    HProv~~ p & ::= & 
+        ... ~\vert~ 
+        anon
+        \\
+    \end{array}$
+\end{center}
+
+Using this type hole, we can analyze the lambda's body against an unknown type without linking it spuriously to some other type hole:
+
+\begin{mathpar}
+  \judgment{
+    \notMatchedArrow{\TMV_3} \\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown^{anon}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3} ~|~ C \cup \{ \TUnknown^{n} \approx \TMV_3 \}
+  }{MALam2-C}
+\end{mathpar}
+
+Note that the conclusion of this rule adds the constraint $\{ \TUnknown^{n} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the hole's type $?^n$.
+
+The rule for analysis of annotated lambdas when the our annotation is inconsistent with the input type of our analyzed type is similarly defined:
+
+\begin{mathpar}
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} ~|~ C_1\\
+    \inconsistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{n} \approx \TMV_3 \}
+  }{MALam3-C}
+\end{mathpar}
+
+This brings us at last to synthesis for the application of lambdas. When the function position expression has a matched arrow form, our rule simply needs to accumulate the constraints of its premises:
+
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} ~|~ C_1 \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2 \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_3
+  }{
+    \ctxSynType{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2} ~|~ C_1 \cup C_2 \cup C_3
+  }{MSAp1-C}
+\end{mathpar}
+
+When the function position expression lacks a match arrow form, we wrap it in a marked expression hole and proceed as if we had called matched arrow on the hole. To facilitate this, the argument expression must be analyzed against $\TUnknown^{\rightarrow_L{n}}$ and we must return $\TUnknown^{\rightarrow_R{n}}$ as the result of synthesis. 
+
+
+\begin{mathpar}
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} ~|~ C_1 \\
+    \notMatchedArrow{\TMV} \\\\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECApNonMatchedAltAlt{\ECMV_1}{\ECMV_2}}{\TUnknown} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^n \approx \tarr{\TUnknown^{\rightarrow_L(n)}}{\TUnknown^{\rightarrow_R(n)}}\}
+  }{MSAp2'-C}
+\end{mathpar}
+
+The remaining rules are all the same as their non constraint generating counterparts, except that they accumulate constraints from each of their premises as done above. As a result, they are somewhat repetitive and are consequently left to our supplementary material in Appendix B \todo{How exactly do we put this in supplementary material and do we actually wanna do that?}.
+  
 We leverage Hazel's type system to generate constraints inductively through bidirectional propagation. Figure ~\ref{fig:ana-syn} defines a bidirectional typing system extended with type constraint sets. A \emph{type constraint set} is written as $C$. The typing context, $\Gamma$, maps a set of expression variables to their types. Rule ~\ref{rule:syn-ehole} and ~\ref{rule:syn-hole} synthesize an expression hole to hole type. Rule ~\ref{rule:ana-subsume} and ~\ref{rule:ana-lam} have type consistency in their premises, generating new constraints and merging them into constraint sets in the conclusion. Rule ~\ref{rule:syn-ap}, ~\ref{rule:ana-lam} and ~\ref{rule:ana-lamann} have \emph{matched arrow type judgements} defined in figure ~\ref{fig:match-arrow-typ}. They leave the arrow type unchanged and assign the type hole the matched arrow type $\tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}}$ where new holes are uniquely identified by matched arrow provenances generated from the original hole $\tehole^{p}$ and constraint generation links the original hole to its matched counterpart \cite{HazelnutPOPL}.
 
 % \includegraphics[width=5.5cm]{images/constraint_gen_example2.png}
@@ -149,141 +297,141 @@ Alternatively, in the example below, $x$ is not considered to have the same solu
 
 Additionally, the constraint relation $\approx$ is distinct from the consistency relation $\sim$. As an example, consider the constraint set $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$. Here, knowing that $\tehole^{1} \approx \tnum$ and $\tehole^{1} \approx \tehole^{2}$, our constraint solver would infer that $\tehole^{2} \approx \tnum$. On the other hand, given only the consistency relations $\{ \tehole^{1} \sim \tnum, ~ \tehole^{1} \sim~ \tehole^{2}\}$, it cannot be concluded that $ \tehole^{2} \sim \tnum$.
 
-\begin{figure}[h!]
-\vspace{-3px} 
-    \begin{multicols}{2}
-      \fbox{$\consexptyp{\Gamma}{e}{\tau}{C}$}~~\text{$e$ synthesizes $\tau$}\hfill
-    \begin{subequations}
-    \begin{equation}\label{rule:syn-var}
-        \inferrule[]{ }{
-            \consexptyp{\Gamma, x : \tau}{x}{\tau}{\econs}
-          }
-    \end{equation}
-    \begin{equation}\label{rule:syn-num}
-        \inferrule[]{ }{
-            \consexptyp{\Gamma}{\hnum{n}}{\tnum}{\econs}
-          }
-    \end{equation}
-    \begin{equation}\label{rule:syn-plus}
-        \inferrule[]{
-            \ana{\Gamma}{e_1}{\tnum}{C_1} \\
-            \ana{\Gamma}{e_2}{\tnum}{C_2}
-          }{
-            \consexptyp{\Gamma}{(e_1 + e_2)}{\tnum}{C_1 \cup C_2}
-          }
-    \end{equation}
-    \begin{equation}
-        \inferrule[]{
-            \ananc{\Gamma}{e_1}{\tnum}\\
-            \ananc{\Gamma}{e_2}{\tnum}
-          }{
-            \consexptypnc{\Gamma}{(e_1 + e_2)}{\tnum}
-          }
-    \end{equation}
-    \begin{equation}\label{rule:syn-asc}
-        \inferrule[]{
-            \ana{\Gamma}{e}{\tau}{C}
-          }{
-            \consexptyp{\Gamma}{(e : \tau)}{\tau}{C}
-          }
-    \end{equation}
-    \begin{equation}\label{rule:syn-ehole}
-        \inferrule[]{ }{
-            \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor^n}{\tehole^n}{\econs}
-          }
-    \end{equation}
-    \begin{equation}\label{rule:syn-hole}
-        \inferrule[]{
-            \consexptyp{\Gamma}{e}{\tau}{C}
-           }{
-             \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor^n}{\tehole^n}{C}
-           }
-    \end{equation}
-    \begin{equation}\label{rule:syn-lamann}
-        \inferrule[]{
-          \consexptyp{\Gamma, x : \tau_{in}}{e}{\tau_{out}}{C}
-        }{
-          \consexptyp{\Gamma}{\lamfunc{x:\tau_{in}}{e}}{\tarr{\tau_{in}}{\tau_{out}}}{C}
-        }
-    \end{equation}
-    \begin{equation}\label{rule:syn-ap}
-      \inferrule[]{
-          \consexptyp{\Gamma}{e_1}{\tau_1}{C_1} \\
-          \tau_1 \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_2} \\
-          \ana{\Gamma}{e_2}{\tau_{in}}{C_3}
-        }{
-          \consexptyp{\Gamma}{\hap{e_1}{e_2}}{\tau_{out}} { C_1 \cup C_2 \cup C_3}
-        }
-  \end{equation}
-    \begin{equation}\label{rule:syn-if}
-        \inferrule[]{
-            \ana{\Gamma}{e_1}{\TBool}{C_1} \\
-            \consexptyp{\Gamma}{e_2}{\tau_1}{C_2} \\
-            \consexptyp{\Gamma}{e_3}{\tau_2}{C_3}
-        }{
-            \consexptyp{\Gamma}{\EIf{e_1}{e_2}{e_3}}{\TJoin{\tau_1}{\tau_2}}{C_1 \cup C_2 \cup C_3 \cup \{\ \tau_1 \approx \tau_2 \}}
-        }
-    \end{equation}
-    \end{subequations}
-    \vspace{3px}\fbox{$\ana{\Gamma}{e}{\tau} {C}$}~~\text{$e$ analyzes against $\tau$}\hfill
-    \begin{subequations}
-    \begin{equation}\label{rule:ana-subsume}
-        \inferrule[]{
-          \consexptyp{\Gamma}{e}{\tau'}{C_1} \\
-          \tau \sim \tau'
-        }{
-          \ana{\Gamma}{e}{\tau}{C_1 \cup \{ \tau \approx \tau' \}}
-        }
-    \end{equation}
-    \begin{equation}\label{rule:ana-lam}
-        \inferrule[]{
-            \tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_1} \\
-             \ana{\Gamma, x : \tau_{in}}{e}{\tau_{out}}{C_2}
-           }{
-             \ana{\Gamma}{\lamfunc{x}{e}}{\tau}{C_1 \cup C_2}
-           }
-    \end{equation}
-    \begin{equation}\label{rule:ana-lamann}
-        \inferrule[]{
-         \tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_1} \\
-          \ana{\Gamma, x : \tau'_{in}}{e}{\tau_{out}}{C_2} \\
-          \tau_{in} \sim \tau'_{in}
-        }{
-          \ana{\Gamma}{\lamfunc{x:\tau'_{in}}{e}}{\tau}{C_1 \cup C_2 \cup \{ \tau_{in} \approx \tau'_{in} \}}
-        }
-    \end{equation}
-    \end{subequations}
-  \end{multicols}
-  \hrule
-  \caption{H-type synthesis and analysis.}
-  \label{fig:ana-syn}
-  \vspace{-10px}
-\end{figure}
+% \begin{figure}[h!]
+% \vspace{-3px} 
+%     \begin{multicols}{2}
+%       \fbox{$\consexptyp{\Gamma}{e}{\tau}{C}$}~~\text{$e$ synthesizes $\tau$}\hfill
+%     \begin{subequations}
+%     \begin{equation}\label{rule:syn-var}
+%         \inferrule[]{ }{
+%             \consexptyp{\Gamma, x : \tau}{x}{\tau}{\econs}
+%           }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-num}
+%         \inferrule[]{ }{
+%             \consexptyp{\Gamma}{\hnum{n}}{\tnum}{\econs}
+%           }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-plus}
+%         \inferrule[]{
+%             \ana{\Gamma}{e_1}{\tnum}{C_1} \\
+%             \ana{\Gamma}{e_2}{\tnum}{C_2}
+%           }{
+%             \consexptyp{\Gamma}{(e_1 + e_2)}{\tnum}{C_1 \cup C_2}
+%           }
+%     \end{equation}
+%     \begin{equation}
+%         \inferrule[]{
+%             \ananc{\Gamma}{e_1}{\tnum}\\
+%             \ananc{\Gamma}{e_2}{\tnum}
+%           }{
+%             \consexptypnc{\Gamma}{(e_1 + e_2)}{\tnum}
+%           }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-asc}
+%         \inferrule[]{
+%             \ana{\Gamma}{e}{\tau}{C}
+%           }{
+%             \consexptyp{\Gamma}{(e : \tau)}{\tau}{C}
+%           }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-ehole}
+%         \inferrule[]{ }{
+%             \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor^n}{\tehole^n}{\econs}
+%           }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-hole}
+%         \inferrule[]{
+%             \consexptyp{\Gamma}{e}{\tau}{C}
+%            }{
+%              \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor^n}{\tehole^n}{C}
+%            }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-lamann}
+%         \inferrule[]{
+%           \consexptyp{\Gamma, x : \tau_{in}}{e}{\tau_{out}}{C}
+%         }{
+%           \consexptyp{\Gamma}{\lamfunc{x:\tau_{in}}{e}}{\tarr{\tau_{in}}{\tau_{out}}}{C}
+%         }
+%     \end{equation}
+%     \begin{equation}\label{rule:syn-ap}
+%       \inferrule[]{
+%           \consexptyp{\Gamma}{e_1}{\tau_1}{C_1} \\
+%           \tau_1 \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_2} \\
+%           \ana{\Gamma}{e_2}{\tau_{in}}{C_3}
+%         }{
+%           \consexptyp{\Gamma}{\hap{e_1}{e_2}}{\tau_{out}} { C_1 \cup C_2 \cup C_3}
+%         }
+%   \end{equation}
+%     \begin{equation}\label{rule:syn-if}
+%         \inferrule[]{
+%             \ana{\Gamma}{e_1}{\TBool}{C_1} \\
+%             \consexptyp{\Gamma}{e_2}{\tau_1}{C_2} \\
+%             \consexptyp{\Gamma}{e_3}{\tau_2}{C_3}
+%         }{
+%             \consexptyp{\Gamma}{\EIf{e_1}{e_2}{e_3}}{\TJoin{\tau_1}{\tau_2}}{C_1 \cup C_2 \cup C_3 \cup \{\ \tau_1 \approx \tau_2 \}}
+%         }
+%     \end{equation}
+%     \end{subequations}
+%     \vspace{3px}\fbox{$\ana{\Gamma}{e}{\tau} {C}$}~~\text{$e$ analyzes against $\tau$}\hfill
+%     \begin{subequations}
+%     \begin{equation}\label{rule:ana-subsume}
+%         \inferrule[]{
+%           \consexptyp{\Gamma}{e}{\tau'}{C_1} \\
+%           \tau \sim \tau'
+%         }{
+%           \ana{\Gamma}{e}{\tau}{C_1 \cup \{ \tau \approx \tau' \}}
+%         }
+%     \end{equation}
+%     \begin{equation}\label{rule:ana-lam}
+%         \inferrule[]{
+%             \tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_1} \\
+%              \ana{\Gamma, x : \tau_{in}}{e}{\tau_{out}}{C_2}
+%            }{
+%              \ana{\Gamma}{\lamfunc{x}{e}}{\tau}{C_1 \cup C_2}
+%            }
+%     \end{equation}
+%     \begin{equation}\label{rule:ana-lamann}
+%         \inferrule[]{
+%          \tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C_1} \\
+%           \ana{\Gamma, x : \tau'_{in}}{e}{\tau_{out}}{C_2} \\
+%           \tau_{in} \sim \tau'_{in}
+%         }{
+%           \ana{\Gamma}{\lamfunc{x:\tau'_{in}}{e}}{\tau}{C_1 \cup C_2 \cup \{ \tau_{in} \approx \tau'_{in} \}}
+%         }
+%     \end{equation}
+%     \end{subequations}
+%   \end{multicols}
+%   \hrule
+%   \caption{H-type synthesis and analysis.}
+%   \label{fig:ana-syn}
+%   \vspace{-10px}
+% \end{figure}
 
-\begin{figure}[h!]
-    \fbox{$\tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C}$}~~\text{$\tau$ has matching arrow type $\tarr{\tau_{in}}{\tau_{out}}$}\hfill
-    \begin{subequations}\label{eqns:matcharrow}
-      \begin{minipage}{0.43\linewidth}
-        \begin{equation}
-          \inferrule[]{ }{
-            \tarr{\tau_{in}}{\tau_{out}} \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{\econs}
-          }
-        \end{equation}
-        \end{minipage}
-        \begin{minipage}{0.55\linewidth}
-        \begin{equation}
-          \inferrule[]{ }{
-             \tehole^p \typearrow \tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}} \addcons{\{ \tehole^p \approx \tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}} \} }
-           }
-        \end{equation}
-        \end{minipage}
+% \begin{figure}[h!]
+%     \fbox{$\tau \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{C}$}~~\text{$\tau$ has matching arrow type $\tarr{\tau_{in}}{\tau_{out}}$}\hfill
+%     \begin{subequations}\label{eqns:matcharrow}
+%       \begin{minipage}{0.43\linewidth}
+%         \begin{equation}
+%           \inferrule[]{ }{
+%             \tarr{\tau_{in}}{\tau_{out}} \typearrow \tarr{\tau_{in}}{\tau_{out}} \addcons{\econs}
+%           }
+%         \end{equation}
+%         \end{minipage}
+%         \begin{minipage}{0.55\linewidth}
+%         \begin{equation}
+%           \inferrule[]{ }{
+%              \tehole^p \typearrow \tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}} \addcons{\{ \tehole^p \approx \tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}} \} }
+%            }
+%         \end{equation}
+%         \end{minipage}
 
-    \end{subequations}
-    \hrule
-    \caption{Matched arrow types.}
-    \label{fig:match-arrow-typ} 
-    \vspace{-2px} 
-  \end{figure}
+%     \end{subequations}
+%     \hrule
+%     \caption{Matched arrow types.}
+%     \label{fig:match-arrow-typ} 
+%     \vspace{-2px} 
+%   \end{figure}
 
 %\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. The system postpones the remaining type checking to runtime. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
 \par
