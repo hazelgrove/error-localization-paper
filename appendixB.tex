@@ -1,0 +1,161 @@
+\newpage
+\section{Appendix B: Constraint Generating Rules}
+Below is a series of constraint generating bidirectional typing judgements defined for the following syntax of the marked lambda calculus.
+
+\[\begin{array}{rrcl}
+    \Prov & \Provp & \Coloneqq & anon \mid n \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_{L}(p) \mid \times_{R}(p) \\
+    \TMName  & \TMV  & \Coloneqq & \TUnknown^p \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \tau_1 \times \tau_2 \\
+    \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
+                       \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
+                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
+             &       & \mid         & \ECPair{\ECMV}{\ECMV}
+                               \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV} \mid \ECUnbound{x}^n \mid \ECInconType{\ECMV}^n \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^n \mid \ECInconMatchedPair{\ECMV} \mid \EEHole^n
+                               
+  \end{array}\]
+
+  
+\subsection{Matched Judgements}
+\begin{mathpar}
+    \raggedright
+  \judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$ with constraints $C$
+  %
+  \begin{mathpar}
+    \judgment{ }{
+      \matchedPair{\TUnknown^p}{\TUnknown}{\TUnknown} ~|~ \{ \TUnknown^p \approx \TPair{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}
+    }{TMPHole-C}
+
+    \judgment{ }{
+      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2} ~|~ \{\}
+    }{TMPProd-C}
+  \end{mathpar}
+\end{mathpar}
+
+\subsection{Constraint Generating Bidirectional Typing judgements}
+\begin{mathpar}
+    \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV} ~|~ C_3
+  }{
+    \ctxAnaType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV} ~|~ C_1 \cup C_2 \cup C_3
+  }{MAIf}\\
+  
+    \judgment{
+        \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C
+    }{
+        \ctxSynType{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}} ~|~ C
+    }{MSLam-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} ~|~ C_1 \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_3
+  }{
+    \ctxSynType{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2} ~|~ C_1 \cup C_2 \cup C_3
+  }{MSAp1-C} \\
+  
+  \judgment{
+    \inCtx{\ctx}{x}{\TMV}
+  }{
+    \ctxSynType{\ctx}{x}{\TMV} ~|~ \{\}
+  }{MSVar-C}
+  
+  \judgment{
+    \notInCtx{\ctx}{x}
+  }{
+    \ctxSynType{\ctx}{\ECUnbound{x}^n}{\TUnknown^n} ~|~ \{\}
+  }{MSUnbound-C}\\
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECTrue}{\TBool} ~|~ \{\}
+  }{MSTrue-C}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECFalse}{\TBool} ~|~ \{\}
+  }{MSFalse-C} \\
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECNumMV}{\TNum} ~|~ \{\}
+  }{MSNum-C}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\EEHole^n}{\TUnknown^n} ~|~ \{\}
+  }{MSEHole-C}\\
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TNum} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TNum} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum} ~|~ C_1 \cup C_2
+  }{MSPlus-C}
+
+    \judgment{ }{
+      \matchedArrow{\TArrow{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2} ~|~ \{\}
+    }{TMAArr-C}\\
+
+    The rules for constraint generation on pairs and projections that are not wrapped in error holes proceed with a logic quite similar to that employed in section 4.4, where we generally simply accumulate constraints:
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV_1} ~|~ C_1\\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TPair{\TMV_1}{\TMV_2}} ~|~ C_1 \cup C_2
+  }{MSPair-C} \\
+
+  \judgment{
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV_1} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_2} ~|~ C_3
+  }{
+    \ctxAnaType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV} ~|~ C_1 \cup C_2 \cup C_3
+  }{MAPair1-C} \\
+
+    
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C_1 \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECMV}}{\TMV_1} ~|~ C_1 \cup C_2
+  }{MSProjL1-C}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TMV}{\TUnknown^{anon}}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECProjL{\ECMV}}{\TMV} ~|~ C
+  }{MAProjL-C}\\
+
+   \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C_1 \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECMV}}{\TMV_2} ~|~ C_1 \cup C_2
+  }{MSProjR1-C}
+
+    \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TUnknown^{anon}}{\TMV}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECProjR{\ECMV}}{\TMV} ~|~ C
+  }{MAProjR-C}
+  
+ \judgment{
+    \notMatchedPair{\TMV} \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TUnknown^{anon}} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown^{anon}} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECInconType{\ECPair{\ECMV_1}{\ECMV_2}}^n}{\TMV} ~|~ C_1 \cup C_2 \cup \{\TUnknown^{n} \approx \tau\}
+  }{MAPair2-C} \\
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECInconMatchedPair{\ECMV}}^n}{\TUnknown^{\times_{L}(n)}} ~|~ C \cup \{ \TUnknown^n \approx \TPair{\TUnknown^{\times_{L}(n)}}{\TUnknown^{\times_{R}(n)}} \}
+  }{MSProjL2-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECInconMatchedPair{\ECMV}^n}}{\TUnknown^{\times_{R}(n)}} ~|~ C \cup \{ \TUnknown^n \approx \TPair{\TUnknown^{\times_{L}(n)}}{\TUnknown^{\times_{R}(n)}} \}
+  }{MSProjR2-C}
+\end{mathpar}

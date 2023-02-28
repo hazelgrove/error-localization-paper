@@ -1,0 +1,42 @@
+\newpage
+\section{Appendix C: An extended syntax of PossibleTypeSets}
+
+\begin{figure}[h!]
+\centering
+\hrule
+$\arraycolsep=4pt\begin{array}{lll}
+BinaryOperator~~ \square & ::=~~~~~
+\rightarrow  ~\vert~ 
+\times
+\\
+PotentialTypeSet~~ s & ::=
+single(t) ~\vert~
+cons(t, s)
+\\
+PotentialType~~ t & ::= 
+  \tnum ~\vert~
+  \tbool ~\vert~
+  \TVar ~\vert~
+  \tehole^p ~\vert~
+  s ~\square~ s
+  \\
+\end{array}$
+\label{fig:syntax_possible_type_sets}
+\caption{Extended syntax of PotentialTypeSets and PotentialTypes}
+\vspace{5px}
+\hrule
+\[\begin{array}{rcl}
+    single(s_1 ~\square_{\alpha}~ s_2) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & single((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)) \\
+    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+    cons(s_1 ~\square_{\alpha}~ s_2, s) ~\amalg~ single(s_3 ~\square_{\alpha}~ s_4) & = & cons((s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4), s) \\
+    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+\end{array}\] 
+\caption{Extended rules for merging PotentialTypeSets}
+\vspace{5px} 
+\hrule
+\label{fig:extended_merging_possible_type_sets}
+\vspace{-5px}
+\end{figure}
+
+Here, we take a more general approach to representing binary types. Namely, a \emph{PotentialType} may be the combination of two \emph{PotentialType}s through any \emph{BinaryOperator} $\square$. The rules for extension follow the same logic as before, where we enforce that extension of a \emph{PotentialTypeSet} containing $s_1 ~\square_{\alpha}~ s_2$ with $s_3 ~\square_{\alpha}~ s_4$ simply merges the left and right \emph{PotentialTypeSet}s, thus yielding $(s_1 ~\amalg~ s_3) ~\square_{\alpha}~ (s_2 ~\amalg~ s_4)$. Additionally, we choose to represent type variables as a ground type, thus enforcing that type variables are inconsistent with other ground types and consistent with type holes and each other. 
