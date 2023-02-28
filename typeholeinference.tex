@@ -38,29 +38,29 @@ Take the following \Hazel programs extended with type hole inference as examples
   \begin{tabular}[b]{cc}
     \begin{tabular}[b]{c}
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/haz3l-static-error}
-        \caption{static error localized to expression}
-        \label{fig:static_error}
+        \includegraphics[width=5.5cm]{images/haz3l-ghost}
+        \includegraphics[width=5.5cm]{images/haz3l-ghost-inferred-type.png}
+        \caption{constraint solving success}
+        \label{fig:inference_success_ghost}
       \end{subfigure}\\
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/haz3l-red-grout}
-        \includegraphics[width=5.5cm]{images/haz3l-red-grout-type-set.png}
-          \caption{inference error localized to type hole}
-          \label{fig:inference_error}
-          \end{subfigure}
+              \includegraphics[width=5.5cm]{images/haz3l-accepted-ghost.png}
+            \caption{user accepts suggested type annotation}
+    		\label{fig:inference_success_accept_suggestion}
+      \end{subfigure}
     \end{tabular}
     &
      \begin{tabular}[b]{c}
     \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/haz3l-ghost}
-        \includegraphics[width=5.5cm]{images/haz3l-ghost-inferred-type.png}
-        \caption{constraint solving success and suggestion}
-        \label{fig:inference_success_ghost}
+        \includegraphics[width=5.5cm]{images/haz3l-static-error}
+        \caption{user fills expression hole with true}
+        \label{fig:static_error}
     \end{subfigure}\\
       \begin{subfigure}[b]{0.4\columnwidth}
-        \includegraphics[width=5.5cm]{images/haz3l-accepted-ghost.png}
-        \caption{user accepts suggested type annotation}
-		\label{fig:inference_success_accept_suggestion}
+            \includegraphics[width=5.5cm]{images/haz3l-red-grout}
+            \includegraphics[width=5.5cm]{images/haz3l-red-grout-type-set.png}
+            \caption{user deletes type annotation}
+            \label{fig:inference_error}
       \end{subfigure}
     \end{tabular}
   \end{tabular}
@@ -78,7 +78,7 @@ Figure ~\ref{fig:inference_success_ghost} is an example succeeding in both stati
 \subsection{Type System}
 
 \label{sec:typinf}
-Figure ~\ref{fig:syntax_fig} defines the syntax of H-types and H-expressions. We start from the definition given in \citet{HazelnutPOPL} except two modifications. First, we add an annotated lambda. Second, we attach a unique \emph{type hole provenance}, drawn as a superscript lower case letter, to each type hole, such as $\ehole^p$. Type holes are unknown type variables, and must be differentiated from one another during constraint generation and constraint solving. There are two types of expression holes: empty holes, $\ehole$, standing for missing parts of an incomplete program, and non-empty holes, $\notehole{e}$, operating as membranes around static and dynamic type inconsistencies \cite{HazelLive}. \par
+Figure ~\ref{fig:syntax_fig} defines the syntax of H-types and H-expressions. We start from the definition given in \citet{HazelnutPOPL} except two modifications. First, we add an annotated lambda. Second, we attach a unique \emph{type hole provenance}, drawn as a superscript lower case letter, to each type hole, such as $\tehole^p$. Type holes are unknown type variables, and must be differentiated from one another during constraint generation and constraint solving. There are two types of expression holes: empty holes, $\ehole^n$, standing for missing parts of an incomplete program, and non-empty holes, $\notehole{e}^n$, operating as membranes around static and dynamic type inconsistencies \cite{HazelLive}. Both types of expression holes are uniquely identified by an integer id $n$. \par
 \begin{figure}[h!]
 \vspace{-3px} 
 $\arraycolsep=4pt\begin{array}{lll}
@@ -91,7 +91,7 @@ HTyp~~ \tau & ::= &
   \tnum ~\vert~
   \tbool ~\vert~
   \tarr{\tau}{\tau} ~\vert~
-  \ehole^p
+  \tehole^p
   \\
 HExp~~ e & ::= &
   x ~\vert~
@@ -101,7 +101,7 @@ HExp~~ e & ::= &
   \underlinenum{n} ~\vert~
   (e+e) ~\vert~
   e: \tau ~\vert~
-  \ehole  ~\vert~
+  \ehole^{n}  ~\vert~
   \notehole{e} 
 \end{array}$
 \hrule
@@ -111,7 +111,17 @@ HExp~~ e & ::= &
 \end{figure}
 
 \subsection{Constraint Generation}
-We leverage Hazel's type system to generate constraints inductively through bidirectional propagation. Figure ~\ref{fig:ana-syn} defines a bidirectional typing system extended with type constraint sets. A \emph{type constraint set} is written as $C$. The typing context, $\Gamma$, maps a set of expression variables to their types. Rule ~\ref{rule:syn-ehole} and ~\ref{rule:syn-hole} synthesize an expression hole to hole type, with premise, $(n ~ \text{fresh})$, indicating generation of a new, unique \emph{provenance}. Rule ~\ref{rule:ana-subsume} and ~\ref{rule:ana-lam} have type consistency in their premises, generating new constraints and merging them into constraint sets in the conclusion. Rule ~\ref{rule:syn-ap}, ~\ref{rule:ana-lam} and ~\ref{rule:ana-lamann} have \emph{matched arrow type judgements} defined in figure ~\ref{fig:match-arrow-typ}. They leave the arrow type unchanged and assign the type hole the matched arrow type $\tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}}$ where new holes are uniquely identified by matched arrow provenances generated from the original hole $\tehole^{p}$ and constraint generation links the original hole to its matched counterpart \cite{HazelnutPOPL}.
+Central to any type inference system is constraint generation. This topic has been widely explored in literature and is commonly completed alongside type checking (citation needed \todo{cite tapl and expand slightly}). We approach constraint generation from a notion of enforcing our expectations of various expressions and their types as we perform synthesis and analysis. 
+
+At the core of expectations in typechecking expressions is analysis: when we expect something should have some type, we commonly analyze it against that type. For example, we analyze the scrutinees of if expressions against $\tbool$ and analyze the operands of addition against $\tnum$ as we expect they will have these types. Consequently, it is crucial that our analysis rules encapsulate these expectations in our constraints. For example, consider the following expression
+
+For instance, consider the if expression $\EIf{\ECTrue}{\ehole^1}{\underlinenum{2}}$. When synthesizing its type, we expect that the scrutinee be of type $\tbool$ and thus analyze it against $\tbool$. We also expect that both branches of the if expression synthesize the consistent types and return their lower bound. 
+
+when writing an if expression, we expect that both branches have the same or consistent types.
+
+This leaves a few other cases (discuss matched arrow)
+
+We leverage Hazel's type system to generate constraints inductively through bidirectional propagation. Figure ~\ref{fig:ana-syn} defines a bidirectional typing system extended with type constraint sets. A \emph{type constraint set} is written as $C$. The typing context, $\Gamma$, maps a set of expression variables to their types. Rule ~\ref{rule:syn-ehole} and ~\ref{rule:syn-hole} synthesize an expression hole to hole type. Rule ~\ref{rule:ana-subsume} and ~\ref{rule:ana-lam} have type consistency in their premises, generating new constraints and merging them into constraint sets in the conclusion. Rule ~\ref{rule:syn-ap}, ~\ref{rule:ana-lam} and ~\ref{rule:ana-lamann} have \emph{matched arrow type judgements} defined in figure ~\ref{fig:match-arrow-typ}. They leave the arrow type unchanged and assign the type hole the matched arrow type $\tarr{\tehole^{\rightarrow_{L}(p)}}{\tehole^{\rightarrow_{R}(p)}}$ where new holes are uniquely identified by matched arrow provenances generated from the original hole $\tehole^{p}$ and constraint generation links the original hole to its matched counterpart \cite{HazelnutPOPL}.
 
 % \includegraphics[width=5.5cm]{images/constraint_gen_example2.png}
 
@@ -178,16 +188,15 @@ Additionally, the constraint relation $\approx$ is distinct from the consistency
           }
     \end{equation}
     \begin{equation}\label{rule:syn-ehole}
-        \inferrule[]{(n~\text{fresh}) }{
-            \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{\econs}
+        \inferrule[]{ }{
+            \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor^n}{\tehole^n}{\econs}
           }
     \end{equation}
     \begin{equation}\label{rule:syn-hole}
         \inferrule[]{
-            (n~\text{fresh}) \\
             \consexptyp{\Gamma}{e}{\tau}{C}
            }{
-             \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{C}
+             \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor^n}{\tehole^n}{C}
            }
     \end{equation}
     \begin{equation}\label{rule:syn-lamann}
@@ -278,7 +287,7 @@ Additionally, the constraint relation $\approx$ is distinct from the consistency
 
 %\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. The system postpones the remaining type checking to runtime. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
 \par
-Constraints are generated through bidirectional judgements in figure ~\ref{fig:ana-syn}. Take $(\lambda x:\tehole^{1}. x+1)~ \ehole$ as an example. We apply rule ~\ref{rule:syn-ap}, ~\ref{rule:syn-lamann}, ~\ref{rule:syn-num}, ~\ref{rule:ana-subsume} and ~\ref{rule:syn-ehole} to derive a constraint set: $\{\tehole^{1} \approx \tnum;~ \tehole^{1} \approx \tehole^{2}\}$, where $\tehole^{2}$ is a fresh type hole generated in rule \ref{rule:syn-ehole}. 
+Constraints are generated through bidirectional judgements in figure ~\ref{fig:ana-syn}. Take $(\lambda x:\tehole^{1}. x+1)~ \ehole^2$ as an example. We apply rule ~\ref{rule:syn-ap}, ~\ref{rule:syn-lamann}, ~\ref{rule:syn-num}, ~\ref{rule:ana-subsume} and ~\ref{rule:syn-ehole} to derive a constraint set: $\{\tehole^{1} \approx \tnum;~ \tehole^{1} \approx \tehole^{2}\}$, where $\tehole^{2}$ is a type hole generated in rule \ref{rule:syn-ehole} whose provenance is simply sourced from the original expression hole's id. 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INFERENCE ALGORITHM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,7 +311,7 @@ PotentialTypeSet~~ s & = list(PotentialType)
 PotentialType~~ t & ::= 
   \tnum ~\vert~
   \tbool ~\vert~
-  \ehole^p ~\vert~
+  \tehole^p ~\vert~
   \tarr{s}{s}
   \\
 % old NeList version:
@@ -313,7 +322,7 @@ PotentialType~~ t & ::=
 % PotentialType~~ t & ::= 
 %   \tnum ~\vert~
 %   \tbool ~\vert~
-%   \ehole^p ~\vert~
+%   \tehole^p ~\vert~
 %   \tarr{s}{s}
 %   \\
 \end{array}$
@@ -550,16 +559,39 @@ let handle_occurs_check (graph) =
 
 \subsection{Future Work}
 \subsubsection{Other Binary Types and Parametric Polymorphism}
-In order to extend our definitions of \emph{PotentialTypeSet}s to other binary types like $\tau_1 \times \tau_2$ or $\tau_1 + \tau_2$ and allow parametric polymorphism, we simply update our definition of \emph{PotentialTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets}
+In order to extend our definitions of \emph{PotentialTypeSet}s to other binary types like $\tau_1 \times \tau_2$ or $\tau_1 + \tau_2$ and allow parametric polymorphism, we simply update our definitions of hole provenances and \emph{PotentialTypeSet}s as defined in Figure \ref{fig:extended_merging_possible_type_sets}
+
+\todo{Discuss other needed provenances and matched rules}
 
 \begin{figure}[h!]
 \centering
-\vspace{-3px} 
+$\arraycolsep=4pt\begin{array}{lll}
+HProv~~ p & ::= & 
+    n ~\vert~ 
+    \rightarrow_{L}(p) ~\vert~ 
+    \rightarrow_{R}(p) ~\vert~ 
+    \times_{L}(p) ~\vert~ 
+    \times_{R}(p) ~\vert~ 
+    \mathtt{+}_{L}(p) ~\vert~ 
+    \mathtt{+}_{R}(p)
+    \\
+HTyp~~ \tau & ::= &
+  \tnum ~\vert~
+  \tbool ~\vert~
+  \tarr{\tau}{\tau} ~\vert~
+  \tau_1 \times \tau_2 ~\vert~
+  \tau_1 + \tau_2 ~\vert~
+  \tehole^p
+  \\
+\end{array}$
+\label{fig:syntax_possible_type_sets}
+\caption{Extended syntax of HProv and HTyp}
+\hrule
 $\arraycolsep=4pt\begin{array}{lll}
 BinaryOperator~~ \square & ::=~~~~~
 \rightarrow  ~\vert~ 
 \times  ~\vert~ 
-+
+\mathtt{+}
 \\
 PotentialTypeSet~~ s & = list(PotentialType)
 \\
@@ -567,12 +599,13 @@ PotentialType~~ t & ::=
   \tnum ~\vert~
   \tbool ~\vert~
   \TVar ~\vert~
-  \ehole^p ~\vert~
+  \tehole^p ~\vert~
   s ~\square~ s
   \\
 \end{array}$
 \label{fig:syntax_possible_type_sets}
 \caption{Extended syntax of PotentialTypeSets and PotentialTypes}
+\vspace{5px}
 \hrule
 \[\begin{array}{rcl}
     % base case: empty list
@@ -603,8 +636,7 @@ In a system with parametric polymorphism, one thing we may be tempted to do is g
 
 \begin{center}
     \begin{lstlisting}[escapeinside={(*}{*)}, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth]
-        let x : (*$?^1$*) = (*$\tehole^2$*) in
-        x
+        let x : (*$?^1$*) = (*$\ehole^2$*) in x
     \end{lstlisting}
 \end{center}
 
@@ -612,43 +644,43 @@ We can see that x is never constrained to any complete types. In fact, the only 
 
 \begin{center}
     \begin{lstlisting}[escapeinside={(*}{*)}, xleftmargin=.2\textwidth, xrightmargin=.2\textwidth]
-        let x : 'a = (*$\tehole^2$*) in
-        x
+        let x : 'a = (*$\ehole^2$*) in x
     \end{lstlisting}
 \end{center}
 
 However, we've run into a stark issue: the only possible expressions that can replace $\tehole^2$ are expressions that analyze against \lstinline{'a}! This is far from ideal: we can see in the initial program that the user didn't express any clear intention for $\tehole^2$ to be strictly polymorphic.
 
-We generalize this notion and make the following observation: whenever the user creates expression holes, there are any number of potential "unknown" constraints that could spawn from the expression hole after it is filled. Indeed, rather than such expression holes being polymorphic, which would effectively represent a lack of constraints on type apart from other unconstrained polymorphic types, they can be constrained to \emph{any} type after being filled. This status can be effectively represented in a new type of constraint: the \emph{ANY} constraint. If a type hole $?^p$ is constrained to \emph{ANY}, it cannot be generalized to a type variable. On the other hand, if a type hole is never constrained to \emph{ANY}, it \emph{can} be generalized to a type hole. In order to concretize this notion and allow it to be represented in our constraint graph, we update rules 1f and 1g in Figure \ref{fig:ana-syn} as follows:
+We generalize this notion and make the following observation: whenever the user creates expression holes, there are any number of potential "unknown" constraints that could spawn from the expression hole after it is filled. Indeed, rather than such expression holes being polymorphic, which would effectively represent a lack of constraints on type apart from other unconstrained polymorphic types, they can be constrained to $\mathtt{ANY}$ type after being filled. This status can be effectively represented in a new type of constraint: the $\mathtt{ANY}$ constraint. If a type hole $?^p$ is constrained to $\mathtt{ANY}$, it cannot be generalized to a type variable. On the other hand, if a type hole is never constrained to $\mathtt{ANY}$, it \emph{can} be generalized to a type hole. In order to concretize this notion and allow it to be represented in our constraint graph, we update rules 1f and 1g in Figure \ref{fig:ana-syn} as follows:
 
 \begin{equation}
     \inferrule[]{ }{
-        \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{\{ \tehole^n \approx \emph{ANY} \}}
+        \consexptyp{\Gamma}{\llparenthesiscolor \rrparenthesiscolor^n}{\tehole^n}{\{ \tehole^n \approx \mathtt{ANY} \}}
       }
 \end{equation}
 \vspace{-3px}
 \begin{equation}
     \inferrule[]{
-        (n~\text{fresh}) \\
         \consexptyp{\Gamma}{e}{\tau}{C}
        }{
-         \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor}{\llparenthesiscolor \rrparenthesiscolor^n}{C \cup \{ \tehole^n \approx \emph{ANY} \}}
+         \consexptyp{\Gamma}{\llparenthesiscolor e \rrparenthesiscolor^n}{\tehole^n}{C \cup \{ \tehole^n \approx \mathtt{ANY} \}}
        }
 \end{equation}
 \\
-These changes ensure that expression holes synthesize type holes that are constrained to the \emph{ANY} type. These type holes and any other type holes constrained to them can never be generalized to type variables. The definition of \emph{PossibleType}s can also be adjusted slightly to account for this change:
+These changes ensure that expression holes synthesize type holes that are constrained to the $\mathtt{ANY}$ type. These type holes and any other type holes constrained to them can never be generalized to type variables. The definition of \emph{PossibleType}s can also be adjusted slightly to account for this change:
 \begin{center}
 $\arraycolsep=4pt\begin{array}{lll}
 PotentialType~~ t & ::= 
   \tnum ~\vert~
   \tbool ~\vert~
   \TVar ~\vert~
-  \emph{ANY} ~\vert~
-  \ehole^p ~\vert~
+  \mathtt{ANY} ~\vert~
+  \tehole^p ~\vert~
   s ~\square~ s
   \\
 \end{array}$
 \end{center}
+
+\todo{solution when ANY with num and ANY with var}
 
 \subsubsection{User Interaction and Conflict Highlighting}
 To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.
