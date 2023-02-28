@@ -31,7 +31,7 @@ in
 \end{lstlisting}
 A type checker with no support for error localization or recovery at all would simply report that this program is ill-typed, because a type cannot be derived for it according to the type system specification, if given in the conventional style (e.g. following the simply typed lambda calculus and its derivatives). 
 
-The more common and practical approach is to localize the first error that causes type checking to fail and emit an error message\todo{cites} (which can help, though studies suggest that developers primarily use location information). In this example, such a system might report that the variable \li{f} is unbound and communicate its location, e.g. using editor decorations. 
+The more common and practical approach is to localize the first error that causes type checking to fail and emit an error message\todo{cites} (which can help, though studies suggest that developers primarily use location information). In this example, such a system might report that the variable \li{f} is unbound and communicate its location, e.g. using a decorative mark in the editor. 
 This is the approach taken in many production type checkers, e.g. XXX.\todo{examples}
 
 A language server with support for type error recovery might continue past this initial error to also report that \li{y} is unbound. To recover further, the system might optimistically ignore the fact that guard of the conditional cannot be confirmed to be a boolean expression and continue into its branches, observing that they have inconsistent types, \li{int} and \li{bool}. 
