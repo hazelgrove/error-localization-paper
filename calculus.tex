@@ -214,7 +214,7 @@ only need the following rules for marking unmarked numbers and typing marked num
   \judgment{
   }{
     \ctxSynFixedInto{\ctx}{\ENumMV}{\ECNumMV}{\TNum}
-  }{ISNum}
+  }{MKSNum}
 
   \judgment{ }{
     \ctxSynType{\ctx}{\ECNumMV}{\TNum}
@@ -244,7 +244,7 @@ in analytic mode and rebuild the marked addition expression. The marked typing r
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TNum}
   }{
     \ctxSynFixedInto{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
-  }{ISPlus}
+  }{MKSPlus}
 
   \judgment{
     \ctxAnaType{\ctx}{\ECMV_1}{\TNum} \\\\
@@ -276,7 +276,7 @@ rules:
     \inCtx{\ctx}{x}{\TMV}
   }{
     \ctxSynFixedInto{\ctx}{x}{x}{\TMV}
-  }{ISVar}
+  }{MKSVar}
 
   \judgment{
     \inCtx{\ctx}{x}{\TMV}
@@ -296,7 +296,7 @@ motivates an \emph{unbound variable mark} $\ECUnbound{x}$, accompanied by the fo
     \notInCtx{\ctx}{x}
   }{
     \ctxSynFixedInto{\ctx}{x}{\ECUnbound{x}}{\TUnknown}
-  }{ISUnbound}
+  }{MKSUnbound}
 
   \judgment{
     \notInCtx{\ctx}{x}
@@ -305,7 +305,7 @@ motivates an \emph{unbound variable mark} $\ECUnbound{x}$, accompanied by the fo
   }{MSUnbound}
 \end{mathpar}
 %
-\textsc{ISUnbound} states that an variable unbound in the context is marked into that variable
+\textsc{MKSUnbound} states that an variable unbound in the context is marked into that variable
 inside an unbound variable mark. \textsc{MSUnbound} then gives the typing of unbound variable marks.
 Since nothing may be said about their types, we synthesize the unknown type, which allows type
 checking to continue---instead of simply failing---and the unbound variable to be used in any
@@ -396,7 +396,7 @@ abstraction:
     \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\ECMV}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\ELam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
-  }{ISLam}
+  }{MKSLam}
 
   \judgment{
     \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
@@ -414,7 +414,7 @@ Similarly, we construct corresponding analytic rules:
     \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
   }{
     \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
-  }{IALam1}
+  }{MKALam1}
 
   \judgment{
     \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
@@ -438,7 +438,7 @@ following rules, in which the lambda abstraction is placed inside the inconsiste
     \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TUnknown}
   }{
     \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
-  }{IALam2}
+  }{MKALam2}
 
   \judgment{
     \notMatchedArrow{\TMV_3} \\
@@ -449,7 +449,7 @@ following rules, in which the lambda abstraction is placed inside the inconsiste
 \end{mathpar}
 %
 Though no expected output type is known, we still need to check and mark the body; it is thus
-analyzed against the unknown type in \textsc{IALam2}.
+analyzed against the unknown type in \textsc{MKALam2}.
 
 A similar situation arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
 $\inconsistent{\TMV}{\TMV_1}$, i.e. the expected input type is inconsistent with the actual input
@@ -462,7 +462,7 @@ type, giving the last pair of analytic rules for lambda abstractions:
     \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
   }{
     \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}}{\TMV_3}
-  }{IALam3}
+  }{MKALam3}
 
   \judgment{
     \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
@@ -497,7 +497,7 @@ rules:
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
   }{
     \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}
-  }{ISAp1}
+  }{MKSAp1}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
@@ -521,7 +521,7 @@ that mark.
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
   }{
     \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECApNonMatched{\ECMV_1}{\ECMV_2}}{\TUnknown}
-  }{ISAp2}
+  }{MKSAp2}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
@@ -548,7 +548,7 @@ following alternative rules:
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
   }{
     \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECAp{\ECApNonMatchedAltAlt{\ECMV_1}}{\ECMV_2}}{\TUnknown}
-  }{ISAp2'}
+  }{MKSAp2'}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV_1}{\TMV} \\
@@ -576,7 +576,7 @@ Boolean values are similarly straightforward:
   \judgment{
   }{
     \ctxSynFixedInto{\ctx}{\ETrue}{\ECTrue}{\TBool}
-  }{ISTrue}
+  }{MKSTrue}
 
   \judgment{ }{
     \ctxSynType{\ctx}{\ECTrue}{\TBool}
@@ -589,7 +589,7 @@ Boolean values are similarly straightforward:
   \judgment{
   }{
     \ctxSynFixedInto{\ctx}{\EFalse}{\ECFalse}{\TBool}
-  }{ISFalse}
+  }{MKSFalse}
 
   \judgment{ }{
     \ctxSynType{\ctx}{\ECFalse}{\TBool}
@@ -652,7 +652,7 @@ the marked conditional from the results.
     \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
-  }{ISIf}
+  }{MKSIf}
 
   \judgment{
     \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\\\
@@ -668,7 +668,7 @@ the marked conditional from the results.
     \ctxAnaFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV} \\
   }{
     \ctxAnaFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
-  }{IAIf}
+  }{MKAIf}
 
   \judgment{
     \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\\\
@@ -692,7 +692,7 @@ conditionals:
     \inconsistent{\TMV_1}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TUnknown}
-  }{ISInconsistentBranches}
+  }{MKSInconsistentBranches}
 
   \judgment{
     \ctxAnaType{\ctx}{\ECMV_1}{\TBool} \\
@@ -735,7 +735,7 @@ subsumption rules:
     \subsumable{\EMV}
   }{
     \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}
-  }{IASubsume}
+  }{MKASubsume}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
@@ -762,7 +762,7 @@ rules is required to handle such cases:
     \subsumable{\EMV}
   }{
     \ctxAnaFixedInto{\ctx}{\EMV}{\ECInconType{\ECMV}}{\TMV}
-  }{IAInconsistentTypes}
+  }{MKAInconsistentTypes}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV}{\TMV'} \\
@@ -864,7 +864,6 @@ type $\TPair{\TMV_1}{\TMV_2}$.
 
   \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
   %
-  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
   \[\begin{array}{rcl}
     & \cdots & \\
     \joinsTo{(\TPair{\TMV_1}{\TMV_2})}{(\TPair{\TMV_1'}{\TMV_2'})}{\TPair{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
@@ -960,21 +959,21 @@ again modelling off the above unmarked typing rules:
     \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TPair{\TMV_1}{\TMV_2}}
-  }{ISPair}
+  }{MKSPair}
 
   \judgment{
     \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
     \matchedPair{\TMV}{\TMV_1}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV_1}
-  }{ISProjL1}
+  }{MKSProjL1}
 
   \judgment{
     \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
     \matchedPair{\TMV}{\TMV_1}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV_2}
-  }{ISProjR1} \\
+  }{MKSProjR1} \\
 
   \judgment{
     \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
@@ -982,19 +981,19 @@ again modelling off the above unmarked typing rules:
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
   }{
     \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
-  }{IAPair1}
+  }{MKAPair1}
 
   \judgment{
     \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TPair{\TMV}{\TUnknown}}
   }{
     \ctxAnaFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV}
-  }{IAProjL}
+  }{MKAProjL}
 
   \judgment{
     \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TPair{\TMV}{\TUnknown}}
   }{
     \ctxAnaFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV}
-  }{IAProjR}
+  }{MKAProjR}
 \end{mathpar}
 %
 accompanied by corresponding typing rules for marked expressions:
@@ -1053,7 +1052,7 @@ binary product may fail, requiring marking and typing rules to handle that case:
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
   }{
     \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECInconType{\ECPair{\ECMV_1}{\ECMV_2}}}{\TMV}
-  }{IAPair2}
+  }{MKAPair2}
 
   \judgment{
     \notMatchedPair{\TMV} \\
@@ -1075,7 +1074,7 @@ new error mark $\ECInconMatchedPair{\ECMV}$. The latter approach leads to the fo
     \notMatchedPair{\TMV}
   }{
     \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECInconMatchedPair{\ECMV}}}{\TMV_1}
-  }{ISProjL2}
+  }{MKSProjL2}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV}{\TMV} \\
@@ -1089,7 +1088,7 @@ new error mark $\ECInconMatchedPair{\ECMV}$. The latter approach leads to the fo
     \notMatchedPair{\TMV}
   }{
     \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECInconMatchedPair{\ECMV}}}{\TMV_2}
-  }{ISProjR2}
+  }{MKSProjR2}
 
   \judgment{
     \ctxSynType{\ctx}{\ECMV}{\TMV} \\
