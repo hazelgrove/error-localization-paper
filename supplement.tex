@@ -1,0 +1,22 @@
+\documentclass{article}
+\input{preamble}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage{libertinust1math}
+  \usepackage{libertine}
+\else
+  \usepackage{libertinus}
+\fi
+
+\declaretheorem[name=Theorem, parent=section]{theorem}
+\declaretheorem[name=Lemma, parent=theorem]{lemma}
+\declaretheorem[name=Definition, parent=section, style=definition]{definition}
+
+\begin{document}
+\renewcommand{\thesection}{\Alph{section}}
+\section{Bidirectional Type Error Localization}
+Formalization of error localization semantics.
+
+\end{document}
