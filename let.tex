@@ -8,6 +8,8 @@ In a traditional bidirectional presentation (CITE 'Strict Bidirectional Type Che
 \[\begin{array}{rrcl}
   \EMName & \EMV & \Coloneqq & \cdots
                                \mid \ELet{\PMV}{\EMV}{\EMV} \\
+  \ECMName & \EMV & \Coloneqq & \cdots
+                               \mid \ELet{\PMV}{\EMV}{\EMV} \\
   \PMName & \PMV & \Coloneqq & x 
                                \mid \_
                                \mid (p_1, p_2)
@@ -26,12 +28,13 @@ One may ask if there a meaningful difference between these two situations. There
 
 This distinction manifests behaviorally in the case of expressions that can have internal type inconsistencies. As per the previous section on booleans, given the expression $\ELet{a}{\EIf{\ETrue}{1}{\EFalse}}{...}$, the conditional will be marked with an inconsistent branches error when in synthetic position, but if analyzed against the unknown type---with which both branches are consistent---no mark will be placed.
 
-One option would be to erase the distinction entirely, adding a rule to switch to synthetic mode whenever we analyze against unknown, or to simply eliminate synthetic mode altogether. We consider these options too drastic; we wish to preserve the above behavioral distinction for conditionals, both indicating an inconsistency error in the unconstrained case, and permitting the user to defer that error via annotation by the unknown type. To this effect, we add a compositional pattern annotation form, which can be applied to sub-patterns: 
-$\ELet{(a, b:\TUnknown)}{(\EIf{\ETrue}{1}{\EFalse},\EIf{\ETrue}{1}{\EFalse})}{e}$. Here we want the first condition to be in synthetic and hence marked, and the second to be in analytic and unmarked.
+One option would be to erase the distinction entirely, adding a rule to switch to synthetic mode whenever we analyze against unknown, or to simply eliminate synthetic mode altogether. We consider these options too drastic; we wish to preserve the above behavioral distinction for conditionals, both indicating an inconsistency error in the unconstrained synthetic case, and permitting the user to defer that error via annotation by the unknown type. To this effect, we add a compositional pattern annotation form, which can be applied to sub-patterns: 
+$\ELet{(a, b:\TUnknown)}{(\ECInconBr{\ETrue}{1}{\EFalse},\EIf{\ETrue}{2}{\EFalse})}{e}$. Here we want the first condition to be in synthetic and hence marked as inconsistent, and the second to be in analytic against unknown and thus unmarked.
 \[\begin{array}{rrcl}
   \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch
 \end{array}\]
-To accomplish this, we use a variation on the first distinction-erasure option, but with a twist. We do not unconditionally switch from analysis against unknown to synthesis, but instead augment our type system with a new variant on the unknown type which triggers the switch. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the matched arrow and product judgements, and the join metafunction.
+
+To accomplish this, we use a variation on the first distinction-erasure option, but with a twist. We do not unconditionally switch from analysis against unknown to synthesis, but instead augment our type system with a new variant on the unknown type which triggers the switch. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the matched arrow and product judgements, and the join metafunction. In our previous example, the pattern variable $a$ will synthesize the $\TUnknownSwitch$ type, whereas the annotation $b: \TUnknown$ synthesizes $\TUnknown$. Thus $1$ will end up in synthetic position and $2$ in analytic, achieving the desired distinction.
 \begin{mathpar}
    \judgment{
      \ctxSynType{\ctx}{\EMV}{\_}
@@ -40,9 +43,8 @@ To accomplish this, we use a variation on the first distinction-erasure option, 
    }{SynSwitch}
 \end{mathpar}
 
-However, it is also reasonable that the annotated unknown type itself should be considered in an error state, since there are no possible fillings for this hole. Indeed, precisely this will be accomplished in section 4.
+(It is worth noting that, despite the lack of marking for the $\TUnknown$-annotated conditional, there is no possible filling of the type hole, so it is also reasonable that the annotated unknown type itself should be considered as an error state. Indeed, precisely this will be accomplished in section 4 via type hole inference.)
 
-Let expressions are typed according to the following $\mathtt{USLet}$ and $\mathtt{UALet}$ rules. Additionally, we add a rule governing the switch from analysis to synthesis, triggered by analysis against the new Unknown-SynSwitch type:
 \begin{mathpar}
 \judgment{
      \ctxSynPat{\ctx}{\PMV}{\TMV_p}
@@ -58,11 +60,6 @@ Let expressions are typed according to the following $\mathtt{USLet}$ and $\math
      \ctxSynOrAnaType{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\TMV}
    }{U(S/A)Let}
    
-   \judgment{
-     \ctxSynType{\ctx}{\EMV}{\_}
-   }{
-     \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
-   }{SynSwitch}
     %\judgment{
     % \ctxSynPat{\ctx}{\PMV}{\TMV_p}
     % \\
@@ -91,10 +88,56 @@ Let expressions are typed according to the following $\mathtt{USLet}$ and $\math
    %  \ctxAnaType{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\TMV}
    %}{UALet}
 \end{mathpar}
-Finally, pattern synthesis and analysis are governed by the following rules. Note how variables and wildcards synthesize the Unknown-SynSwitch type, but note also that this type is never added to the context:
+In order to ensure propagation of type information between the pattern and definition, we require a bit more machinery than a typical let rule. First, we synthesize the pattern type and analyze the definition against that type. These two steps are needed to ensure that the pattern and definition types are consistent. Then we synthesize the definition's type, and analyze the pattern against that type. This analysis of the pattern is guaranteed to succeed; however is is required, as we want the context produced by the pattern $\ctx_b$ to take into account the definition's type. Finally, the let body is synthesized or analyzed (depending on whether the let itself is being synthesized or analyzed) within that context.
 
-\begin{figure}[htbp]
-  \raggedright
+The marking rules are directly analogous:
+\begin{mathpar}
+   \judgment{
+     \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p}
+     \\
+     \ctxAnaFixedInto{\ctx}{\EMV_{def}}{\ECMV_{def}}{\TMV_{p}}
+     \\\\
+     \ctxSynType{\ctx}{\EMV_{def}}{\TMV_{def}}
+     \\
+     \ctxAnaPat{\ctx}{\PMV}{\TMV_{def}}{\ctx_{b}}
+     \\
+     \ctxSynFixedInto{\ctx_{b}}{\EMV_{b}}{\ECMV_{b}}{\TMV}
+   }{
+     \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\ELet{\PCMV}{\ECMV_{def}}{\ECMV_{b}}}{\TMV}
+   }{ISLet}
+
+   \judgment{
+     \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p}
+     \\
+     \ctxAnaFixedInto{\ctx}{\EMV_{def}}{\ECMV_{def}}{\TMV_{p}}
+     \\\\
+     \ctxSynType{\ctx}{\EMV_{def}}{\TMV_{def}}
+     \\
+     \ctxAnaPat{\ctx}{\PMV}{\TMV_{def}}{\ctx_{b}}
+     \\
+     \ctxAnaFixedInto{\ctx_{b}}{\EMV_{b}}{\ECMV_{b}}{\TMV}
+   }{
+     \ctxAnaFixedInto{\ctx}{\ELet{\PMV}{\EMV_{def}}{\EMV_{b}}}{\ELet{\PCMV}{\ECMV_{def}}{\ECMV_{b}}}{\TMV}
+   }{IALet}
+
+   \judgment{
+     \ctxSynPat{\ctx}{\PCMV}{\TMV_p}
+     \\
+     \ctxAnaType{\ctx}{\ECMV_{def}}{\TMV_p}
+     \\
+     \ctxSynType{\ctx}{\ECMV_{def}}{\TMV_{def}}
+     \\\\
+     \ctxAnaPat{\ctx}{\PCMV}{\TMV_{def}}{\ctx_{b}}
+     \\
+     \ctxSynOrAnaType{\ctx_{b}}{\ECMV_{b}}{\TMV}
+   }{
+     \ctxSynOrAnaType{\ctx}{\ELet{\PCMV}{\ECMV_{def}}{\ECMV_{b}}}{\TMV}
+   }{M(S/A)Let}
+\end{mathpar}
+
+Note that the $\TUnknownSwitch$ exists entirely to insure that sub-expressions of the definition are assigned an appropriate mode. As per the pattern rules below, it is never added to the context, which might result in spooky synthesis-at-a-distance:
+
+
   \judgbox{\ensuremath{\ctxSynPat{\Gamma}{\PMV}{\TMV}}} Pattern $\PMV$ synthesizes type $\TMV$
   %
   \begin{mathpar}
@@ -118,12 +161,10 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
   \end{mathpar}
   %
   \label{fig:calculus-pattern-synthesis}
-\end{figure}
 
-
-\begin{figure}[htbp]
-  \raggedright
-  \judgbox{\ensuremath{\ctxAnaPat{\ctx_{in}}{\PMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against type $\TMV$ producing context $\Gamma_{out}$
+For our analytic pattern judgement, out output context is produced, consisting of the input context augmented with any bindings made within the pattern: \\
+\\
+\judgbox{\ensuremath{\ctxAnaPat{\ctx_{in}}{\PMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against type $\TMV$ producing context $\Gamma_{out}$
   %
   \begin{mathpar}
    \judgment{ }{\ctxAnaPat{\ctx}{\_}{\TMV}{\ctx}}{UAPatWild}
@@ -147,13 +188,9 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
       \ctxAnaPat{\ctx}{\ECPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
     }{UAPatPair}
   \end{mathpar}
-  %
-  \label{fig:calculus-pattern-analysis}
-\end{figure}
 
-
-\begin{figure}[htbp]
-  \raggedright
+Marking judgements for patterns introduce two error types which parallel those for expressions:\\
+\\
   \judgbox{\ensuremath{\ctxSynFixedInto{\ctx_{in}}{\PMV}{\PCMV}{\TMV}}} Pattern $\PMV$ synthesizes $\TMV$ producing marked $\PCMV$ \\
   \judgbox{\ensuremath{\ctxAnaFixedIntoPat{\ctx_{in}}{\PMV}{\PCMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against $\TMV$ producing marked $\PCMV$ and context $\Gamma_{out}$
    %
@@ -212,35 +249,43 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
    }{IAPatAnn}
 
    \judgment{
-     \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
-     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+     \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\tau'}
+     \\
+     \inconsistent{\tau}{\tau'}
    }{
-        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau}{\ECInconType{\PCMV} : \tau}{\tau}{\ctx'}
-   }{IAPatAnnFail1}
-   
-   \judgment{
-     \ctxAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
-     \inconsistent{\tau}{\tau'} \\
-     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
-   }{
-        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\PCMV : \tau'}}{\tau}{\ctx'}
-   }{IAPatAnnFail2}
+        \ctxAnaFixedIntoPat{\ctx}{\PMV}{\ECInconType{\PCMV}}{\tau}{\ctx}
+    }{IAInconsistentTypesPat}
 
-   \judgment{
-     \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
-     \inconsistent{\tau}{\tau'} \\
-     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
-   }{
-        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\ECInconType{\PCMV} : \tau'}}{\tau}{\ctx'}
-   }{IAPatAnnFail3}
+   %\judgment{
+   %  \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+   %  \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   %}{
+   %     \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau}{\ECInconType{\PCMV} : %\tau}{\tau}{\ctx'}
+   %}{IAPatAnnFail1}
+   
+   %\judgment{
+   %  \ctxAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+   %  \inconsistent{\tau}{\tau'} \\
+   %  \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   %}{
+   %     \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\PCMV : %\tau'}}{\tau}{\ctx'}
+   %}{IAPatAnnFail2}
+
+   %\judgment{
+   %  \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+   %  \inconsistent{\tau}{\tau'} \\
+   %  \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   %}{
+   %     \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}%{\ECInconType{\ECInconType{\PCMV} : \tau'}}{\tau}{\ctx'}
+   %}{IAPatAnnFail3}
 
   \end{mathpar}
   %
   \caption{Pattern Marking}
   \label{fig:calculus-pattern-synthesis-marking}
-\end{figure}
 
-\begin{figure}[htbp]
+And finally, the typing rules for marked expression precisely parallel the unmarked ones:
+
   \begin{mathpar}
 
    \judgment{ }{\ctxSynPat{\ctx}{\_}{\TUnknownSwitch}}{MSPatWild}
@@ -259,15 +304,7 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
    }{
      \ctxSynPat{\ctx}{\EPair{\PCMV_1}{\PCMV_2}}{\TPair{\TMV_1}{\TMV_2}}
    }{MSPatPair}
-  \end{mathpar}
-  %
-  \caption{Marked Pattern Synthesis}
-  \label{fig:calculus-pattern-synthesis-marked}
-\end{figure}
 
-\begin{figure}[htbp]
-  \raggedright
-  \begin{mathpar}
    \judgment{ }{\ctxAnaPat{\ctx}{\_}{\TMV}{\ctx}}{MAPatWild}
    
    \judgment{ }{\ctxAnaPat{\Gamma}{x}{\TMV}{\ctx, x:\TMV}}{MAPatVar}
@@ -281,22 +318,29 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
     }{MAPatAnn}
 
     \judgment{
-     \ctxAnaPat{\ctx}{\PCMV{}}{\tau'}{\ctx'}
+     \ctxSynPat{\ctx}{\PCMV{}}{\tau'}
      \\
      \inconsistent{\tau}{\tau'}
    }{
-        \ctxAnaPat{\ctx}{\ECInconType{\PCMV}}{\tau}{\ctx'}
+        \ctxAnaPat{\ctx}{\ECInconType{\PCMV}}{\tau}{\ctx}
     }{MAInconsistentTypes}
 
    \judgment{
-      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\\\
-      \ctxAnaPat{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
+      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
+      \ctxAnaPat{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\
       \ctxAnaPat{\ctx_1}{\PCMV_2}{\TMV_2}{\ctx_2}
     }{
       \ctxAnaPat{\ctx}{\ECPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
     }{MAPatPair}
+
+    \judgment{
+       \notMatchedPair{\TMV} \\
+      \ctxAnaPat{\ctx}{\PCMV_1}{\TUnknown}{\ctx_1} \\
+      \ctxAnaPat{\ctx_1}{\PCMV_2}{\TUnknown}{\ctx_2}
+    }{
+      \ctxAnaPat{\ctx}{\ECInconMatchedPair{\ECPair{\PCMV_1}{\PCMV_2}}}{\TMV}{\ctx_2}
+    }{MAPatPairFail}
   \end{mathpar}
   %
-  \caption{Marked Pattern Analysis}
-  \label{fig:calculus-pattern-analysis-marked}
-\end{figure}
+  \caption{Marked Pattern Typing}
+  \label{fig:calculus-pattern-marked-typing}
