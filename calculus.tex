@@ -1,7 +1,7 @@
 % TODO standardize naming: marking vs mark insertion, marks vs error marks vs markings
 % TODO uniform style for referencing rules
 
-\section{The Marking Calculus}
+\section{The Marked Lambda Calculus}
 \label{sec:calculus}
 
 Programmers often work with program states that are syntactically well-formed but not well-typed.
@@ -36,9 +36,9 @@ errors.
 
 % TODO examples of this ad hoc stuff
 
-The key contribution of this section is the \emph{marking calculus}, a formal calculus for type
-error localization in bidirectional systems. Namely, the calculus provides a judgmental framework
-with a unified theory for the design of typing semantics that support ill-typed programs.
+The key contribution of this section is the \emph{marked lambda calculus}, a formal calculus for
+type error localization in bidirectional systems. Namely, the calculus provides a judgmental
+framework with a unified theory for the design of typing semantics that support ill-typed programs.
 \Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
 lambda calculus, extending it with binary product types in \cref{sec:calculus-products}. All rules
 and theorems may be found in the supplementary appendix, alongside a complete mechanization in the
@@ -63,7 +63,7 @@ to more complex typing features, such as System F-style polymorphism.
 % TODO outline the structure of this section at the beginning
 % TODO make it clear unmarked/marked languages share same types
 
-We now formally introduce the \emph{marking calculus} through its application to a gradually typed
+We now formally introduce the marked lambda calculus through its application to a gradually typed
 lambda calculus extended with numbers and booleans. Consider the syntax for such a language, given
 as $\EMName$ in \cref{fig:calculus-syntax}. The base types $\TNum$ and $\TBool$ classify number and
 boolean expressions. The number literal corresponding to the mathematical number $n$ is given by
@@ -98,7 +98,7 @@ analysis}, written $\ctxAnaType{\ctx}{\EMV}{\TMV}$, states that the expression $
 where an expression of type $\TMV$ is expected. We may give these typing semantics traditionally,
 without considering error localization and recovery.
 
-The \emph{marking calculus} builds atop these typing semantics into a two-layer system:
+The marked lambda calculus builds atop these typing semantics into a two-layer system:
 %
 \begin{itemize}
   \item The \textbf{unmarked language}, which is the original language. Expressions of this language
@@ -773,7 +773,7 @@ rules is required to handle such cases:
   }{MAInconsistentTypes}
 \end{mathpar}
 %
-These rules complete the development of the marking calculus for the gradually typed lambda
+These rules complete the development of the marked lambda calculus for the gradually typed lambda
 calculus.
 
 % TODO mini conclusion on methodology
@@ -836,10 +836,10 @@ Together with totality, marking may be considered and implemented as a total fun
 \subsection{Adding Binary Products}
 \label{sec:calculus-products}
 
-We now demonstrate how one might extend or adapt the marking calculus for new typing features by
-adding binary product types. First, in \cref{fig:calculus-product-judgments}, we extend the syntax
-of types and the accompanying notions of consistency and join, which closely mirror the definitions
-for arrow types.
+We now demonstrate how one might extend or adapt the marked lambda calculus for new typing features
+by adding binary product types. First, in \cref{fig:calculus-product-judgments}, we extend the
+syntax of types and the accompanying notions of consistency and join, which closely mirror the
+definitions for arrow types.
 %
 \[\begin{array}{rrcl}
   \TMName  & \TMV  & \Coloneqq & \cdots \mid \TPair{\TMV}{\TMV}
@@ -1119,7 +1119,7 @@ those datatypes is taken. For marked expressions, we opt for implicitly typed te
 which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
 readers interested in browsing the mechanization, all rule names match those presented here.
 
-\section{The Marking Calculus in Structured Editing}
+\section{The Marked Lambda in Structured Editing}
 \label{sec:calculus-structured-editing}
 
 The previous section presented a formal calculus for error localization and recovery. We now discuss
@@ -1141,7 +1141,7 @@ ensures programs are statically meaningful.
 Hazelnut, however, is unable to cope with actions that require non-local hole fixes. % TODO example of this
 Such actions remain undefined, i.e. unperformable.
 
-By applying the marking calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
+By applying the marked lambda calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
 from the typing semantics. Under this new system, the action calculus is concerned only with the
 manipulation of syntax, and the marking procedure yields statically meaningful terms with error
 holes inserted at the appropriate positions. Furthermore, marking solves the problem of non-local
