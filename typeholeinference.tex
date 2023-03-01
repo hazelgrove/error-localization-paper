@@ -453,7 +453,7 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
             let graph = Map.add(graph, hole, hole) in
             if (contains_hole(t)) then (
                 let graph = Map.add(graph, t, t) in
-                let graph = create_traversable_edge(~graph, t, hole) in
+                let graph = create_traversable_edge(graph, t, hole) in
                 construct_graph(~graph, tl)
             ) else (
                 let graph = create_solution_edge(graph, hole, t) in

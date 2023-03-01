@@ -1,0 +1,226 @@
+\newpage
+\section{Constraint Generating Rules}
+Below is a series of constraint generating bidirectional typing judgements defined for the following syntax of the marked lambda calculus.
+
+\[\begin{array}{rrcl}
+    \Prov & \Provp & \Coloneqq & anon \mid n \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_{L}(p) \mid \times_{R}(p) \\
+    \TMName  & \TMV  & \Coloneqq & \TUnknown^p \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \tau_1 \times \tau_2 \\
+    \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
+                       \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
+                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
+             &       & \mid         & \ECPair{\ECMV}{\ECMV}
+                               \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV} \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \ECInconMatchedPairId{\ECMV}{u} \mid \EEHole^u
+                               
+  \end{array}\]
+
+\judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C}}
+\begin{mathpar}
+    \judgment{ }{
+      \matchedPair{\TUnknown^p}{\TUnknown}{\TUnknown} ~|~ \{ \TUnknown^p \approx \TPair{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}
+    }{TMPHole-C}
+
+    \judgment{ }{
+      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2} ~|~ \{\}
+    }{TMPProd-C}
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedArrow{\TMV}{\TMV_1}{\TMV_2} ~|~ C}}
+\begin{mathpar}
+    \judgment{ }{
+      \matchedArrow{\TArrow{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2} ~|~ \{\}
+    }{TMAArr-C}
+
+    \judgment{ }{
+  \matchedArrow{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} ~|~ \{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}
+}{TMAHole-C}
+\end{mathpar}
+
+\judgbox{\ensuremath{\ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C}}
+\begin{mathpar}
+     \judgment{
+    \inCtx{\ctx}{x}{\TMV}
+  }{
+    \ctxSynType{\ctx}{x}{\TMV} ~|~ \{\}
+  }{MSVar-C}
+  
+  \judgment{
+    \notInCtx{\ctx}{x}
+  }{
+    \ctxSynType{\ctx}{\ECUnboundId{x}{u}}{\TUnknown^{exp(u)}} ~|~ \{ \TUnknown^{exp(u)} \approx \mathtt{etc} \}
+  }{MSUnbound-C}\\
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECTrue}{\TBool} ~|~ \{\}
+  }{MSTrue-C}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECFalse}{\TBool} ~|~ \{\}
+  }{MSFalse-C} \\
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\ECNumMV}{\TNum} ~|~ \{\}
+  }{MSNum-C}
+
+  \judgment{ }{
+    \ctxSynType{\ctx}{\EEHole^u}{\TUnknown^{exp(u)}} ~|~ \{ \TUnknown^{exp(u)} \approx \mathtt{etc} \}
+  }{MSEHole-C}\\
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TNum} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TNum} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum} ~|~ C_1 \cup C_2
+  }{MSPlus-C}
+
+    \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1  \\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_2 \\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} ~|~ C_3
+  }{
+    \ctxSynType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}
+  }{MSIf-C}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1 \\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_2 \\
+    \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} ~|~ C_3 \\
+    \inconsistent{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynType{\ctx}{\ECInconBrId{\ECMV_1}{\ECMV_2}{\ECMV_3}{u}}{\TUnknown^{exp(u)}} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2, \TUnknown^{exp(u)} \approx \mathtt{etc} \}
+  }{MSInconsistentBranches-C}
+  
+    \judgment{
+        \ctxSynType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C
+    }{
+        \ctxSynType{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}} ~|~ C
+    }{MSLam-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} ~|~ C_1 \\
+    \matchedArrow{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_1} ~|~ C_3
+  }{
+    \ctxSynType{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2} ~|~ C_1 \cup C_2 \cup C_3
+  }{MSAp1-C}
+
+    \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV} ~|~ C_1 \\
+    \notMatchedArrow{\TMV} \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown^{\rightarrow_{L}(exp(u))}} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECApNonMatchedId{\ECMV_1}{u}{\ECMV_2}}{\TUnknown^{\rightarrow_{R}(exp(u))}} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \tarr{\TUnknown^{\rightarrow_L(exp(u))}}{\TUnknown^{\rightarrow_R(exp(u))}}, \TUnknown^{exp(u)} \approx \mathtt{etc}\}
+  }{MSAp2-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV_1}{\TMV_1} ~|~ C_1\\
+    \ctxSynType{\ctx}{\ECMV_2}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TPair{\TMV_1}{\TMV_2}} ~|~ C_1 \cup C_2
+  }{MSPair-C}
+    
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C_1 \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECMV}}{\TMV_1} ~|~ C_1 \cup C_2
+  }{MSProjL1-C}
+
+   \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C_1 \\
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_2
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECMV}}{\TMV_2} ~|~ C_1 \cup C_2
+  }{MSProjR1-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjL{\ECInconMatchedPairId{\ECMV}{u}}}{\TUnknown^{\times_{L}(exp(u))}} ~|~ C \cup \{ \TUnknown^{exp(u)} \approx \TPair{\TUnknown^{\times_{L}(exp(u))}}{\TUnknown^{\times_{R}(exp(u))}}, \TUnknown^{exp(u)} \approx \mathtt{etc} \}
+  }{MSProjL2-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C \\
+    \notMatchedPair{\TMV}
+  }{
+    \ctxSynType{\ctx}{\ECProjR{\ECInconMatchedPairId{\ECMV}{u}}}{\TUnknown^{\times_{R}(exp(u))}} ~|~ C \cup \{ \TUnknown^{exp(u)} \approx \TPair{\TUnknown^{\times_{L}(exp(u))}}{\TUnknown^{\times_{R}(exp(u))}}, \TUnknown^{exp(u)} \approx \mathtt{etc} \}
+  }{MSProjR2-C}
+\end{mathpar}
+
+\judgbox{\ensuremath{\ctxAnaType{\ctx}{\ECMV}{\TMV} ~|~ C}}
+\begin{mathpar}
+    \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} ~|~ C \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECMV}{\TMV} ~|~ C \cup \{ \TMV \approx \TMV' \}
+  }{MASubsume-C}
+
+  \judgment{
+    \ctxSynType{\ctx}{\ECMV}{\TMV'} ~|~ C  \\
+    \inconsistent{\TMV}{\TMV'} \\
+    \subsumable{\ECMV}
+  }{
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV} ~|~ C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}
+  }{MAInconsistentTypes-C}
+
+    \judgment{
+    \ctxAnaType{\ctx}{\ECMV_1}{\TBool} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV} ~|~ C_3
+  }{
+    \ctxAnaType{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV} ~|~ C_1 \cup C_2 \cup C_3
+  }{MAIf}
+  
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} ~|~ C_1\\
+    \consistent{\TMV}{\TMV_1} \\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TMV \approx \TMV_1 \}
+  }{MALam1-C}
+
+  \judgment{
+    \notMatchedArrow{\TMV_3} \\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown^{anon}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} ~|~ C \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
+  }{MALam2-C}
+
+  \judgment{
+    \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} ~|~ C_1\\
+    \inconsistent{\TMV}{\TMV_1} \\\\
+    \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
+  }{MALam3-C}
+
+  \judgment{
+    \matchedPair{\TMV}{\TMV_1}{\TMV_2} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TMV_1} ~|~ C_2 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TMV_2} ~|~ C_3
+  }{
+    \ctxAnaType{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV} ~|~ C_1 \cup C_2 \cup C_3
+  }{MAPair1-C}
+
+ \judgment{
+    \notMatchedPair{\TMV} \\
+    \ctxAnaType{\ctx}{\ECMV_1}{\TUnknown^{anon}} ~|~ C_1 \\
+    \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown^{anon}} ~|~ C_2
+  }{
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECPair{\ECMV_1}{\ECMV_2}}{u}}{\TMV} ~|~ C_1 \cup C_2 \cup \{\TUnknown^{exp(u)} \approx \tau\}
+  }{MAPair2-C}
+
+  \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TMV}{\TUnknown^{anon}}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECProjL{\ECMV}}{\TMV} ~|~ C
+  }{MAProjL-C}
+  
+    \judgment{
+    \ctxAnaType{\ctx}{\ECMV}{\TPair{\TUnknown^{anon}}{\TMV}} ~|~ C
+  }{
+    \ctxAnaType{\ctx}{\ECProjR{\ECMV}}{\TMV} ~|~ C
+  }{MAProjR-C}
+\end{mathpar}

@@ -1,5 +1,8 @@
-\documentclass{article}
+\documentclass[acmsmall, screen,anonymous,nonacm]{acmart}
+
 \input{preamble}
+\input{symbols}
+\input{macros}
 
 \usepackage[margin=1in]{geometry}
 \usepackage{iftex}
@@ -18,5 +21,8 @@
 \renewcommand{\thesection}{\Alph{section}}
 
 \input{supplement/marking}
+\input{supplement/constraintRules}
+\input{supplement/unionFindPTS}
+\input{supplement/extendedPTS}
 
 \end{document}

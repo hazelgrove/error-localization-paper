@@ -15,7 +15,7 @@ these semantic services can become degraded or unavailable \cite{HazelnutSNAPL}.
 These gaps in service are not always transient. 
 For example, a change to a type definition might result in type errors at dozens of use sites in a large program, which might take hours or days to resolve.
 
-These gaps in service are fundamentally rooted in a definitional gap: a type system defined in a conventional way, 
+These service gaps are fundamentally rooted in a definitional gap: a type system defined in a conventional way, 
 e.g. in the tradition of the typed lambda calculus and its derivatives \cite{TaplBook,pfpl},
 assigns meaning only to well-typed programs. 
 If a type error appears \emph{anywhere}, the program is formally meaningless \emph{everywhere}.
@@ -25,9 +25,8 @@ This gap problem has prompted considerable practical interest in
 (2) \textbf{type error recovery}: mechanisms that allow the language server to optimistically recover from a localized type error 
 and continue on to locate other errors and provide downstream semantic services, 
 ideally at every location in the program and with minimal degradation in service.
-Essentially all widely-used programming systems have some support for type error localization. 
-When debugging type errors, developers have been observed to attend in particular to error locations presented in compiler error messages 
-or directly in their editor, via error marks decorating the localized code.\todo{cite}
+Essentially all widely-used programming systems have some support for type error localization, and developers have been observed to attend in particular to error locations as reported in compiler error messages 
+or directly in their editor, via error markings decorating the localized code.\todo{cite}
 Many systems also attempt recovery of certain services in certain situations, discussed below.
 
 However, type error localization and recovery mechanisms have developed idiosyncratically, 
@@ -41,7 +40,7 @@ support for local type inference, specified in the well-established bidirectiona
 let x = 
   if f(y) then 1 else true
 in 
-  x + 1
+  x + "abc"
 \end{lstlisting}
 A type checker with no support for error localization or recovery---%
 the sort often written by students in undergraduate courses---%
@@ -64,23 +63,23 @@ To recover further, we might choose to also ignore the bidirectional type system
 (because the type of \li{f(y)} is also unknown) 
 and continue into its branches, observing that they have inconsistent types, \li{Int} and \li{Bool}. 
 There are several ways to localize this inconsistency. 
-One approach would be to assume, arbitrarily, that the first branch is correct, localizing the error to the second branch, or \emph{vice versa}.
-(TODO: what does Elm do? what does OCaml do?)
-Heuristics have been developed to help make choices like these less arbitrary, e.g. 
+One approach would be to assume, arbitrarily, that one branch is correct, localizing the error to the other branch. 
+Heuristics have been developed to help make this choice less arbitrary, e.g. 
 by observing recent editing history \todo{cite}, 
 or training a machine learning model \todo{cite}. 
-The other approach, which we take in this paper's language server for Hazel, is to localize the inconsistency to the conditional expression itself, as indicated in
-the screenshot in Fig.~\ref{fig:hazel-intro-example}(b)\todo{figure}. 
-This entirely avoids needing to heuristically decide which branch is correct: the problem is actually that the branch types differ.
+The other approach, which we take in this paper's language server for Hazel, is to localize the inconsistency to the conditional expression itself, reporting that the problem is actually that the branch types differ, as indicated in
+the screenshot in Fig.~\ref{fig:hazel-intro-example}(b)\todo{figure}.
 
 This localization decision cannot be made in a vacuum, however; it affects how the system recovers as it proceeds into the let body, \li{x + 1}. 
-If localization assumes that the \li{then} branch is correct, then \li{x : Int} and there is no error to report here.
+If localization assumes that the \li{then} branch is correct, then \li{x : Int} and there is no error to report for the left operand.
 If the \li{else} branch is chosen, then \li{x : Bool} and an error can be reported (though this error might mislead the programmer if this earlier localization guess was incorrect). 
 If instead the inconsistency is localized to the conditional expression as a whole, as in our language server, then we again confront the problem of missing type information: 
 \li{x} does not have a known type,
-though it is known to be bound. 
-There is no definitive problem here, based on the incomplete information available about \li{x}'s type, 
+though it \emph{is} known to be bound. 
+There is no definitive type or binding error here, based on the incomplete information available about \li{x}'s type, 
 so we choose not to report an error in Hazel.
+No matter how localization handles the left operand, we would like to be able to recover and 
+localize the definitive type inconsistency on the right operand (the \li{+} operator is integer addition in Hazel.)
 
 This informal exercise demonstrates that (1) localization choices can vary, particularly in regard to the extent to which they make \emph{ad hoc} guesses about intent;  
 (2) when combined with error recovery, localization decisions have implications on downstream localization decisions; and 

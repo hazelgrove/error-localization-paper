@@ -1,7 +1,7 @@
 \begin{abstract}
 Type systems typically only define the conditions under which an expression is well-typed, leaving ill-typed expressions entirely meaningless. 
 This approach is insufficient as the basis for language servers for modern programming environments, which are expected to sensibly localize any type errors and recover, i.e. continue to provide a variety of downstream semantic services. 
-This paper addresses this problem, contributing the first comprehensive formal account of type error localization and recovery: the marked lambda calculus. In particular, we define a gradual type system for expressions with marked errors and holes, together with a total procedure for marking unmarked expressions. We mechanize the metatheory of the marked lambda calculus in Agda and implement it, scaled up, as the new basis for Hazel, a full-scale live functional programming environment. 
+This paper addresses this problem, contributing the first comprehensive formal account of type error localization and recovery: the marked lambda calculus. In particular, we define a gradual type system for expressions with marked errors, together with a total procedure for marking unmarked expressions with holes. We mechanize the metatheory of the marked lambda calculus in Agda and implement it, scaled up, as the new basis for Hazel, a full-scale live functional programming environment. 
 As a secondary contribution, we show how total marking resolves 
 the problem of undefined behavior in the Hazelnut structure editor calculus
 (though marking itself does not require a structure editor).
