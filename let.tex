@@ -1,23 +1,9 @@
-\subsection{Let with Composite Patterns}
+\subsection{Let-Expressions with Composite Destructuring Patterns}
 \label{sec:calculus-let}
 
 %TODO(andrew): justification, examples
 
-In a traditional bidirectional presentation (CITE), let expressions without composite patterns usually have two rules: A type-annotated version which places the definition in analytic position, and an unannotated synthetic version. With composite patterns, this straightforward division is no longer possible, as whether or not there are type constraints on the definition depends on the (arbitrarily nested) sub-components of the pattern.
-The most obvious approach is to instead use a single rule which synthesizes a type from the pattern, then analyzes the definition against that type. However, this runs afoul of user expectation. Consider the expression $\ELet{(a,b)}{(1,2)}{...}$. The semantics of pattern matching are often (CITE) given by expansion to nested lets under appropriate projections, beta-reduced as far as possible. Here this would give $\ELet{a}{1}{\ELet{b}{2}{...}}$. Notice that in the un-expanded expression, $1$ and $2$ are in analytic against the unknown type, whereas in the latter, they are in synthetic position.
-At this point one should ask: Is there a meaningful difference between these two situations? There is at least a subtle semantic distinction: Synthetic means 'no type constraints', whereas analytic against unknown imposes a trivial type constraint.
-This distinction behaviorally manifests in the case of expressions which can have internal type inconsistencies. As per the previous section on booleans, in the expression $\ELet{a}{\EIf{\ETrue}{1}{\EFalse}}{...}$, the conditional will be marked with an inconsistent branches error if in synthetic position, but if analyzed against unknown---with which both branches are consistent---no mark will be placed.
-This raises the question: Do we need this distinction? Perhaps we can simply erase it, for example adding a rule to switch to synthetic mode whenever we analyze against hole, or vice-versa. This is similar to the path we take, but simply collapsing the distinction removes an important expressive dimension of user intent in gradual typing.
-To better illustrate, we additionally add a compositional pattern annotation form, which can be applied to sub-patterns: $\ELet{(a, b:\TUnknown)}{(\EIf{\ETrue}{1}{\EFalse},\EIf{\ETrue}{1}{\EFalse})}{...}$. Here, we annotate the sub-pattern $b$ with an unknown type annotation. Here, the user is expressing their intent that the corresponding sub-definition should have some definite, as-yet unspecified, type. It is reasonable that the conditional should no longer be marked, as this action passes the buck, attribution-wise, to the annotation. However, it is also reasonable that the annotated unknown type itself should be considered in an error state, since there are no possible fillings for this hole. Indeed, precisely this will be accomplished in section 4.
-
-
-We augment our type system with a new variant on the unknown type which can trigger a swtich from analysis to synthesis. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the marched arrow and product judgements, and the join metafunction:
-%
-\[\begin{array}{rrcl}
-  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch
-\end{array}\]
-
-The unmarked language is extended by let expressions with composite patterns:
+In a traditional bidirectional presentation (CITE 'Strict Bidirectional Type Checking' Chlipala et al), let-expressions without composite patterns have two rules: A type-annotated version placing the definition in analytic position, and an unannotated synthetic version. With composite patterns, this straightforward division is no longer possible, as type constraints on the definition may depend on the (arbitrarily nested) sub-components of the pattern.
 %
 \[\begin{array}{rrcl}
   \EMName & \EMV & \Coloneqq & \cdots
@@ -34,6 +20,28 @@ The unmarked language is extended by let expressions with composite patterns:
                                \mid \ECInconMatchedPair{\PCMV}
 \end{array}\]
 %
+The most obvious approach is to instead use a single rule which synthesizes a type from the let-expression's pattern, then analyzes the definition against that type. However, this may run afoul of user expectation. Consider the expression $\ELet{(a,b)}{(1,2)}{e}$, which a user would reasonably expect to be semantically equivalent to the expanded expression $\ELet{a}{1}{\ELet{b}{2}{e}}$. Notice that in the un-expanded expression, $1$ and $2$ are in analytic against the unknown type, whereas in the latter, they are in synthetic position.
+
+One may ask if there a meaningful difference between these two situations. There is at least a subtle semantic distinction: Synthetic means 'no type constraints', whereas analysis against unknown imposes a trivial type constraint.
+
+This distinction manifests behaviorally in the case of expressions that can have internal type inconsistencies. As per the previous section on booleans, given the expression $\ELet{a}{\EIf{\ETrue}{1}{\EFalse}}{...}$, the conditional will be marked with an inconsistent branches error when in synthetic position, but if analyzed against the unknown type---with which both branches are consistent---no mark will be placed.
+
+One option would be to erase the distinction entirely, adding a rule to switch to synthetic mode whenever we analyze against unknown, or to simply eliminate synthetic mode altogether. We consider these options too drastic; we wish to preserve the above behavioral distinction for conditionals, both indicating an inconsistency error in the unconstrained case, and permitting the user to defer that error via annotation by the unknown type. To this effect, we add a compositional pattern annotation form, which can be applied to sub-patterns: 
+$\ELet{(a, b:\TUnknown)}{(\EIf{\ETrue}{1}{\EFalse},\EIf{\ETrue}{1}{\EFalse})}{e}$. Here we want the first condition to be in synthetic and hence marked, and the second to be in analytic and unmarked.
+\[\begin{array}{rrcl}
+  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch
+\end{array}\]
+To accomplish this, we use a variation on the first distinction-erasure option, but with a twist. We do not unconditionally switch from analysis against unknown to synthesis, but instead augment our type system with a new variant on the unknown type which triggers the switch. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the matched arrow and product judgements, and the join metafunction.
+\begin{mathpar}
+   \judgment{
+     \ctxSynType{\ctx}{\EMV}{\_}
+   }{
+     \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
+   }{SynSwitch}
+\end{mathpar}
+
+However, it is also reasonable that the annotated unknown type itself should be considered in an error state, since there are no possible fillings for this hole. Indeed, precisely this will be accomplished in section 4.
+
 Let expressions are typed according to the following $\mathtt{USLet}$ and $\mathtt{UALet}$ rules. Additionally, we add a rule governing the switch from analysis to synthesis, triggered by analysis against the new Unknown-SynSwitch type:
 \begin{mathpar}
 \judgment{
@@ -146,8 +154,10 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
 
 \begin{figure}[htbp]
   \raggedright
+  \judgbox{\ensuremath{\ctxSynFixedInto{\ctx_{in}}{\PMV}{\PCMV}{\TMV}}} Pattern $\PMV$ synthesizes $\TMV$ producing marked $\PCMV$ \\
+  \judgbox{\ensuremath{\ctxAnaFixedIntoPat{\ctx_{in}}{\PMV}{\PCMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against $\TMV$ producing marked $\PCMV$ and context $\Gamma_{out}$
+   %
   \begin{mathpar}
-
    \judgment{ }{\ctxSynFixedInto{\ctx}{\_}{\_}{\TUnknownSwitch}}{ISPatWild}
    
    \judgment{ }{\ctxSynFixedInto{\ctx}{x}{x}{\TUnknownSwitch}}{ISPatVar}
@@ -205,15 +215,25 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
      \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
      \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
    }{
-        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\PCMV} : \tau'}{\tau}{\ctx'}
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau}{\ECInconType{\PCMV} : \tau}{\tau}{\ctx'}
    }{IAPatAnnFail1}
+   
+   \judgment{
+     \ctxAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+     \inconsistent{\tau}{\tau'} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   }{
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\PCMV : \tau'}}{\tau}{\ctx'}
+   }{IAPatAnnFail2}
 
    \judgment{
      \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+     \inconsistent{\tau}{\tau'} \\
      \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
    }{
-        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau}{\ECInconType{\PCMV} : \tau}{\tau}{\ctx'}
-   }{IAPatAnnFail2}
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\ECInconType{\PCMV} : \tau'}}{\tau}{\ctx'}
+   }{IAPatAnnFail3}
+
   \end{mathpar}
   %
   \caption{Pattern Marking}
@@ -251,7 +271,7 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
    \judgment{ }{\ctxAnaPat{\ctx}{\_}{\TMV}{\ctx}}{MAPatWild}
    
    \judgment{ }{\ctxAnaPat{\Gamma}{x}{\TMV}{\ctx, x:\TMV}}{MAPatVar}
-   \\\\
+
    \judgment{
      \ctxAnaPat{\ctx}{\PCMV{}}{\tau'}{\ctx'}
      \\
@@ -265,9 +285,9 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
      \\
      \inconsistent{\tau}{\tau'}
    }{
-        \ctxAnaPat{\ctx}{\ECInconType{\PCMV} : \tau'}{\tau}{\ctx'}
-    }{MAPatAnnFail}
-   \\\\
+        \ctxAnaPat{\ctx}{\ECInconType{\PCMV}}{\tau}{\ctx'}
+    }{MAInconsistentTypes}
+
    \judgment{
       \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\\\
       \ctxAnaPat{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
