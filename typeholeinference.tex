@@ -85,7 +85,7 @@ These changes are summarized below:
 \[\begin{array}{rrcl}
     \Prov & \Provp & \Coloneqq & u \mid exp(u) \\
     \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
-    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnbound{x}^u \mid \ECInconType{\ECMV}^u \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^u \mid \EEHole^u
+    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \EEHole^u
 \end{array}\]
 
 We turn to provenances for unique identification of type holes for two key benefits:
@@ -138,7 +138,7 @@ With this guiding principle in hand, let us approach constraint generation for s
     \inconsistent{\TMV}{\TMV'} \\
     \subsumable{\ECMV}
   }{
-    \ctxAnaType{\ctx}{\ECInconType{\ECMV}^u}{\TMV} ~|~ C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV} ~|~ C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}
   }{MAInconsistentTypes-C}
 \end{mathpar}
 Here we accumulate constraints from our premises just as before. However, instead of expecting that the type of \ECMV~ be the consistent with the type $\tau$ when this is clearly impossible, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
@@ -164,7 +164,7 @@ Our logic is somewhat trickier when the branches of an if expression have no low
     \ctxSynType{\ctx}{\ECMV_3}{\TMV_2} ~|~ C_3 \\
     \inconsistent{\TMV_1}{\TMV_2}
   }{
-    \ctxSynType{\ctx}{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}^u}{\TUnknown^{exp(u)}} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}
+    \ctxSynType{\ctx}{\ECInconBrId{\ECMV_1}{\ECMV_2}{\ECMV_3}{u}}{\TUnknown^{exp(u)}} ~|~ C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}
   }{MSInconsistentBranches-C}
 \end{mathpar}
 We assume that the definition of $\TJoin{\TMV_1}{\TMV_2}$ has been adjusted to accept type holes with provenances where we arbitrarily decide that $\TJoin{\TUnknown^{p1}}{\TUnknown^{p2}} = \TUnknown^{p1}$.
@@ -215,7 +215,7 @@ Using this type hole, we can analyze the lambda's body against an unknown type w
     \notMatchedArrow{\TMV_3} \\
     \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown^{anon}} ~|~ C
   }{
-    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}^u}{\TMV_3} ~|~ C \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} ~|~ C \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
   }{MALam2-C}
 
   \judgment{
@@ -223,7 +223,7 @@ Using this type hole, we can analyze the lambda's body against an unknown type w
     \inconsistent{\TMV}{\TMV_1} \\\\
     \ctxAnaType{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2} ~|~ C_2
   }{
-    \ctxAnaType{\ctx}{\ECInconType{\ECLam{x}{\TMV}{\ECMV}}^u}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
+    \ctxAnaType{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}
   }{MALam3-C}
 \end{mathpar}
 Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the hole's type, $?^{exp(u)}$.
@@ -236,7 +236,7 @@ This brings us at last to the application of lambdas. When the function position
     \notMatchedArrow{\TMV} \\
     \ctxAnaType{\ctx}{\ECMV_2}{\TUnknown^{\rightarrow_{L}(exp(u))}} ~|~ C_2
   }{
-    \ctxSynType{\ctx}{\ECApNonMatched{\ECMV_1}^n{\ECMV_2}}{\TUnknown^{\rightarrow_{R}(exp(u))}} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \tarr{\TUnknown^{\rightarrow_L(exp(u))}}{\TUnknown^{\rightarrow_R(exp(u))}}\}
+    \ctxSynType{\ctx}{\ECApNonMatchedId{\ECMV_1}{u}{\ECMV_2}}{\TUnknown^{\rightarrow_{R}(exp(u))}} ~|~ C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \tarr{\TUnknown^{\rightarrow_L(exp(u))}}{\TUnknown^{\rightarrow_R(exp(u))}}\}
   }{MSAp2-C}
 \end{mathpar}
 
