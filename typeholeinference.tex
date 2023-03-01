@@ -8,19 +8,19 @@
 \section{Type Hole Inference}
 \subsection{Introduction}
 \label{sec:intro}
-\emph{Type inference} allows programmers to omit most or all type annotations, but requires complex constraint solving for type checking, making it difficult for users to reason about types and producing complex error messages \cite{typeinferDif}. This paper develops \emph{type hole inference}, which combines the benefits of bidirectional typing and type inference. Our approach takes the type system discussed for the marked lambda calculus and adds constraint solving as a layer on top to suggest type hole fillings, without making constraint solving necessary for typing. 
+\emph{Type inference} allows programmers to omit most or all type annotations, but requires complex constraint solving for type checking, making it difficult for users to reason about types and producing complex error messages \cite{typeinferDif}. This paper develops \emph{type hole inference}, which combines the benefits of bidirectional type systems and type inference. Our approach takes the bidirectional type system discussed for the marked lambda calculus and adds constraint solving as a layer on top to suggest type hole fillings without making constraint solving necessary for typing. 
 
 We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type substitutions and (2) reporting the most informative substitutions to the user. If all possible substitutions are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
 
-\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple types. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
+\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple inconsistent types. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
 
-Through the constraint solving layer of \emph{Type Hole Inference}, the user is given suggestions for type holes which are \textit{solvable}. In addition, \emph{type hole inference} provides debug information for \emph{unsolvable} type holes by presenting a \emph{PotentialTypeSet} containing all possible substitutions. When the user selects an \emph{unsolvable} type hole, rather than blaming one particular expression, the editor highlights the origins of all types that rendered it \emph{unsolvable}. Error localization feedback is visual and updated as edits occur, allowing the user to interactively repair their program.
+Through the constraint solving layer of \emph{type hole inference}, the user is given suggestions for type holes which are \textit{solvable}. In addition, \emph{type hole inference} provides debug information for \emph{unsolvable} type holes by presenting a \emph{PotentialTypeSet} containing all possible substitutions. When the user selects an \emph{unsolvable} type hole, rather than blaming one particular expression, the editor displays all types that rendered it \emph{unsolvable}. Error localization feedback is visual and updated as edits occur, allowing the user to interactively repair their program.
 
-\par{Contributions} The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section without failure upon hitting unsolvable constraints ~\ref{sec:infalg}.
+The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section without failure upon hitting unsolvable constraints in section ~\ref{sec:infalg}.
 
 \subsection{User Interaction}
 
-Taking advantage of the interactive nature of live programming, rather than guessing sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired. \\
+Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
 
 In Figure \ref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$.
 
@@ -61,34 +61,41 @@ Figure \ref{fig:editor_ghost} illustrates a program which has a full solution fo
 \subsection{Type System}
 
 \label{sec:typinf}
-It is crucial that we be able to uniquely identify type holes within our constraint solving system. Doing so allows us to properly represent each type hole with distinct results during unification. Thus, we adjust the syntax of the marked lambda calculus slightly as depicted in Figure ~\ref{fig:adjusted-calculus-syntax}. We make three modifications to the existing calculus's syntax.:
+It is crucial that we be able to uniquely identify type holes within our constraint solving system. Doing so allows us to properly represent each type hole with distinct results during unification. Thus, we make three modifications to the marked lambda calculus's syntax.:
 \begin{enumerate}
     \item We add a unique id $u$ to all expression holes and user inserted type holes. This creates an avenue by we can to link type holes to their locus in the program. We assume that the assignment of ids to expression holes and user inserted type holes is taken care of by some action semantics on insertion of expression holes. 
     \item We add a \emph{type hole provenance}, drawn as a superscript such as $\tehole^p$. This allows the differentiation of type holes while describing the manner each type hole was generated.
     \item We add the empty expression hole. This change is purely for convenience and allows us to more effectively discuss different user edit states in our discussions of type hole inference.
 \end{enumerate}
-
-\begin{figure}[htbp]
-  \[\begin{array}{rrcl}
+% These changes are depicted in Figure ~\ref{fig:adjusted-calculus-syntax}.
+% \begin{figure}[htbp]
+%   % \[\begin{array}{rrcl}
+%   %   \Prov & \Provp & \Coloneqq & u \mid exp(u) \\
+%   %   \TMName  & \TMV  & \Coloneqq & \TUnknown^{p} \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \\
+%   %   \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
+%   %                      \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
+%   %                      \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
+%   %            &       & \mid         & \ECUnbound{x}^u \mid \ECInconType{\ECMV}^u \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^u \mid \EEHole^u
+%   % \end{array}\]
+  
+%   \caption{Adjusted syntax of the marked lambda calculus}
+%   \label{fig:adjusted-calculus-syntax}
+% \end{figure}
+These changes are summarized below:
+\[\begin{array}{rrcl}
     \Prov & \Provp & \Coloneqq & u \mid exp(u) \\
-    \TMName  & \TMV  & \Coloneqq & \TUnknown^{p} \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \\
-    \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
-                       \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
-                       \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
-             &       & \mid         & \ECUnbound{x}^u \mid \ECInconType{\ECMV}^u \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^u \mid \EEHole^u
-  \end{array}\]
-  \caption{Adjusted syntax of the marked lambda calculus}
-  \label{fig:adjusted-calculus-syntax}
-\end{figure}
+    \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
+    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnbound{x}^u \mid \ECInconType{\ECMV}^u \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^u \mid \EEHole^u
+\end{array}\]
 
 We turn to provenances for unique identification of type holes for two key benefits:
 \begin{enumerate}
-    \item Provenances allow each type hole to always have a concrete link to some type hole or expression hole that lies in the program. For instance, rather than identifying holes by an arbitrary id integer, the provenance $exp(3)$ tells us that this type hole was the result of synthesis on the expression hole with id 3.
-    \item Provenances allow increased efficiency when compared to constantly generating fresh type hole ids, which would spawn far larger constraint graphs during constraint generation.
+    \item Provenances allow each type hole to always have a concrete link to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that a type hole was the result of synthesis on an expression hole with id 3.
+    \item Provenances allow increased efficiency when compared to generating fresh type hole ids, where the latter would spawn far larger constraint graphs during constraint generation.
 \end{enumerate}
 
 \subsection{Constraint Generation}
-Central to any type inference system is constraint generation. This topic has been widely explored in literature and is commonly completed alongside type checking (citation needed \todo{cite tapl}). We approach constraint generation from a notion of enforcing our expectations of various expressions and their types as we perform synthesis and analysis. Constraints can be accumulated across uses of bidirectional typing judgements after expressions have been marked to generate a final set of constraints. To facilitate this, we extend our previous judgement forms for the synthesis and analysis of matched expressions as follows:
+Central to any type inference system is constraint generation. This topic has been widely explored in literature and is commonly completed alongside type checking \cite{TAPL}. We approach constraint generation from a notion of enforcing our expectations of various expressions and their types as we perform synthesis and analysis. Constraints can be accumulated across uses of bidirectional typing judgements after expressions have been marked to generate a final set of constraints. To facilitate this, we extend our previous judgement forms for the synthesis and analysis of matched expressions as follows:
 \begin{center}
     $\ctxSynType{\ctx}{\ECMV}{\TMV} ~|~ C$ \hspace{3cm} $\ctxAnaType{\ctx}{\ECMV}{\TMV} ~|~ C$
 \end{center}
@@ -265,6 +272,7 @@ $$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUn
 \usetikzlibrary{positioning,calc}
 
 \subsection{Constraint Solving}
+\label{sec:infalg}
 The problem of inferring types from constraints has been widely explored in the literature. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Moreover, we approach type inference with the key goal of representing all potential type fillings for type holes, regardless of any conflicts that may arise during unification.
 
 In order to do this, we begin with a simpler problem: representing our constraints as an undirected graph. We'd like to construct our graph such that if the node associated with type hole $\TUnknown^{p_2}$ can be reached from $\TUnknown^{p_1}$, it must be the case that $\TUnknown^{p_1} \approx \TUnknown^{p_2}$. Once we have a graph of all constraints, the problem of identifying potential types to suggest for any type hole in the program can be boiled down to that of identifying our graph's connected components. Put another way, if we want to find the potential types that may be used to fill some type hole, all we need to do is find all nodes that can be reached from its node in the constraint graph.
