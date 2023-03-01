@@ -20,15 +20,18 @@ We augment our type system with a new variant on the unknown type which can trig
 The unmarked language is extended by let expressions with composite patterns:
 %
 \[\begin{array}{rrcl}
-  \EMName  & \EMV  & \Coloneqq & \cdots
-                               \mid \ELet{\PMV}{\EMV}{\EMV}
-\end{array}\]
-\[\begin{array}{rrcl}
-  \PMName  & \PMV  & \Coloneqq x 
+  \EMName & \EMV & \Coloneqq & \cdots
+                               \mid \ELet{\PMV}{\EMV}{\EMV} \\
+  \PMName & \PMV & \Coloneqq & x 
                                \mid \_
-                               \mid (p_1,p_2)
+                               \mid (p_1, p_2)
+                               \mid p : \TMV \\
+  \PCMName & \PCMV & \Coloneqq & x 
+                               \mid \_
+                               \mid (p_1, p_2)
                                \mid p : \TMV
-                               
+                               \mid \ECInconType{\PCMV}
+                               \mid \ECInconMatchedPair{\PCMV}
 \end{array}\]
 %
 Let expressions are typed according to the following $\mathtt{USLet}$ and $\mathtt{UALet}$ rules. Additionally, we add a rule governing the switch from analysis to synthesis, triggered by analysis against the new Unknown-SynSwitch type:
@@ -48,7 +51,7 @@ Let expressions are typed according to the following $\mathtt{USLet}$ and $\math
    }{U(S/A)Let}
    
    \judgment{
-     \ctxSynType{\ctx}{\EMV}{_}
+     \ctxSynType{\ctx}{\EMV}{\_}
    }{
      \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
    }{SynSwitch}
@@ -87,7 +90,6 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
   \judgbox{\ensuremath{\ctxSynPat{\Gamma}{\PMV}{\TMV}}} Pattern $\PMV$ synthesizes type $\TMV$
   %
   \begin{mathpar}
-
    \judgment{ }{\ctxSynPat{\ctx}{\_}{\TUnknownSwitch}}{USPatWild}
    
    \judgment{ }{\ctxSynPat{\ctx}{x}{\TUnknownSwitch}}{USPatVar}
@@ -110,6 +112,7 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
   \label{fig:calculus-pattern-synthesis}
 \end{figure}
 
+
 \begin{figure}[htbp]
   \raggedright
   \judgbox{\ensuremath{\ctxAnaPat{\ctx_{in}}{\PMV}{\TMV}{\ctx_{out}}}} Pattern $\PMV$ analyzes against type $\TMV$ producing context $\Gamma_{out}$
@@ -128,23 +131,152 @@ Finally, pattern synthesis and analysis are governed by the following rules. Not
         \ctxAnaPat{\ctx}{\PMV : \tau'}{\tau}{\ctx'}
     }{UAPatAnn}
 
-   \\\\
    \judgment{
-      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\
-      \ctxAnaPat{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
+      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\\\
+      \ctxAnaPat{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\\\
       \ctxAnaPat{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
     }{
       \ctxAnaPat{\ctx}{\ECPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
     }{UAPatPair}
-
-   \judgment{
-     \ctxSynPat{\ctx}{\PMV{}}{\_}
-   }{
-        \ctxAnaPat{\ctx}{\ECMarkedInconType{\PMV}{}}{\tau}{\ctx}
-    }{UAPatErr}
   \end{mathpar}
   %
   \label{fig:calculus-pattern-analysis}
 \end{figure}
 
-%TODO:andrew
+
+\begin{figure}[htbp]
+  \raggedright
+  \begin{mathpar}
+
+   \judgment{ }{\ctxSynFixedInto{\ctx}{\_}{\_}{\TUnknownSwitch}}{ISPatWild}
+   
+   \judgment{ }{\ctxSynFixedInto{\ctx}{x}{x}{\TUnknownSwitch}}{ISPatVar}
+
+   \judgment{
+     \ctxSynFixedInto{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1} \\\\
+     \ctxSynFixedInto{\ctx}{\PMV_2}{\PCMV_2}{\TMV_2}
+   }{
+      \ctxSynFixedInto{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\ECPair{\PCMV_1}{\PCMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+   }{ISPatPair}
+   
+   \judgment{
+     \ctxAnaPat{\ctx}{\PMV{}}{\TMV}{\_} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\_}
+   }{
+        \ctxSynFixedInto{\ctx}{\PMV : \tau}{\PCMV : \tau}{\tau}
+    }{ISPatAnn}
+
+   \judgment{
+     \ctxNotAnaPat{\ctx}{\PMV{}}{\TMV}{\_} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TUnknown}{\_}
+   }{
+        \ctxSynFixedInto{\ctx}{\PMV : \TMV}{\ECInconType{\PCMV} : \TMV}{\TMV}
+    }{ISPatAnnFail}
+   \\\\
+   \judgment{ }{\ctxAnaFixedIntoPat{\ctx}{\_}{\_}{\TMV}{\ctx}}{IAPatWild}
+   
+   \judgment{ }{\ctxAnaFixedIntoPat{\ctx}{x}{x}{\TMV}{\ctx, x:\TMV}}{IAPatVar}
+   \\\\
+   \judgment{
+     \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\\\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
+     \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TMV_2}{\ctx_2}
+   }{
+      \ctxAnaFixedIntoPat{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\ECPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+   }{IAPatPair}
+
+   \judgment{
+     \notMatchedPair{\TMV} \\\\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TUnknown}{\ctx_1} \\\\
+     \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TUnknown}{\ctx_2}
+   }{
+      \ctxAnaFixedIntoPat{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\ECInconMatchedPair{\ECPair{\PCMV_1}{\PCMV_2}}}{\TMV}{\ctx_2}
+   }{IAPatPairFail}
+
+   \judgment{
+     \ctxAnaPat{\ctx}{\PMV{}}{\tau'}{\ctx'} \\
+     \consistent{\tau}{\tau'} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau'}{\_}
+   }{
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\PCMV : \tau'}{\tau}{\ctx'}
+   }{IAPatAnn}
+
+   \judgment{
+     \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   }{
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau'}{\ECInconType{\PCMV} : \tau'}{\tau}{\ctx'}
+   }{IAPatAnnFail1}
+
+   \judgment{
+     \ctxNotAnaPat{\ctx}{\PMV{}}{\tau}{\ctx'} \\
+     \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\tau}{\_}
+   }{
+        \ctxAnaFixedIntoPat{\ctx}{\PMV : \tau}{\ECInconType{\PCMV} : \tau}{\tau}{\ctx'}
+   }{IAPatAnnFail2}
+  \end{mathpar}
+  %
+  \caption{Pattern Marking}
+  \label{fig:calculus-pattern-synthesis-marking}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
+
+   \judgment{ }{\ctxSynPat{\ctx}{\_}{\TUnknownSwitch}}{MSPatWild}
+   
+   \judgment{ }{\ctxSynPat{\ctx}{x}{\TUnknownSwitch}}{MSPatVar}
+   
+   \judgment{
+     \ctxAnaPat{\ctx}{\PCMV{}}{\tau}{\_}
+   }{
+        \ctxSynPat{\ctx}{\PCMV : \tau}{}{\tau}
+    }{MSPatAnn}
+
+   \judgment{
+     \ctxSynPat{\ctx}{\PCMV_1}{\TMV_1} \\
+     \ctxSynPat{\ctx}{\PCMV_2}{\TMV_2}
+   }{
+     \ctxSynPat{\ctx}{\EPair{\PCMV_1}{\PCMV_2}}{\TPair{\TMV_1}{\TMV_2}}
+   }{MSPatPair}
+  \end{mathpar}
+  %
+  \caption{Marked Pattern Synthesis}
+  \label{fig:calculus-pattern-synthesis-marked}
+\end{figure}
+
+\begin{figure}[htbp]
+  \raggedright
+  \begin{mathpar}
+   \judgment{ }{\ctxAnaPat{\ctx}{\_}{\TMV}{\ctx}}{MAPatWild}
+   
+   \judgment{ }{\ctxAnaPat{\Gamma}{x}{\TMV}{\ctx, x:\TMV}}{MAPatVar}
+   \\\\
+   \judgment{
+     \ctxAnaPat{\ctx}{\PCMV{}}{\tau'}{\ctx'}
+     \\
+     \consistent{\tau}{\tau'}
+   }{
+        \ctxAnaPat{\ctx}{\PCMV : \tau'}{\tau}{\ctx'}
+    }{MAPatAnn}
+
+    \judgment{
+     \ctxAnaPat{\ctx}{\PCMV{}}{\tau'}{\ctx'}
+     \\
+     \inconsistent{\tau}{\tau'}
+   }{
+        \ctxAnaPat{\ctx}{\ECInconType{\PCMV} : \tau'}{\tau}{\ctx'}
+    }{MAPatAnnFail}
+   \\\\
+   \judgment{
+      \matchedPair{\TMV}{\TMV_1}{\TMV_2} \\\\
+      \ctxAnaPat{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
+      \ctxAnaPat{\ctx_1}{\PCMV_2}{\TMV_2}{\ctx_2}
+    }{
+      \ctxAnaPat{\ctx}{\ECPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+    }{MAPatPair}
+  \end{mathpar}
+  %
+  \caption{Marked Pattern Analysis}
+  \label{fig:calculus-pattern-analysis-marked}
+\end{figure}

@@ -8,14 +8,13 @@
 % and many helpful language services are not fully functional \cite{HazelnutSNAPL}.
 
 Modern programming environments provide developers with 
-various semantic services, such as type hints, semantic navigation, semantic code completion, and automated refactoring, that require statically reasoning about the type and binding structure of the program as it is being edited. 
+various semantic services---e.g. type hints, semantic navigation, semantic code completion, and automated refactoring---that require statically reasoning about the type and binding structure of a program as it is being edited. 
 % These semantic services are often packaged into language servers\todo{cites}.
-The problem is that the program being edited can be ill-typed, sometimes for long periods of time. 
-For example, when the developer changes an important type definition, errors might arise at dozens of usage sites in a large program, which could take hours or days to address. Semantic services often exhibit gaps in service during these periods \cite{HazelnutSNAPL}, because in the conventional formal account of type systems, only well-typed programs have a well-defined type and binding structure. As soon as a type error occurs \emph{anywhere}, the program is formally meaningless \emph{everywhere}.
+The problem is that the program being edited can be ill-typed, sometimes for a long period of time. 
+For example, after changing a type definition, errors might arise at dozens of usage sites in a large program, which can take hours or days to resolve. Semantic services often exhibit gaps in service during these periods \cite{HazelnutSNAPL}, because type systems defined in the conventional way specify the type and binding structure only for well-typed programs. As soon as a type error occurs \emph{anywhere}, the program is formally meaningless \emph{everywhere}.
 
-Developers benefit when these gaps in service are minimized or eliminated, so there has long been considerable practical interest in (1)~\textbf{type error localization}: mechanisms for directing the developer to 
-the location(s) in a program that may be erroneous, and (2) \textbf{type error recovery}: 
-mechanisms that allow the language server to optimistically recover from localized errors and continue to provide downstream semantic services, ideally throughout the program.
+Developers benefit when these gaps in service are minimized or eliminated, so there has long been considerable practical interest in (1)~\textbf{type error localization}: mechanisms for identifying the location(s) in a program at fault for a type error, and (2) \textbf{type error recovery}: 
+mechanisms that allow the language server to optimistically recover from a localized error and continue on to locate other errors and provide downstream semantic services, ideally throughout the program and with minimal degradation in quality.
 
 Essentially all widely-used programming systems have some support for type error 
 localization, e.g. via compiler error messages or user interface affordances fed by data from a language server.\todo{cites}

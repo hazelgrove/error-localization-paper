@@ -406,11 +406,131 @@ $$C_{ex} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnk
 \subsection{Constraint Solving}
 \todo{fix this section to use terminology discussed}
 \label{sec:infalg}
-The problem of inferring types from constraints has been widely explored in the literature. We look to Huet's union-find based unification algorithm \cite{G. Huet} as a base from which to build our solution. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Thus, we present a variant of Huet's algorithm which, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PotentialTypeSet}, for all type holes in the program.
+The problem of inferring types from constraints has been widely explored in the literature. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. Moreover, we approach type inference with the key goal of representing all potential type fillings for type holes, regardless of any conflicts that may arise during unification.
 
-\todo{Jump straight into a graph example}
+In order to do this, we begin with a simpler problem: representing our constraints as an undirected graph. We'd like to construct our graph such that if the node associated with type hole $\TUnknown^{p2}$ can be reached from $\TUnknown^{p1}$, it must be the case that $\TUnknown^{p1} \approx \TUnknown^{p2}$. Once we have a graph of all constraints, the problem of identifying potential types to suggest for any type hole in the program can be boiled down to that of identifying our graph's connected components. Put another way, if we want to find the potential types that may be used to fill some type hole, all we need to do is find all nodes that can be reached from its node.
 
-% Hence, we utilize the union-find algorithm for constraint solving like Huet. 
+
+\subsubsection{Constructing Constraint Graphs}
+When constructing a graph of our constraints, our first inclination  might be to allow all types found in our constraints to act as nodes in our graph. We could then create a traversable edge between nodes for every constraint. However, such a choice prevents pairs that are reachable from one another from always being related via the constraint relation. To see why, recall that the constraint relation is only transitive across incomplete types (those containing at least one type hole). Since edges can be traversed transitively, we cannot have traversable edges between all types represented in constraints. Rather, only incomplete types can have traversable edges. Conversely, complete types should be reachable only by incomplete types that have been directly constrained to them. 
+
+To simplify this observation, we assert that only incomplete types can be nodes in our graph. We refer to edges connecting incomplete types as \emph{traversable edges} which we draw as solid lines. Edges linking to complete types will be represented via \emph{solution edges}, which we draw as dashed lines. These edges can only be used to travel into complete types and can never be used to travel out. As a result, they simply influence the solutions possible for the nodes that can reach into them via some \emph{solution edge}. As an example of this, consider Figure \ref{fig:ex1ex2graphs}. 
+\begin{figure}[htb!]
+\centering
+\begin{subfigure}{.49\textwidth}
+  \centering
+      \begin{tikzpicture}
+      [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
+      \node[rectangle,minimum size=0.85cm] (n1) at (3,3) {$\tehole^{1}$};
+      \node[rectangle,minimum size=0.85cm] (n2) at (1,3)  {$\tehole^{2}$};
+      \node[minimum size=0.85cm] (i) at (3,1)  {$\tnum$};
+    
+      \foreach \from/\to in {n1/n2}
+        \draw (\from) -- (\to);
+       \foreach \from/\to in {n1/i}
+        \draw[dashed] (\from) -- (\to);
+    
+    \end{tikzpicture}
+  \caption{Graph of $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$}
+  \label{fig:reachable-tag}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+  \centering
+  \begin{tikzpicture}
+  [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
+  \node[rectangle,minimum size=0.85cm] (n1) at (2,3) {$\tehole^{1}$};
+  \node[rectangle,minimum size=0.85cm] (n2) at (4,3)  {$\tehole^{2}$};
+  \node[minimum size=0.85cm] (i1) at (4,1)  {$\tnum$};
+  \node[minimum size=0.85cm] (i2) at (2,1)  {$\tnum$};
+  \node[minimum size=0.85cm] (i3) at (0,3)  {$\tbool$};
+
+   \foreach \from/\to in {n1/i3, n1/i2, n2/i1}
+    \draw[dashed] (\from) -- (\to);
+
+\end{tikzpicture}
+  \caption{Graph of $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$}
+  \label{fig:disjoint-nodes}
+\end{subfigure}
+\caption{Sample constraint graphs of ground types}
+\label{fig:ex1ex2graphs}
+\end{figure}
+
+Figure \ref{fig:reachable-tag} illustrates a set of constraints $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$ where all nodes can be solved as $\tnum$ by travelling into $\tnum$ through $\tehole^1$, resulting in it having a single connected component. On the other hand, figure  \ref{fig:disjoint-nodes} illustrates an example set of constraints $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$ where $\tnum$ is travelled into by two separate incomplete types, but cannot be used to connect them. Consequently, it contains two connected components.
+
+% Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
+
+Upon encountering a constraint between two arrow types, we can generate two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$, we generate $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. These constraints can then be used to render the graph depicted in Figure \ref{fig:arrowgraph}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[remember picture,
+  inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+  innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+  outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
+  ]
+  \node[outer,draw=green] (A) {
+    \shortstack{
+        $Arrow$\\
+        \begin{tikzpicture}
+          \node [inner] (n1)  {$\tehole^{1}$};
+          \node [inner,right=of n1] (n2) {$\tehole^{2}$};
+          % \draw[red,thick,->] (n1) -- (n2);
+        \end{tikzpicture}
+    }
+  };
+  \node[outer,draw=green,below=of A] (B) {
+    \shortstack{
+        $Arrow$\\
+        \begin{tikzpicture}
+          \node [inner] (n3)  {$\tehole^{3}$};
+          \node [innercirc,right=of n3] (i) {$\tnum$};
+          % \draw[red,thick,->] (n3) -- (i);
+        \end{tikzpicture}
+    }
+  };
+  \draw (n1) -- (n3);
+  \draw[dashed] (n2) -- (i);
+   \draw[thick] (A) -- (B);
+\end{tikzpicture}
+\caption{Expanded constraint graph of $C_{ex} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
+\label{fig:arrowgraph}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[remember picture,
+  inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+  innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+  outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
+  ]
+  \node[outer,draw=green] (A) {$$};
+  \node[outer,draw=green,below=of A] (B) {
+    \shortstack{
+        $Arrow$\\
+        \begin{tikzpicture}
+          \node [inner] (n3)  {$\tehole^{3}$};
+          \node [innercirc,right=of n3] (i) {$\tnum$};
+          % \draw[red,thick,->] (n3) -- (i);
+        \end{tikzpicture}
+    }
+  };
+  % \node[rectangle,minimum size=0.85cm, below=of B] (num) at (2,3) {$\tnum$};
+  % \node[rectangle,minimum size=0.85cm, below=of B, right=of num] (hole3) at (4,3)  {$\tehole^{3}$};
+  \draw (n1) -- (n3);
+  \draw[dashed] (n2) -- (i);
+   \draw[thick] (A) -- (B);
+\end{tikzpicture}
+\caption{Expanded constraint graph of $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
+\label{fig:C-ex-graph}
+\end{figure}
+
+
+The graph the constraint solver would create given the constraint set $C_{ex1}$ is shown in Figure \ref{fig:C_ex_graph}.
+
+Thus, we present a variant of Huet's algorithm which, instead of halting upon discovering a conflicting constraint, continues past encountered errors and always computes the set of possible types, a \textit{PotentialTypeSet}, for all type holes in the program.
+
+The set of constraints generated through static analysis can be used to construct a graph of \textit{PotentialType}s.
+
 A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. The problem of determining the \textit{PotentialTypeSet} for every type hole can be re-framed as finding all connected components in a graph of types, where nodes are connected by constraint relations. After every constraint has been processed, every type hole is associated with one \textit{PotentialTypeSet}. A \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of the nodes used to transition, we continuously extend some \emph{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in Figure \ref{fig:possible_type_sets}.
 
 \begin{figure}[h!]
@@ -446,115 +566,7 @@ PotentialType~~ t & ::=
 \vspace{-5px}
 \end{figure}
 
-The set of constraints generated through static analysis can be used to construct a graph of \textit{PotentialType}s. Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
-
-\begin{figure}[h!]
-\centering
-\begin{subfigure}{.49\textwidth}
-  \centering
-      \begin{tikzpicture}
-      [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-      \node[rectangle,minimum size=0.85cm] (n1) at (3,3) {$\tehole^{1}$};
-      \node[rectangle,minimum size=0.85cm] (n2) at (1,3)  {$\tehole^{2}$};
-      \node[minimum size=0.85cm] (i) at (3,1)  {$\tnum$};
-    
-      \foreach \from/\to in {n1/n2}
-        \draw (\from) -- (\to);
-       \foreach \from/\to in {n1/i}
-        \draw[dashed] (\from) -- (\to);
-    
-    \end{tikzpicture}
-  \caption{Graph of $C = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$}
-  \label{fig:sub1}
-\end{subfigure}
-\begin{subfigure}{.49\textwidth}
-  \centering
-  \begin{tikzpicture}
-  [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-  \node[rectangle,minimum size=0.85cm] (n1) at (2,3) {$\tehole^{1}$};
-  \node[rectangle,minimum size=0.85cm] (n2) at (4,3)  {$\tehole^{2}$};
-  \node[minimum size=0.85cm] (i1) at (4,1)  {$\tnum$};
-  \node[minimum size=0.85cm] (i2) at (2,1)  {$\tnum$};
-  \node[minimum size=0.85cm] (i3) at (0,3)  {$\tbool$};
-
-   \foreach \from/\to in {n1/i3, n1/i2, n2/i1}
-    \draw[dashed] (\from) -- (\to);
-
-\end{tikzpicture}
-  \caption{Graph of $C = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$}
-  \label{fig:sub2}
-\end{subfigure}
-\caption{Sample constraint graphs of ground types}
-\label{fig:ex1ex2graphs}
-\end{figure}
-
-Upon encountering a constraint between two arrow $\tarr{}{}$ types, the constraint solver generates a two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum}$, the solver will generate $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. See Figure \ref{fig:arrowgraph} for the graph constructed from $C_{ex3}$. Note that the nodes $\tehole^1$ and $\tehole^3$ are \textit{linked} with a solid edge, but $\tehole^2$ is only \textit{tagged} with $\tnum$.
-
-\begin{figure}[h!]
-\centering
-\begin{tikzpicture}[remember picture,
-  inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
-  innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
-  outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
-  ]
-  \node[outer,draw=green] (A) {
-    \shortstack{
-        $Arrow$\\
-        \begin{tikzpicture}
-          \node [inner] (n1)  {$\tehole^{1}$};
-          \node [inner,right=of n1] (n2) {$\tehole^{2}$};
-          % \draw[red,thick,->] (n1) -- (n2);
-        \end{tikzpicture}
-    }
-  };
-  \node[outer,draw=green,below=of A] (B) {
-    \shortstack{
-        $Arrow$\\
-        \begin{tikzpicture}
-          \node [inner] (n3)  {$\tehole^{3}$};
-          \node [innercirc,right=of n3] (i) {$\tnum$};
-          % \draw[red,thick,->] (n3) -- (i);
-        \end{tikzpicture}
-    }
-  };
-  \draw (n1) -- (n3);
-  \draw[dashed] (n2) -- (i);
-   \draw[thick] (A) -- (B);
-\end{tikzpicture}
-\caption{Expanded constraint graph of $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
-\label{fig:arrowgraph}
-\end{figure}
-
 We provide pseudocode for a graph construction algorithm in Figure \ref{fig:algcode_construct_graph}.  We assume a basic \emph{link\_nodes} and \emph{tag\_nodes} definition that connects nodes by retrieving a type hole's associated \emph{PotentialTypeSet} from the graph before extending it with some supplied type. We also assume the existence of a \emph{Map.add} function that adds a new element to the supplied map if it does not already exist, and otherwise does not change any values.
-
-% A Union-Find implementation can use the following helper functions defined in \ref{fig:algcode_construct_graph_helpers}:
-% \begin{enumerate}
-%   \item add\_node() wraps an $Htyp$ in singleton PotentialTypeSet and adds it to the graph if not already present, and returns the updated graph.
-%   \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PotentialTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
-%   \item tag\_node() uses the Find operation of Union-Find to get the representative of a node, and adds $\tau$ to its \textit{PotentialTypeSet}.
-% \end{enumerate}
-
-% \begin{figure}[h!]
-% \begin{lstlisting}[escapeinside={(*}{*)}]
-% let link (graph, t1, t2) =
-%     let s1 = graph.get(t1) in
-%     let s2 = graph.get(t2) in
-%     let s3 = s1 (*$\amalg$*) s2 in
-%     let graph = graph.insert(t1, s3)in
-%     let graph = graph.insert(t2, s3) in
-%     graph;
-
-% let tag (graph, t1, t2) =
-%     let s = graph.get(t1) in
-%     let s' = s (*$\amalg$*) single(t2) in
-%     let graph = graph.insert(t1, s') in 
-%     graph;
-% \end{lstlisting}
-% \vspace{-4px}
-%  \hrule
-% \caption{Algorithms for linking and tagging nodes in constraint graphs}
-% \label{fig:algcode_link_tag}
-% \end{figure}
 
 \begin{figure}[h!]
 \begin{lstlisting}[escapeinside={(*}{*)}]
@@ -564,10 +576,7 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
     | hd::tl -> (
         match hd with
         | ((*$\tarr{t1_L}{t1_R}$*), (*$\tarr{t2_L}{t2_R}$*)) ->
-            construct_graph(
-                ~graph, 
-                (((*$t1_L$*), (*$t2_L$*)))::(((*$t1_R$*), (*$t2_R$*)))::tl
-            )
+            construct_graph(~graph, (((*$t1_L$*), (*$t2_L$*)))::(((*$t1_R$*), (*$t2_R$*)))::tl)
         | ((*$\tehole^{p}$*) as hole, t)
         | (t, (*$\tehole^{p}$*) as hole) ->
             let graph = Map.add(graph, hole, hole) in
@@ -580,7 +589,7 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
                 construct_graph(~graph, tl)
             )
         | _ -> construct_graph(~graph, tl)
-    );
+    );;
 
 \end{lstlisting}
 \vspace{-4px}
@@ -589,11 +598,10 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
 \label{fig:algcode_construct_graph}
 \end{figure}
 
-% When a constraint of the form $A \approx B$ is processed, both A and B's \textit{PotentialTypeSet}s are recovered from the graph and then \textit{link}ed. When computing connected components, the link operation may be adjusted to identify a single representative among $A$ and $B$ via union-find. This representative can then be updated with the union of $A$ and $B$'s \textit{PotentialTypeSet}s. As other \textit{link} operations are performed on $A$ or $B$, union-find allows us to update a single \textit{PotentialTypeSet} shared among all members of their known \textit{connected component}. In this manner, the \texit{PotentialTypeSet} associated with any representative can act as an accumulated connected component across the entirety of \textit{constructGraph}. The changes necessary to \textit{link} and \textit{tag} are shown below in Figure ~\ref{fig:algocode_construct_graph}.
+\subsubsection{Computing PotentialTypeSets Using Constraint Graphs} 
+The function construct\_graph builds a mapping from each type hole to a \emph{PotentialTypeSet} containing its adjacency list. This \textit{PotentialTypeSet} is only an adjacency list, a subset of the full solution for the type hole. A depth-first search can be used to determine all nodes in the graph which can be reached from a type hole using this adjacency list. Instead of this, we look to Huet's union-find based unification algorithm \cite{G. Huet} as a base from which to build our solution.
 
-The function construct\_graph builds a mapping from each type hole to a \emph{PotentialTypeSet} containing its adjacency list. This \textit{PotentialTypeSet} is only an adjacency list, a subset of the full solution for the type hole. A depth-first search can be used to determine all nodes in the graph which can be reached from a type hole using this adjacency list.
-
-Alternatively, a Union-Find implementation can use the following definitions for these helper functions defined in \ref{fig:algcode_construct_graph_helpers}:
+A Union-Find implementation can use the following definitions for these helper functions defined in \ref{fig:algcode_construct_graph_helpers}:
 \begin{enumerate}
   \item add\_node() wraps an $Htyp$ in singleton PotentialTypeSet and adds it to the graph if not already present, and returns the updated graph.
   \item link\_nodes() uses the Find operation of Union-Find to get the representatives of both nodes, then Unions both representatives, merging their \textit{PotentialTypeSet}s in the process as described in Figure \ref{fig:possible_type_sets}.
@@ -603,19 +611,17 @@ Using these helper functions, the graph returned by construct\_graph will contai
 
 \begin{figure}[h!]
 \begin{lstlisting}[escapeinside={(*}{*)}]
-let add_node (graph, t) =
-    graph.add(graph, t, [])
 let link_nodes (graph, t1, t2) =
     let (rep1, rep2) = (UnionFind.find(t1), UnionFind.find(t2)) in
     let (s1, s2) = (graph.find(rep1), graph.find(rep2)) in
     let union_rep = UnionFind.union(rep1, rep2) in
     let s_merged = s1 (*$\amalg_{UF}$*) s2 in
-    Map.update(graph, union_rep, s_merged)
+    Map.update(graph, union_rep, s_merged);;
 let tag_node (graph, t1, t2) =
     let rep1 = UnionFind.find(t1) in
     let s = graph.get(rep1) in
     let s' = s (*$\amalg_{UF}$*) UnionFind.elem([t2]) in
-    Map.update(graph, t1, s')
+    Map.update(graph, t1, s');;
 \end{lstlisting}
 \vspace{-2px}
 \hrule
@@ -634,14 +640,12 @@ Type holes are considered solvable if their \textit{PotentialTypeSet} contains a
 \begin{figure}[h!]
 \begin{lstlisting}[escapeinside={(*}{*)}]
 let handle_occurs_check (graph) =
-    // annotate solution with occurs check errors
     let annotate_with_error (key) =
         let s = Map.find(graph, UnionFind.find(key) in
         let pass_occurs = is_acyclic(s)
         (key, s, pass_occurs)
     in
-    List.map(Map.keys(graph), annotate_with_error)
-}
+    List.map(Map.keys(graph), annotate_with_error);;
 \end{lstlisting}
 \vspace{-4px}
  \hrule

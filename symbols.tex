@@ -57,12 +57,17 @@
 \newcommand{\synOrAna}{\ensuremath{\Rightarrow\hspace{-4pt}/\hspace{-1pt}\Leftarrow}}
 \newcommand{\ctxSynOrAnaType}[3]{\ensuremath{\withCtx{#1}{\ensuremath{#2 \synOrAna #3}}}}
 
-% typing patterns
+% patterns
 \newcommand{\ctxSynPat}[3]{\ensuremath{\withCtx{#1}{\synType{#2}{#3}}}}
 \newcommand{\ctxAnaPat}[4]{\ensuremath{\withCtx{#1}{\anaType{#2}{#3 ; #4}}}}
+\newcommand{\notAnaPat}[2]{\ensuremath{#1 \not\Leftarrow #2}}
+\newcommand{\ctxNotAnaPat}[4]{\ensuremath{\withCtx{#1}{\notAnaPat{#2}{#3 ; #4}}}}
 \newcommand{\PMV}{\ensuremath{p}}
+\newcommand{\PCMV}{\ensuremath{\check{p}}}
 \newcommand{\PMName}{{\normalfont\textsf{UPat}}}
+\newcommand{\PCMName}{{\normalfont\textsf{MPat}}}
 \newcommand{\TUnknownSwitch}{\ensuremath{\?^{\Rightarrow}}}
+\newcommand{\ctxAnaFixedIntoPat}[5]{\ensuremath{\withCtx{#1}{\anaFixedInto{#2}{#3}{#4 ; #5}}}}
 
 % subsumable
 \newcommand{\subsumable}[1]{\ensuremath{#1 ~{\normalfont{\normalfont\textsf{subsumable}}}}}
