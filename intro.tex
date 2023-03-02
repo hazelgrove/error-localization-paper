@@ -66,7 +66,7 @@ One approach would be to assume, arbitrarily, that one branch is correct, locali
 Heuristics have been developed to help make this choice less arbitrary, e.g. 
 by observing recent editing history \todo{cite}, 
 or training a machine learning model \todo{cite}. 
-The other approach, which we take in Hazel, is to localize the inconsistency to the conditional expression itself, reporting that the problem is that the branch types differ, as indicated in
+The other approach, which Hazel takes, is to localize the inconsistency to the conditional expression itself, reporting that the problem is that the branch types differ, as indicated in
 the screenshot in \autoref{fig:hazel-intro}. When the cursor is on the conditional expression, the Hazel type inspector---a status bar that reports typing information, including type error messages, about the term at the cursor \cite{hannah1}---shows the following error:
 
 TODO\todo{tpye inspector}
@@ -117,4 +117,9 @@ than attempting to localize to expressions.
 The user can explore the different partial type hole fillings. Making a choice then allows the bidirectional system to localize the error to relevant expressions.
 Until the choice is finalized, the system continues to recover gradually.
 
+
+
+
+let x : ? = ? in 
+if x then x(x + 1) else 
 

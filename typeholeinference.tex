@@ -309,7 +309,8 @@ As an example of this, consider Figure \ref{fig:ex2ex3graphs}. Figure \ref{fig:r
 
 % Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
 
-Upon encountering a constraint between two arrow types, we can generate two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex4} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$, we generate the constraints $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. These constraints can then be used to render the graph depicted in Figure \ref{fig:arrowgraph}. Here, we represent incomplete $Arrow$s as nodes whose types are dependent on their left and right hand sides, which may also be nodes. As an example, we see in figure \ref{fig:arrowgraph} that $\tarr{\tehole^1}{\tehole^2}$ is represented by a large arrow node containing the node $\tehole^1$ on the left and $\tehole^2$ on the right. Any node linked to an $Arrow$ node can only access its left and right hand sides once they are paired together and wrapped in a binary $\rightarrow$ type. 
+Upon encountering a constraint between two arrow types, we can generate two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex4} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$, we generate the constraints $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. These constraints can then be used to render the graph depicted in Figure \ref{fig:arrowgraph}. Here, we represent incomplete $Arrow$s as nodes whose types are dependent on their left and right hand sides, which may also be nodes. As an example, we see in figure \ref{fig:arrowgraph} that $\tarr{\tehole^1}{\tehole^2}$ is represented by a large arrow node containing the node $\tehole^1$ on the left and $\tehole^2$ on the right. 
+% Any node linked to an $Arrow$ node can only access its left and right hand sides once they are paired together and wrapped in a binary $\rightarrow$ type. 
 
 With these rules in hand, we can construct graphs for more complex constraint sets. Let us explore the graph of the constraint set $C_{ex1}$ generated from the synthesis of $\ECMV_{ex}$ in section 4.4.8:
 $$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
@@ -456,7 +457,6 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
     );;
 
 \end{lstlisting}
-\vspace{-4px}
 \hrule
 \caption{Constraint graph creation algorithm of type hole inference}
 \label{fig:algcode_construct_graph}
@@ -481,7 +481,6 @@ let create_solution_edge (graph, t1, t2) =
     let s' = s (*$\amalg_{UF}$*) UnionFind.elem(single(t2)) in
     Map.update(graph, t1, s');;
 \end{lstlisting}
-\vspace{-2px}
 \hrule
 \caption{Constraint solving algorithm helper functions, using Union-Find.}
 \label{fig:algcode_construct_graph_helpers}
@@ -501,7 +500,6 @@ let handle_occurs_check (graph) =
     in
     List.map(Map.keys(graph), annotate_with_error);;
 \end{lstlisting}
-\vspace{-4px}
  \hrule
 \caption{Constraint solving algorithm of type hole inference}
 \label{fig:occurs_check}
