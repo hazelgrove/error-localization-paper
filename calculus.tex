@@ -42,8 +42,8 @@ framework with a unified theory for the design of typing semantics that support 
 \Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
 lambda calculus (GTLC), extending it with binary product types in \cref{sec:calculus-products}. All
 rules and theorems may be found in the supplementary appendix, alongside a complete mechanization in
-the Agda proof assistant, which is discussed briefly in \cref{sec:calculus-agda}. With products, we
-then consider how error localization is complicated by patterned let expressions in
+the Agda proof assistant \cite{norell:thesis} (discussed in \cref{sec:calculus-agda}). With
+products, we then consider how error localization is complicated by patterned let expressions in
 \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how the system might be extended
 to more complex typing features, such as System F-style polymorphism.
 
@@ -98,10 +98,10 @@ that these are not critical to the calculus.
 
 Types classify expressions by a \emph{bidirectional type system}, which employs two mutually defined
 judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$, establishes that, under
-the typing context $\ctx$, the expression $e$ synthesizes or infers the type $\TMV$. \emph{Type
-analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$, states that the expression $\EMV$ may appear
-where an expression of type $\TMV$ is expected. We may give these typing semantics traditionally,
-without considering error localization and recovery.
+the typing context $\ctx$, the expression $e$ synthesizes or locally infers \cite{Localinf} the type
+$\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$, states that the expression
+$\EMV$ may appear where an expression of type $\TMV$ is expected. We may give these typing semantics
+traditionally, without considering error localization and recovery.
 
 The marked lambda calculus builds atop these typing semantics into a two-layer system:
 %
@@ -461,8 +461,9 @@ abstractions: % TODO intuition why
 %
 The synthesis rule is standard. The analysis rule employs the judgment
 $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$, which establishes that $\TMV$ is a \emph{matched arrow type}
-[citation], i.e. it may be considered an arrow type. Defined in \cref{fig:calculus-matched-arrow},
-this notion is purely a technical mechanism to avoid duplication of rules related to arrow types.
+\cite{cimini:2016}, i.e. it may be considered an arrow type. Defined in
+\cref{fig:calculus-matched-arrow}, this notion is purely a technical mechanism to avoid duplication
+of rules related to arrow types.
 
 % TODO mention explicitly that by inductive hypothesis, the marking of body cannot fail?
 % TODO more intuition on these two judgments
@@ -851,7 +852,6 @@ resulting marked program. Following the logic of constructing marking rules, we 
 That is, since error marks indicate type errors in the program, no marks should be introduced
 when marking a well-typed program, a property given by the judgment $\markless{\ECMV}$. The
 converse---that at least one mark is inserted into ill-typed programs---is also true.
-% TODO latter is easier to do in Agda, but maybe it is weaker?
 
 Finally, no less importantly, marking is deterministic. This is given by
 \cref{thm:calculus-marking-unicity}.
@@ -1147,9 +1147,9 @@ polymorphism. Specifically, we consider System F-style explicit polymorphism.
 \label{sec:calculus-agda}
 
 The semantics and metatheory presented above, including the extension with binary products, have
-been fully mechanized in the Agda proof assistant [citation]. Though the mechanization's
-documentation contains more detailed discussion regarding technical decisions made therein, we
-highlight some important aspects here.
+been fully mechanized in the Agda proof assistant. Though the mechanization's documentation contains
+more detailed discussion regarding technical decisions made therein, we highlight some important
+aspects here.
 
 The standard approach of modeling judgments as inductive datatypes and rules as constructors for
 those datatypes is taken. For marked expressions, we opt for implicitly typed terms [citation],
