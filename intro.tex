@@ -99,17 +99,17 @@ This system, scaled up and implemented in Hazel (Sec.~\ref{sec:calculus-hazel}),
 % which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing, 
 % 
 
-Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as is featured in Agda \cite{agda}, GHC Haskell \cite{haskell-holes}, Idris \cite{idris-holes}, and other languages), syntax error recovery \cite{error-reovery}, and structure editing \cite{HazelnutPOPL}. 
+Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as is featured in Agda \cite{norell:thesis}, GHC Haskell \cite{haskell-holes}, Idris \cite{DBLP:journals/jfp/Brady13}, and other languages), syntax error recovery \cite{error-reovery}, and structure editing \cite{HazelnutPOPL}. 
 Hazel has both a textual syntax and a structure editor, which are briefly described in Sec.~\ref{sec:calculus-hazel}.\todo{sec} 
 Marking is not integrated with structure editing, as it was in Hazelnut. 
 %offering (1) a textual syntax, which allows the programmer to manually insert empty holes as necessary, (2) a text-like structure editor that offers partial syntax error recovery (inserting holes to maintain well-formedness as long as all matching delimiters have been placed) \cite{tylr}, and (3) a term-based structure editor with total syntax error recovery, i.e. a guarantee that every edit maintains syntactic well-formedness \cite{HazelnutPOPL}\todo{popl17}. 
 However, as a secondary contribution, 
-we briefly discuss in Sec.~\ref{sec:calculus-structured-editing} how (1)  total marking can resolve the problem of undefined editing behavior in the Hazelnut structure editor calculus, 
+we briefly discuss in Sec.~\ref{sec:calculus-hazelnut} how (1)  total marking can resolve the problem of undefined editing behavior in the Hazelnut structure editor calculus, 
 and (2) integrating marking with typed structure editing allows us to re-mark only where necessary based on the edit location and the type and binding structure.
 
 Local type inference pairs well with type error localization and recovery because information flows systematically through the tree, leading to predictable and systematic localization decisions (as informally observed also by \cite{pierce}). Languages with constraint-based type inference gather constraints from all relevant locations in a program. This approach is powerful, but it is also notorious for complicating type error localization and recovery, because inconsistencies can arise through a confluence of constraints originating from any number of locations in the program. 
 
-In Sec.~\ref{sec:thi}\todo{sec}, we describe how we blend local and constraint-based type inference in Hazel. In particular,  
+In Sec.~\ref{sec:thi}, we describe how we blend local and constraint-based type inference in Hazel. In particular,  
 we generate constraints for each type hole that arises (either explicitly in the program or during type error localization and recovery as defined in  Sec.~\ref{sec:calculus}). 
 We develop a unification algorithm that can recover from inconsistent constraints by maintaining possible type hole solutions. For holes that can be uniquely solved, we suggest the solution. 
 If conflicting constraints arise, we localize the errors to the relevant type holes, rather 
