@@ -7,8 +7,8 @@
 Programmers often work with program states that are syntactically well-formed but not well-typed.
 \Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
 environment. For example, a simple error that may occur is the use of an unbound variable. As in
-\cref{fig:calculus-examples-unbound}, editor services indicate the usage of unbound $y$ is invalid
-by highlighting it in red.
+\cref{fig:calculus-examples-unbound}, the editor indicates that the usage of an unbound $y$ is
+invalid by highlighting it in red.
 
 \input{figs/calculus-examples}
 
@@ -19,9 +19,10 @@ indicates a mismatch between the expected and actual types of the operand. The a
 \cref{fig:calculus-examples-app-non-lambda} of a non-lambda leads to a similar kind of error. In
 this case, however, the expectation is not a singular type, but any member of a family of function
 types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error of inconsistent
-branches: the branches of the if-else expression are of different types. Hazel opts to highlight the
-entire expression in such a situation, while other tools may choose one branch to be ``correct'' and
-``blame'' the type mismatch error on the other.
+branches: the branches of the conditional are of different types: $5$ is a number, while
+$\textsf{false}$ is a boolean. Hazel opts to highlight the entire expression in such a situation,
+while other tools may choose one branch to be ``correct'' and ``blame'' the type mismatch error on
+the other.
 
 % TODO elaborate on this part
 
@@ -92,7 +93,7 @@ that these are not critical to the calculus.
              &       & \mid         & \ECSynNonMatchedArrow{\ECMV} \mid \ECAnaNonMatchedArrow{\ECMV}
                        \mid           \ECSynNonMatchedProd{\ECMV} \mid \ECAnaNonMatchedProd{\ECMV}
   \end{array}\]
-  \caption{Syntax of an extended GTLC.}
+  \caption{Syntax of an extended GTLC and its marked version.}
   \label{fig:calculus-syntax}
 \end{figure}
 
@@ -617,7 +618,7 @@ Again, to satisfy totality, we must consider the case when $\TMV$ is not a match
 as in the example of \cref{fig:calculus-examples-app-non-lambda}. There is no expected type for the
 argument, so we perform analytic marking on $\EMV_2$ against the unknown type. In this case, it is
 not quite right to mark $\EMV_1$ with the inconsistent type mark; rather than any single type, it is
-a member of the family of function types that is expected. For such a ``constrained'' synthetic
+any type within the family of arrow types that is expected. For such a ``constrained'' synthetic
 mode, we use a specialized mark $\ECSynNonMatchedArrow{\ECMV}$, which indicates that $\ECMV$ was
 expected to be a function---but was not. The output type is unknown, so the entire expression
 synthesizes the unknown type.
@@ -786,9 +787,9 @@ conditionals:
   }{MSInconsistentBranches}
 \end{mathpar}
 
-The framework also allows for other localization approaches. For example, we may regard the first
-branch as ``correct'' and localize any errors to the second. The following rule formalizes such a
-design:
+The framework also allows for other localization approaches. For example, as discussed at the
+beginning of the section, we may regard the first branch as ``correct'' and localize any errors to
+the second. The following rule formalizes such a design:
 \[%
   \judgment{
     \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\
