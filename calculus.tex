@@ -34,8 +34,8 @@ the system might be extended to more complex typing features, such as polymorphi
 \subsection{The Core Calculus}
 \label{sec:calculus-calculus}
 
-The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a}\todo{snapl} extended
-with numbers and booleans and empty expression holes. The syntax is given in
+The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a} extended
+with numbers, booleans, and empty expression holes \cite{HazelnutSNAPL}. The syntax is given in
 \cref{fig:calculus-syntax}. There are two expression languages:
 \begin{itemize}
   \item The \textbf{unmarked language}, which is our original language. Expressions of this language
@@ -184,7 +184,7 @@ unmarked addition expressions:
   }{USPlus}
 \end{mathpar}
 
-The marking rule mirrors \textsc{USPlus} closely. Since an expected type for each operand is known,
+The marking rule parallels \textsc{USPlus} closely. Since an expected type for each operand is known,
 we shift the responsibility for any type errors to them. Hence, we recursively mark each operand in
 analytic mode and rebuild the marked addition expression. The typing rule for marked addition
 expressions then mirrors \textsc{USPlus} exactly.
@@ -892,7 +892,7 @@ those datatypes is taken. For marked expressions, we opt for implicitly typed te
 which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
 readers interested in browsing the mechanization, all rule names match those presented here.
 
-\subsection{Polymorphism and Judgemental Structure}
+\subsection{Polymorphism and Richer Judgemental Structures}
 \label{sec:calculus-poly}
 
 The case studies above demonstrate that the judgemental structure of the marked lambda calculus is suitable to support a variety of extensions. We hope that this spurs language designers to designed mark variants of other calculi, following the recipe discussed above.
@@ -904,56 +904,42 @@ We leave as future work the task of defining a marked version of even more elabo
 \section{Integrating Marking with Editing}
 \label{sec:calculus-structured-editing}
 \subsection{Hazel Implementation}
-We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching \cite{oopsla23}, strings, and explicit polymorphism (all following the same recipe we took above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
+\label{sec:calculus-hazel}
 
-The result of this effort is the first full-scale typed functional language equipped with a language server that solves the gap problem: all of Hazel's semantic services, which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing, are available as long as the program sketch is syntactically well-formed.
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching \cite{oopsla23}, strings, and explicit polymorphism (all following the same recipe we developed above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
+
+The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing.
 % 
 
 Hazel offers both a textual syntax, with explicit empty holes, and more interestingly,
-a structure editor that is able to additionally maintain a form
+a structure editor that is able to additionally offer partial syntactic error recovery.
+In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automaticallys insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{tylr}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
 
 
-The previous section presented a formal calculus for error localization and recovery. We now discuss
-its usage in a structured editing setting. In particular, the calculus has been integrated into the
-Hazel programming environment, a live programming environment with support for typed holes.
-
-\subsection{Implementation in Hazel}
-\label{sec:calculus-hazel}
-
-\subsection{Reified Hazelnut Action Semantics}
+\subsection{Fixing Holes in Hazelnut}
 \label{sec:calculus-hazelnut}
 
-The Hazelnut action calculus introduced by \citet{HazelnutPOPL} gives a structure editing scheme
-that employs \emph{expression holes}, denoted $\EEHole$, which represent syntactically incomplete
-part of the program. Not only are terms always syntactically well-formed, they are always
-\emph{well-typed}, ensuring that semantic services are always available. To accomplish this, the
-bidirectional action calculus---given by the synthetic action judgment, written
+Earlier versions of Hazel achieved total syntax error recovery by using a term-based structure editor, which maintained delimiter matching by construction, albeit at the cost of some syntactic rigidity. The Hazelnut action calculus introduced by \citet{HazelnutPOPL} specifies such a structure editor formally. Notably, this calculus also supports a form of type error localization and recovery: edit actions can automatically insert non-empty holes around type inconsistencies that appear at the cursor after an edit action. This requires specifying a bidirectionally typed action calculus that propagates type and binding information to the cursor, given by the synthetic action judgment, written
 $\ASEAction{\ctx}{\EMV}{\TMV}{\EMV'}{\TMV'}{\AMV}$, and the analytic action judgment, written
-$\AAEAction{\ctx}{\EMV}{\EMV'}{\TMV}{\AMV}$---inserts on-demand \emph{error holes}, denoted
-$\hhole{\EMV}{}$, which indicate type errors. \todo{example?}
+$\AAEAction{\ctx}{\EMV}{\EMV'}{\TMV}{\AMV}$.
 
-Hazelnut, however, is unable to cope with actions that require \emph{non-local} hole fixes. For
+A significant issue with Hazelnut is that it does not allow (i.e. it leaves undefined) actions that require \emph{non-local} mark (i.e. non-empty hole, in Hazelnut's parlance) insertion or removal. For
 example, though the system can wrap an arbitrary expression in an arithmetic operation, it cannot
 wrap an arbitrary expression $\EMV$ in a lambda abstraction, i.e. construct
 $\ELam{x}{\TUnknown}{\EMV}$ directly from $\EMV$. The binding of $x$ with the unknown type may
-shadow a previous declaration and require the removal of error holes anywhere in body, but Hazelnut
-may only perform such fixes for immediately local holes. Such actions remain undefined, i.e.
-unperformable.
+shadow a previous declaration and require the removal of error holes in body. The calculus includes manual non-empty hole insertion and removal actions as a workaround.
 
-By applying the marked lambda calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
-from the typing semantics. Under this new system, the action calculus, given by the singular action
+The fundamental issue is that Hazelnut did not have a total marking system that it could deploy to remark expressions where needed. The marked lambda calculus allows us to solve this problem, in two different ways.
+
+One approach is to define an untyped action calculus, \emph{wholly decoupling} edit actions from typing. Under this simplified design, the action calculus, given by the singular action
 judgment, written $\AUEAction{\EMV}{\EMV'}{\AMV}$, is concerned only with the manipulation of
-syntax, and the marking procedure yields statically meaningful terms with error marks, now error
-holes, inserted at the appropriate positions as a kind of editor decoration. This solves the problem
+syntax, and the total marking procedure yields statically meaningful terms with error marks inserted at the appropriate positions as a kind of editor decoration. This solves the problem
 outlined above; since marking operates on the entire program after each action, arbitrary
 constructions are permitted.
 
-Alternatively, instead of a wholly untyped action calculus, one may re-adapt the existing Hazelnut
-calculus with scope-based marking. Action operate over \emph{marked expressions}, and error marks
-operate as error holes. The system is once again bidirectional, writing (note $\ECMV$ instead of
-$\EMV$) the judgments $\ASEAction{\ctx}{\ECMV}{\TMV}{\ECMV'}{\TMV'}{\AMV}$ and
-$\AAEAction{\ctx}{\ECMV}{\ECMV'}{\TMV}{\AMV}$. Then, when wrapping $\ECMV$ into
-$\ECLam{x}{\TUnknown}{\ECMV}$, we may simply re-mark the body under the context with $x$ binding
+Alternatively, instead of a wholly untyped action calculus, one may directly integrate re-marking logic into the typed Hazelnut
+calculus, making use of the type and scoping information being propagated to re-mark only in scopes where it might be necessary. For example, we can wrap $\ECMV$ into
+$\ECLam{x}{\TUnknown}{\ECMV}$ by re-mark the body under the context with $x$ binding
 the unknown type:
 \[%
   \judgment{
@@ -962,7 +948,6 @@ the unknown type:
     \ASEConLam{\ctx}{\ECMV}{\TMV}{\ECMV'}{\TMV'}{x}
   }{ASEConLam}
 \]%
-This system optimizes over the untyped version by performing marking only when necessary. In
-particular, whenever binders are introduced around an expression, marking redraws error holes. The
+The
 supplemental material contains a complete formal description of both variants, and the untyped
-action semantics and related metatheory are mechanized in Agda.
+action semantics and related metatheory are mechanized in Agda. Because of the simplicity of the untyped version, and because marking is defined separately, this Agda mechanization can serve universally as a baseline for correctness of approaches, like our initial design that aim to make use of type and scope information, and perhaps other analyses, to minimize re-marking. We leave a complete assessment of this and other remarking optimization approaches to future work.

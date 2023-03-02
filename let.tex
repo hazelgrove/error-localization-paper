@@ -3,7 +3,7 @@
 
 To ease the use of products, many languages feature destructuring bindings. In a typed setting, we may want to granularly add type annotations in patterns as well. As it turns out this combination of features is surprisingly tricky to get right! Let us add let
 expressions and simple patterns, writing $\PWild$ for the wildcard pattern, $\PVar{x}$ for a
-variable pattern, $\PPair{\PMV_1}{\PMV_2}$ for a pair. 
+variable pattern, and $\PPair{\PMV_1}{\PMV_2}$ for a pair. 
 %
 \[\begin{array}{rrcl}
   \EMName  & \EMV  & \Coloneqq & \cdots \mid \ELet{\PMV}{\EMV}{\EMV} \\
@@ -24,7 +24,7 @@ $\TProd{\TUnknown}{\TUnknown}$, and $\EPair{1}{2}$ is analyzed against it, hence
 each analyzed against $\TUnknown$. In the expanded version, however, they are typed in synthetic
 mode.
 
-Though the distinction is benign in this example, there is a subtle semantic distinction: synthetic
+Though it is benign in this example, there is a subtle semantic distinction: synthetic
 mode imposes \emph{no} type constraints, whereas analytic mode imposes a \emph{trivial} type
 constraint. This manifests when expressions may have internal type inconsistencies,  as in the
 following:
