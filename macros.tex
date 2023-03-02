@@ -8,6 +8,21 @@
 \newcommand{\Prov}{{\normalfont\textsf{Provenance}}}
 \newcommand{\Provp}{\ensuremath{p}}
 
+% errors with id
+\newcommand{\ECMarkedId}[3]{\ensuremath{\textcolor{red}{\bm{\llparenthesis}}#1\textcolor{red}{\bm{\rrparenthesis}^{#3}_{#2}}}}
+\newcommand{\ECMarkedUnboundId}[2]{\ensuremath{\ECMarkedId{#1}{\MRUnbound}{#2}}}
+\newcommand{\ECMarkedInconTypeId}[2]{\ensuremath{\ECMarkedId{#1}{\MRInconType}{#2}}}
+\newcommand{\ECMarkedInconBrId}[2]{\ensuremath{\ECMarkedId{#1}{\MRInconBr}{#2}}}
+
+\newcommand{\ECUnboundId}[2]{\ensuremath{\ECMarkedUnboundId{#1}{#2}}}
+\newcommand{\ECInconTypeId}[2]{\ensuremath{\ECMarkedInconTypeId{#1}{#2}}}
+\newcommand{\ECInconBrId}[4]{\ensuremath{\ECMarkedInconBrId{\ECIf{#1}{#2}{#3}}{#4}}}
+\newcommand{\ECApNonMatchedId}[3]{\ensuremath{\ECAp{\ECInconTypeId{#1}{#2}}{#3}}}
+
+\newcommand{\ECInconMatchedId}[3]{\ensuremath{\ECMarkedId{#1}{#2}{#3}}}
+\newcommand{\ECInconMatchedArrowId}[2]{\ensuremath{\ECInconMatchedId{#1}{\notMatchedArrowRel}{#2}}}
+\newcommand{\ECInconMatchedPairId}[2]{\ensuremath{\ECInconMatchedId{#1}{\notMatchedPairRel}{#2}}}
+
 % Violet hotdogs; highlight color helps distinguish them
 \newcommand{\llparenthesiscolor}{\textcolor{violet}{\llparenthesis}}
 \newcommand{\rrparenthesiscolor}{\textcolor{violet}{\rrparenthesis}}
