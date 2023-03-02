@@ -40,10 +40,10 @@ The key contribution of this section is the \emph{marked lambda calculus}, a for
 type error localization in bidirectional systems. Namely, the calculus provides a judgmental
 framework with a unified theory for the design of typing semantics that support ill-typed programs.
 \Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
-lambda calculus, extending it with binary product types in \cref{sec:calculus-products}. All rules
-and theorems may be found in the supplementary appendix, alongside a complete mechanization in the
-Agda proof assistant, which is discussed briefly in \cref{sec:calculus-agda}. With products, we then
-consider how error localization is complicated by patterned let expressions in
+lambda calculus (GTLC), extending it with binary product types in \cref{sec:calculus-products}. All
+rules and theorems may be found in the supplementary appendix, alongside a complete mechanization in
+the Agda proof assistant, which is discussed briefly in \cref{sec:calculus-agda}. With products, we
+then consider how error localization is complicated by patterned let expressions in
 \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how the system might be extended
 to more complex typing features, such as System F-style polymorphism.
 
@@ -63,16 +63,16 @@ to more complex typing features, such as System F-style polymorphism.
 % TODO outline the structure of this section at the beginning
 % TODO make it clear unmarked/marked languages share same types
 
-We now formally introduce the marked lambda calculus through its application to a gradually typed
-lambda calculus extended with numbers and booleans. Consider the syntax for such a language, given
-as $\EMName$ in \cref{fig:calculus-syntax}. The base types $\TNum$ and $\TBool$ classify number and
-boolean expressions. The number literal corresponding to the mathematical number $n$ is given by
-$\ENumMV$, and there is a single addition operation on numeric expressions. $\ETrue$ and $\EFalse$
-correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
+We now formally introduce the marked lambda calculus through its application to the GTLC extended
+with numbers and booleans. Consider the syntax for such a language, given as $\EMName$ in
+\cref{fig:calculus-syntax}. The base types $\TNum$ and $\TBool$ classify number and boolean
+expressions. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$,
+and there is a single addition operation on numeric expressions. $\ETrue$ and $\EFalse$ correspond
+to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
 $\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives a conditional structure. In addition to these forms,
-$\TUnknown$ is the unknown type from gradual type theory. $\EEHole$ denotes an \emph{expression
-hole}, which are used to model syntactically incomplete programs---but are not critical within the
-calculus.
+$\TUnknown$ is the unknown type from gradual type theory. Finally, $\EEHole$ denotes an
+\emph{expression hole}, which are used to model syntactically incomplete programs. Note, however,
+that these are not critical to the calculus.
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
@@ -92,7 +92,7 @@ calculus.
              &       & \mid         & \ECSynNonMatchedArrow{\ECMV} \mid \ECAnaNonMatchedArrow{\ECMV}
                        \mid           \ECSynNonMatchedProd{\ECMV} \mid \ECAnaNonMatchedProd{\ECMV}
   \end{array}\]
-  \caption{Syntax of an extended gradually typed lambda calculus.}
+  \caption{Syntax of an extended GTLC.}
   \label{fig:calculus-syntax}
 \end{figure}
 
@@ -146,11 +146,11 @@ denote a different error message that might be shown in an editor or emitted by 
   % \item $\ECSynNonMatchedArrow{\ECMV}$
 % \end{itemize}
 %
-Throughout the remainder of this section, as we formulate marking for the gradually typed lambda
-calculus, we will motivate and give precise semantics for these error marks. Note that this is a
-non-exhaustive list; depending on the syntactic forms and typing features found in the language,
-other kinds of marks may be necessary. Indeed, in \cref{sec:calculus-poly}, we consider the kinds of
-marks that may be required in an language with explicit polymorphism.
+Throughout the remainder of this section, as we formulate marking for the GTLC, we will motivate and
+give precise semantics for these error marks. Note that this is a non-exhaustive list; depending on
+the syntactic forms and typing features found in the language, other kinds of marks may be
+necessary. Indeed, in \cref{sec:calculus-poly}, we consider the kinds of marks that may be required
+in an language with explicit polymorphism.
 
 The marked language possesses its own typing semantics, also formulated bidirectionally. We write
 $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis.
@@ -207,9 +207,9 @@ unmarked language guide the construction of the marking process.
 \subsubsection{Numbers}
 \label{sec:calculus-numbers}
 
-To start, let us consider the simple case of numbers. Because of \emph{subsumption}, which we
-discuss next, we need only define a synthesis rule for unmarked numbers, in which numbers synthesize
-the type $\TNum$:
+To start, let us consider the simple case of numbers. Because of \emph{subsumption}, which is
+discussed in more detail next, we need only define a synthesis rule for unmarked numbers, in which
+number literals synthesize the type $\TNum$:
 %
 \begin{mathpar}
   \judgment{ }{
@@ -475,7 +475,7 @@ this notion is purely a technical mechanism to avoid duplication of rules relate
   \begin{mathpar}
     \judgment{ }{
       \matchedArrow{\TUnknown}{\TUnknown}{\TUnknown}
-    }{TMAHole}
+    }{TMAUnknown}
 
     \judgment{ }{
       \matchedArrow{\TArrow{\TMV}{\TMV}}{\TMV}{\TMV}
@@ -798,6 +798,24 @@ design:
 Of course, corresponding unmarked and marked typing rules would follow similar structure, and other
 heuristics may be devised for different kinds of branching structures.
 
+\subsubsection{Holes}
+For completeness, we finish the development of the marked lambda calculus on the GTLC with the
+marking of holes. Like number literals and booleans, these are governed by straightforward rules.
+%
+\begin{mathpar}
+  \judgment{ }{
+    \ctxSynTypeU{\ctx}{\EEHole}{\TUnknown}
+  }{USHole}
+
+  \judgment{ }{
+    \ctxSynFixedInto{\ctx}{\EEHole}{\ECEHole}{\TUnknown}
+  }{MKSHole}
+  
+  \judgment{ }{
+    \ctxSynTypeM{\ctx}{\ECEHole}{\TUnknown}
+  }{MSHole}
+\end{mathpar}
+
 % TODO mini conclusion on methodology
 
 \subsubsection{Additional Theorems}
@@ -851,12 +869,6 @@ Together, totality and unicity give that marking may be considered and implement
 function. Indeed, given the algorithmic nature of bidirectional typing, it is fairly easy to extract
 an implementation from the rules.
 
-% TODO non-gradual semantics?
-
-% Note that while the semantics that follow concern a gradually typed language, a non-gradual system
-% may be recovered straightforwardly by removing the unknown type and replacing type consistency with
-% equality.
-
 \subsection{Adding Binary Products}
 \label{sec:calculus-products}
 
@@ -898,7 +910,7 @@ type $\TProd{\TMV_1}{\TMV_2}$.
   \begin{mathpar}
     \judgment{ }{
       \matchedProd{\TUnknown}{\TUnknown}{\TUnknown}
-    }{TMPHole}
+    }{TMPUnknown}
 
     \judgment{ }{
       \matchedProd{\TProd{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
