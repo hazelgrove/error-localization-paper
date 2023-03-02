@@ -2,7 +2,7 @@
   \small\raggedright
   %
   \[\begin{array}{rrcl}
-    \TMName  & \TMV  & \Coloneqq & \cdots \mid \TPair{\TMV}{\TMV}
+    \TMName  & \TMV  & \Coloneqq & \cdots \mid \TProd{\TMV}{\TMV}
   \end{array}\]
 
   \judgbox{\ensuremath{\consistent{\TMV_1}{\TMV_2}}} $\TMV_1$ is consistent with $\TMV_2$
@@ -12,19 +12,19 @@
       \consistent{\TMV_1}{\TMV_1'} \\
       \consistent{\TMV_2}{\TMV_2'} \\
     }{
-      \consistent{\TPair{\TMV_1}{\TMV_2}}{\TPair{\TMV_1'}{\TMV_2'}}
+      \consistent{\TProd{\TMV_1}{\TMV_2}}{\TProd{\TMV_1'}{\TMV_2'}}
     }{TCProd} \\
   \end{mathpar}
 
-  \judgbox{\ensuremath{\matchedPair{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched binary product type $\TPair{\TMV_1}{\TMV_2}$
+  \judgbox{\ensuremath{\matchedProd{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched binary product type $\TProd{\TMV_1}{\TMV_2}$
   %
   \begin{mathpar}
     \judgment{ }{
-      \matchedPair{\TUnknown}{\TUnknown}{\TUnknown}
+      \matchedProd{\TUnknown}{\TUnknown}{\TUnknown}
     }{TMPHole}
 
     \judgment{ }{
-      \matchedPair{\TPair{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
+      \matchedProd{\TProd{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
     }{TMPProd} \\
   \end{mathpar}
 
@@ -33,7 +33,7 @@
   \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
   \[\begin{array}{rcl}
     & \cdots & \\
-    \joinsTo{(\TPair{\TMV_1}{\TMV_2})}{(\TPair{\TMV_1'}{\TMV_2'})}{\TPair{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+    \joinsTo{(\TProd{\TMV_1}{\TMV_2})}{(\TProd{\TMV_1'}{\TMV_2'})}{\TProd{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
   \end{array}\]
   %
   \caption{Syntax and judgments for binary product types.}
