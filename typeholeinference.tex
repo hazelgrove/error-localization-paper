@@ -16,7 +16,7 @@ to \emph{type holes} that cannot be solved by constraint unification and computi
 \subsection{Type Hole Inference in Hazel}
 % Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
 
-In Figure \ref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$, leaving the return type unknown.
+In Figure \ref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$ in gray. The return type is not constrained, so it is left unknown here (see below on polymorphic generalization).
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_holes.png}
 \includegraphics[width=9cm]{images/example_holes_CI.png}
@@ -64,13 +64,11 @@ We must be able to uniquely identify type holes when constraint solving because 
 \end{array}\]
 
 \begin{enumerate}
-    \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. This creates an avenue by we can to link type holes to their locus in the program. We assume that id generation is handled by the editor.
-    \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenance}, drawn as a superscript such as $\tehole^p$.
-    We turn to provenances for unique identification of type holes for several reasons:
+    \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. We assume that id generation is handled by the editor.
+    \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenances}, $p$. These serve two useful but non-critical purposes:
 \begin{enumerate}
-    \item Provenances allow each type hole to always have a concrete link to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that a type hole was the result of synthesis on an expression hole with id 3. We discuss the matched arrow provenances below.
+    \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.
     \item Provenances allow increased efficiency when compared to generating fresh type hole ids (which spawns larger constraint graphs during constraint generation.) 
-    \item Future user interface affordances could also use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.
 \end{enumerate}
 \end{enumerate}
 % These changes are depicted in Figure ~\ref{fig:adjusted-calculus-syntax}.
@@ -89,15 +87,12 @@ We must be able to uniquely identify type holes when constraint solving because 
 % \end{figure}
 
 \subsection{Constraint Generation}
-The first step is constraint generation. Our approach closely follows the usual approach \cite{TAPL}, by augmenting the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$:
-\begin{center}
-    $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ \hspace{3cm} $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$
-\end{center}
-Below we discuss the constraint relation and interesting rules for constraint generation in detail.
+The first step is constraint generation. Our approach closely follows the usual approach \cite{TAPL}, by augmenting the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
+    $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
-\subsubsection{The Constraint Relation}
+\subsubsection{Constraints}
 Individual constraints are written $\tau_1 \approx \tau_2$. 
-The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ are \textit{allegedly} the same type, and share the same solution. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types. "Complete" types are types that contain no type holes and do not transitively constrain incomplete types \cite{HazelnutPOPL}.
+The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ must have the same solution once the constituent type holes are filled. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types, following \citet{HazelnutPOPL}.
 
 % Before detailing this relationship, consider an approach where constraints were transitive across complete types. In such a world, we may end up with the incorrect error localization below:
 % \begin{center}
@@ -110,9 +105,9 @@ $$\ECMV_{ex} = \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\und
 What constraints might we expect this expression to generate? In this expression, we expect that the annotation of the lambda is consistent with the type of its argument, $\TUnknown^{exp(0)}$. This notion might generate the constraint $\{ \TUnknown^1 \approx \TUnknown^{exp(0)}\}$. We might further notice that we expect both branches of the if expressions to synthesize consistent types. But what is the type of $\ECAp{f}{\underline{2}}$? Previously, we might have argued that it would simply be $\TUnknown$; however, now we must ask exactly \emph{which} type hole this application synthesizes and determine its provenance. In order to further understand these questions, let us more formally explore constraint generation before revisiting this example.
 
 \subsubsection{Subsumption Constraints}
-As discussed earlier, constraints constitute a series of expectations for what different types should be. One key mechanism by which we facilitate our accumulation of these expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this, consider subsumption. 
+% As discussed earlier, constraints constitute a series of expectations for what different types should be. One key mechanism by which we facilitate our accumulation of these expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this, consider subsumption. 
 
-Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. In order to more concretely track this expectation as a constraint, we extend the rule MASubsume as follows so that it generates the constraint $\tau \approx \tau'$:
+Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. We extend the rule MASubsume as follows so that it generates the corresponding constraint $\tau \approx \tau'$:
 \begin{mathpar}
   \judgment{
     \synConstraint{\ctx}{\ECMV}{\TMV'}{C} \\
@@ -122,9 +117,9 @@ Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynT
     \anaConstraint{\ctx}{\ECMV}{\TMV}{C \cup \{ \TMV \approx \TMV'\}}
   }{MASubsume-C}
 \end{mathpar}
-Notice that we also accumulate constraints generated in each premise in our conclusion.
+% Notice that we also accumulate constraints generated in each premise in our conclusion.
 
-One key question is how one should manage constraints whenever marked expressions are wrapped in holes. Should expectations of types pass through the hole membrane and render expressions inside unsolvable? On a similar tack, should a program inside some hole membrane seep out and affect the rest of the program? We assert that the answer to both of these questions is no. Nonempty holes should act as quarantines that allow the programmer to reason as if the expressions inside them are unaffected by and do not affect the program around them.
+One key question is how one should manage constraints whenever marked expressions are marked with errors. Should an expected type pass through the mark, which would necessarily create an unsolvable constraint? We assert that the answer is no: marks  act as quarantines. We can, however, take advantage of the interpretation of marks as non-empty holes to infer a type for the marked expression, i.e. the type that mark repair needs to target.
 
 With this guiding principle in hand, let us approach constraint generation for subsumption when \inconsistent{\TMV}{\TMV'} by extending MAInconsistentTypes:
 \begin{mathpar}
@@ -136,11 +131,10 @@ With this guiding principle in hand, let us approach constraint generation for s
     \anaConstraint{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV}{C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}}
   }{MAInconsistentTypes-C}
 \end{mathpar}
-Here we accumulate constraints from our premises just as before. However, instead of expecting that the type of \ECMV~ be consistent with the type $\tau$, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
+% Here, instead of expecting that the type of \ECMV~ be consistent with the type $\tau$, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
 
 \subsubsection{If Expressions and Their Constraints}
 Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that both branches have consistent types and assess this implicitly by attempting to compute their join. This leads to the following constraint generating rule for if expression synthesis where we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$:
-
 \begin{mathpar}
   \judgment{
     \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}  \\
@@ -151,7 +145,7 @@ Expectations for the result of typechecking on expressions is not limited to ana
   }{MSIf-C}
 \end{mathpar} 
 
-Our logic is somewhat trickier when the branches of an if expression have no lower bound, causing it to be wrapped in a marked hole. However, we can still use the same principles leveraged for MSInconsistentTypes-C to our advantage. Inconsistency among branches should be considered an error that lies \emph{within} the hole membrane surrounding our marked expression. Consequently, we constrain $\TMV_1 \approx \TMV_2$ as before and do not consider the type of our hole membrane, $\TUnknown^{exp(u)}$, in the constraints:
+Our logic is somewhat trickier when the branches of an if expression have no lower bound, causing it to be wrapped in a marked hole. Inconsistency among branches should be considered an error that lies \emph{within} the hole membrane surrounding our marked expression. Consequently, we constrain $\TMV_1 \approx \TMV_2$ as before and do not consider the type of our hole membrane, $\TUnknown^{exp(u)}$, in the constraints:
 \begin{mathpar}
   \judgment{
     \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1} \\
@@ -196,7 +190,7 @@ Our rules for the remaining two lambda analysis cases where the lambda expressio
         \\
     \end{array}$
 \end{center}
-Using this type hole, we can analyze the lambda's body against an unknown type without linking it spuriously to some other type hole:
+We can analyze the lambda's body against an anonymous unknown type:
 \begin{mathpar}
   \judgment{
     \notMatchedArrow{\TMV_3} \\
@@ -213,7 +207,7 @@ Using this type hole, we can analyze the lambda's body against an unknown type w
     \anaConstraint{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} {C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}}
   }{MALam3-C}
 \end{mathpar}
-Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the expression hole's type, $?^{exp(u)}$.
+% Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the expression hole's type, $?^{exp(u)}$.
 
 \subsubsection{Applications and Their Constraints}
 This brings us at last to the application of lambdas. When the function position expression $\ECMV_1$ lacks a matched arrow form, we proceed as if we had called matched arrow on the marked expression hole surrounding it. To this end, the function argument $\ECMV_2$ must be analyzed against $\TUnknown^{\rightarrow_L{u}}$ and we must return $\TUnknown^{\rightarrow_R{u}}$ as the result of synthesis. 
@@ -433,7 +427,7 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
     match constraints with
     | [] -> graph
     | hd::tl -> (
-        match hd with
+        (match hd with
         | ((*$\tarr{t1_L}{t1_R}$*), (*$\tarr{t2_L}{t2_R}$*)) ->
             construct_graph(~graph, (((*$t1_L$*), (*$t2_L$*)))::(((*$t1_R$*), (*$t2_R$*)))::tl)
         | ((*$\tehole^{p}$*) as hole, t)
@@ -447,8 +441,7 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
                 let graph = create_solution_edge(graph, hole, t) in
                 construct_graph(~graph, tl)
             )
-        | _ -> construct_graph(~graph, tl)
-    );;
+        | _ -> construct_graph(~graph, tl))
 
 \end{lstlisting}
 \hrule
@@ -463,7 +456,7 @@ In order to change our graph construction algorithm to a constraint solver, all 
 
 An additional step is taken to mark type holes with an error if their \emph{PotentialTypeSet} contains a cycle that is not a self loop. In Hindley-Milner type inference this is referred to as the occurs-check.
 
-After our union find based \lstinline{construct_graph} and occurs check marking have been completed, we are ready to identify the solvability of our type holes. We consider type holes solvable if their \textit{PotentialTypeSet} contains at most one type that is not a hole. On the other hand, if a type hole's \textit{PotentialTypeSet} contains multiple conflicting types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases, helpful visual feedback can be provided to the user as in Figure \ref{fig:editor_conflict}.
+After our union find based \lstinline{construct_graph} and occurs check marking have been completed, we are ready to identify the solvability of our type holes. We consider type holes solvable if their \textit{PotentialTypeSet} contains at most one type that is not a hole. On the other hand, if a type hole's \textit{PotentialTypeSet} contains multiple conflicting types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases,  feedback can be provided as in Figure \ref{fig:editor_conflict}.
 
 % \subsubsection{Other Binary Types}
 % Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. We follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
@@ -480,7 +473,7 @@ After our union find based \lstinline{construct_graph} and occurs check marking 
 For the sake of minimality, our discussion above did not formalize parametric polymorphism. Integration of parametric polymorphism into type inference is well-understood. Type hole inference 
 creates only one particularly interesting wrinkle, having to do with the common practice of implicitly generalizing unconstrained type inference variables, here type holes. With the inclusion of expression holes in our system, we need to be a bit more careful in when we generalize. Consider the following expression:
 $$\ECLam{x}{\TUnknown^1}{\EEHole^2}$$
-We can see that $\TUnknown^1$ is never constrained to any complete types. Suppose that we were to suggest the implicitly universally quantified type variable $'a$ as a type hole filling for $?^1$. It is unlikely that the user accepts this suggestion because it is unlikely that the user intends to write the identity function!
+We can see that $\TUnknown^1$ is not constrained. Suppose that we were to suggest the implicitly universally quantified type variable $'a$ as a type hole filling for $?^1$. It is unlikely that the user accepts this suggestion because it is unlikely that the user intends to write the identity function!
 The fact there are not yet any constraints does not imply that there will not be once the expression hole is filled.
 
 To address this, we need to reason as if there are any number of \emph{unknown constraints} coming from expression holes.  This status can be represented with a new type of constraint: the $\mathtt{etc}$ constraint, which we add to our syntax of \emph{PotentialTypes} below. 
