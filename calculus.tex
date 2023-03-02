@@ -306,9 +306,9 @@ replaces the notion of \emph{type equality} to relate the unknown type to all ot
       \consistent{\TMV_2}{\TMV_2'} \\
     }{
       \consistent{\TArrow{\TMV_1}{\TMV_2}}{\TArrow{\TMV_1'}{\TMV_2'}}
-    }{TCArr} \\
+    }{TCArr}
   \end{mathpar}
-  %
+  \vspace{-10px}
   \caption{Type consistency.}
   \label{fig:calculus-consistency}
 \end{figure}
@@ -713,9 +713,9 @@ there is an expected type for both branches, we shift the blame for any errors t
     \joinsTo{\TMV}{\TUnknown}{\TMV} \\
     \joinsTo{\TNum}{\TNum}{\TNum} \\
     \joinsTo{\TBool}{\TBool}{\TBool} \\
-    \joinsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+    \joinsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}}
   \end{array}\]
-  %
+  \vspace{-10px}
   \caption{Type join.}
   \label{fig:calculus-type-join}
 \end{figure}
@@ -820,7 +820,7 @@ rules.
 
 % TODO mini conclusion on methodology
 
-\subsubsection{Additional Theorems}
+\subsubsection{Additional Metatheorems}
 To conclude this section, we present two more metatheorems that help ensure correctness of the
 system. Though \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
 the syntactic structure of a program, it makes no statement about the presence of error marks in the
@@ -867,8 +867,8 @@ Finally, no less importantly, marking is deterministic. This is given by
 \end{theorem}
 %
 Together, totality and unicity give that marking may be considered and implemented as a total
-function. Indeed, given the algorithmic nature of bidirectional typing, it is fairly easy to extract
-an implementation from the rules.
+function. Indeed, given the algorithmic nature of bidirectional typing, it is fairly direct to extract
+an implementation from these rules.
 
 \subsection{Adding Binary Products}
 \label{sec:calculus-products}
@@ -880,7 +880,7 @@ aspects related to marking; a comprehensive set of rules is found in the supplem
 First, we extend the syntax of types and the accompanying notions of consistency and join, which
 closely mirror the definitions for arrow types. Additionally, analogous to the notion of matched
 arrow types, the judgment $\matchedProd{\TMV}{\TMV_1}{\TMV_2}$ establishes that $\TMV$ may be
-considered the binary product type $\TProd{\TMV_1}{\TMV_2}$ [cite?].
+considered the binary product type $\TProd{\TMV_1}{\TMV_2}$ [cite?].\todo{cite}
 
 The unmarked language is extended with a pair constructor $\EPair{\EMV}{\EMV}$ and projection
 operators $\EProjL{\EMV}$ and $\EProjR{\EMV}$, governed by standard bidirectional rules. In addition
@@ -959,9 +959,9 @@ written $\ECSynNonMatchedProd{\ECMV}$. These cases give the final marking rules 
 \label{sec:calculus-poly}
 
 We now consider how the calculus might be extended to richer typing features such as parametric
-polymorphism. Specifically, we consider System F-style explicit polymorphism.
+polymorphism. Specifically, we consider System F-style explicit polymorphism.\todo{write me}
 
-\subsection{Mechanization}
+\subsection{Agda Mechanization}
 \label{sec:calculus-agda}
 
 The semantics and metatheory presented above, including the extension with binary products, have

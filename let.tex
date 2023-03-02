@@ -1,7 +1,7 @@
-\subsection{Destructuring Let with Composite Patterns}
+\subsection{Destructuring Let with Type Annotated Composite Patterns}
 \label{sec:calculus-let}
 
-To ease the use of products, many languages feature destructuring bindings [cite]. Let us add let
+To ease the use of products, many languages feature destructuring bindings [cite]\todo{cite}. Let us add let
 expressions and simple patterns, writing $\PWild$ for the wildcard pattern, $\PVar{x}$ for a
 variable pattern, $\PPair{\PMV_1}{\PMV_2}$ for a pair. In a bidirectional setting, the pattern
 itself synthesizes a type which constrains the definition.
@@ -105,7 +105,7 @@ let requires some extra machinery.
     \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
     \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
   }{
-    \ctxSynType{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
+    \ctxSynTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
   }{USLetPat}
 \]%
 First, to ensure that the pattern and definition types are consistent, the pattern synthesizes a
