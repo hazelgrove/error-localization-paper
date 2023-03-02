@@ -1,6 +1,3 @@
-% TODO standardize naming: marking vs mark insertion, marks vs error marks vs markings
-% TODO uniform style for referencing rules
-
 \section{The Marked Lambda Calculus}
 \label{sec:calculus}
 
@@ -944,6 +941,14 @@ to the projected expression when analysing projections.
   }{USPair}
 
   \judgment{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaTypeU{\ctx}{\EMV_1}{\TMV_1} \\
+    \ctxAnaTypeU{\ctx}{\EMV_2}{\TMV_2}
+  }{
+    \ctxAnaTypeU{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TMV}
+  }{UAPair}
+
+  \judgment{
     \ctxSynTypeU{\ctx}{\EMV}{\TMV} \\
     \matchedProd{\TMV}{\TMV_1}{\TMV_2}
   }{
@@ -955,27 +960,7 @@ to the projected expression when analysing projections.
     \matchedProd{\TMV}{\TMV_1}{\TMV_2}
   }{
     \ctxSynTypeU{\ctx}{\EProjR{\EMV}}{\TMV_2}
-  }{USProjR} \\
-
-  \judgment{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaTypeU{\ctx}{\EMV_1}{\TMV_1} \\
-    \ctxAnaTypeU{\ctx}{\EMV_2}{\TMV_2}
-  }{
-    \ctxAnaTypeU{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TMV}
-  }{UAPair}
-
-  \judgment{
-    \ctxAnaTypeU{\ctx}{\EMV}{\TProd{\TMV}{\TUnknown}}
-  }{
-    \ctxAnaTypeU{\ctx}{\EProjL{\EMV}}{\TMV}
-  }{UAProjL}
-
-  \judgment{
-    \ctxAnaTypeU{\ctx}{\EMV}{\TProd{\TUnknown}{\TMV}}
-  }{
-    \ctxAnaTypeU{\ctx}{\EProjR{\EMV}}{\TMV}
-  }{UAProjR}
+  }{USProjR}
 \end{mathpar}
 %
 Similarly to application, \textsc{USProjL} and \textsc{USProjR} employ the matched binary product
@@ -1021,18 +1006,6 @@ again modelling off the above unmarked typing rules:
   }{
     \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
   }{MKAPair1}
-
-  \judgment{
-    \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TProd{\TMV}{\TUnknown}}
-  }{
-    \ctxAnaFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV}
-  }{MKAProjL}
-
-  \judgment{
-    \ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TProd{\TMV}{\TUnknown}}
-  }{
-    \ctxAnaFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV}
-  }{MKAProjR}
 \end{mathpar}
 %
 accompanied by corresponding typing rules for marked expressions:
@@ -1066,18 +1039,6 @@ accompanied by corresponding typing rules for marked expressions:
   }{
     \ctxAnaTypeM{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
   }{MAPair1}
-
-  \judgment{
-    \ctxAnaTypeM{\ctx}{\ECMV}{\TProd{\TMV}{\TUnknown}}
-  }{
-    \ctxAnaTypeM{\ctx}{\ECProjL{\ECMV}}{\TMV}
-  }{MAProjL}
-
-  \judgment{
-    \ctxAnaTypeM{\ctx}{\ECMV}{\TProd{\TUnknown}{\TMV}}
-  }{
-    \ctxAnaTypeM{\ctx}{\ECProjR{\ECMV}}{\TMV}
-  }{MAProjR}
 \end{mathpar}
 
 However, as previously seen with lambda abstractions and applications, two sets of rules are further
