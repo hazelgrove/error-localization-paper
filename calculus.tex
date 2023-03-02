@@ -3,32 +3,31 @@
 
 Programmers often work with program states that are syntactically well-formed but not well-typed.
 \Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
-environment. For example, a simple error that may occur is the use of an unbound variable (\cref{fig:calculus-examples-unbound}).
+environment. 
+%For example, a simple error that may occur is the use of an unbound variable (\cref{fig:calculus-examples-unbound}).
 % As in
 % \cref{fig:calculus-examples-unbound}, the editor indicates that the usage of an unbound $y$ is
 % invalid by highlighting it in red.
 
 \input{figs/calculus-examples}
 
-With local type inference, an expression might have a expected type. Consider
-\cref{fig:calculus-examples-inconsistent-types}, in which it is expected that both operands of the
-$+$ operator are numbers. Since $\textsf{true}$ is not a number, a type error arises, and Hazel
-indicates an inconsistency between the expected and actual types of the operand. The application in
-\cref{fig:calculus-examples-app-non-lambda} of a non-lambda leads to a similar kind of error. In
-this case, however, the expectation is not a singular type, but any member of a family of function
-types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error caused by inconsistent
-branch types. As discussed in the introduction, Hazel opts to highlight the entire expression in such a situation,
-while other tools may choose one branch to be ``correct'' and ``blame'' the type mismatch error on
-the other.
+% With local type inference, an expression might have a expected type. Consider
+% \cref{fig:calculus-examples-inconsistent-types}, in which it is expected that both operands of the
+% $+$ operator are numbers. Since $\textsf{true}$ is not a number, a type error arises, and Hazel
+% indicates an inconsistency between the expected and actual types of the operand. The application in
+% \cref{fig:calculus-examples-app-non-lambda} of a non-lambda leads to a similar kind of error. In
+% this case, however, the expectation is not a singular type, but any member of a family of function
+% types. \Cref{fig:calculus-examples-inconsistent-branches} presents an error caused by inconsistent
+% branch types. As discussed in the introduction, Hazel opts to highlight the entire expression in such a situation,
+% while other tools may choose one branch to be ``correct'' and ``blame'' the type mismatch error on
+% the other.
 
-The key contribution of this section is the \emph{marked lambda calculus}, a formal calculus for
-bidirectional type error localization with gradual recovery. Namely, the calculus provides a
-judgmental framework with a unified theory for the design of typing semantics that support ill-typed
-programs. \Cref{sec:calculus-calculus} describes its form and metatheory by example on a small
-gradually typed lambda calculus (GTLC) \cite{Siek06a}, extending it with binary product types in
-\cref{sec:calculus-products}. All rules and theorems may be found in the supplementary appendix,
+The key contribution of this section is the \emph{marked lambda calculus}, a calculus based on the gradually typed lambda calculus (GTLC) that formalizes the mechanism by which errors like these can be localized, and how to  recover, in all cases, from such errors. 
+% In brief, the marked lambda calculus formalizes 
+% bidirectional type error localization with gradual recovery. 
+\Cref{sec:calculus-calculus} introduces the syntax, judgemental structure, guiding metatheory, and then goes through the rules, organized by syntactic form rather than judgement, to build intuition about how the various judgements relate to one another \cite{Siek06a}. All rules and theorems may be found organized by judgement form in the supplementary appendix for reference, 
 alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis} (discussed in
-\cref{sec:calculus-agda}). With products, we then consider how error localization is complicated by
+\cref{sec:calculus-agda}). We intentionally keep the marked lambda calculus minimal products, we then consider how error localization is complicated by
 patterned let expressions in \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how
 the system might be extended to more complex typing features, such as System F-style polymorphism.
 
