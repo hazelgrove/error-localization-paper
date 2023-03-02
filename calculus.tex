@@ -78,7 +78,7 @@ used to represent syntactically incomplete portions of the program à la Hazelnu
 
 Before giving any of the rules, let us summarize the overall judgemental structure of the calculus. Note that colors in the judgement forms below are entirely redundant reading aids---color has no semantic significance.
 
-As our starting point, types classify unmarked expressions by a completely standard \emph{bidirectional type system} \cite{BidirTyping,LocalInf}, which employs
+As our starting point, types classify unmarked expressions by a completely standard \emph{bidirectional type system} \cite{BidirTyping,Localinf}, which employs
 two mutually defined judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$,
 establishes that, under the typing context $\ctx$, the expression $e$ synthesizes or locally infers the type $\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
 states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected.
@@ -370,8 +370,7 @@ continue, motivating an \emph{unbound variable mark} $\ECUnbound{x}$ and the acc
 %
 An unbound variable is marked as such, and since nothing may be said about their types, we
 synthesize the unknown type. Similarly to the inconsistent type mark, this allows type checking to
-proceed, with usage of the unbound variable permitted in any expression. \todo{intution for
-correctness} \todo{relate to gradual recovery}
+proceed, with usage of the unbound variable permitted in any expression.
 
 \subsubsection{Lambda Abstractions}
 \label{sec:calculus-lambda-abstractions}
@@ -399,7 +398,7 @@ type annotation and body match them.
 The synthesis rule is standard. Analysis employs the judgment $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$,
 which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini:2016}, i.e. it may be
 considered an arrow type. Defined in \cref{fig:calculus-matched-arrow}, this notion is purely a
-technical mechanism to avoid duplication of rules related to arrow types.
+technical mechanism to avoid duplication of rules related to arrow types \cite{siek2015refined}.
 
 \begin{figure}[htbp]
   \raggedright
@@ -634,7 +633,7 @@ synthetic and analytic rules:
 %
 In synthetic position, conditionals synthesize the \emph{join} of the branch types $\TMV_1$ and
 $\TMV_2$, which we define inductively in \cref{fig:calculus-type-join}. We choose the ``more
-specific'' type of the two\todo{intuition for why this is correct}. In analytic position, since
+specific'' type of the two. In analytic position, since
 there is an expected type for both branches, we shift the blame for any errors to them.
 
 \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
@@ -875,15 +874,11 @@ written $\ECSynNonMatchedProd{\ECMV}$. These cases give the final marking rules 
 
 \input{let}
 
-
-
-
 \subsection{Agda Mechanization}
 \label{sec:calculus-agda}
-% TODO clarify exactly what is/isn't mechanized
 
 The semantics and metatheory presented above, including the extension with binary products, have
-been fully mechanized in the Agda proof assistant. Though the mechanization's documentation contains
+been fully mechanized in the Agda proof assistant. The mechanization additionally includes the decoupled Hazelnut action semantics described in \cref{sec:calculus-hazelnut}. Though the mechanization's documentation contains
 more detailed discussion regarding technical decisions made therein, we highlight some important
 aspects here.
 
@@ -897,8 +892,8 @@ readers interested in browsing the mechanization, all rule names match those pre
 
 The case studies above demonstrate that the judgemental structure of the marked lambda calculus is suitable to support a variety of extensions. We hope that this spurs language designers to designed mark variants of other calculi, following the recipe discussed above.
 
-In calculi with richer judgemental structure---for example, System F, which introduces type validity and type variables \cite{tapl}---the general approach is again to define marks for any new kind of error that might arise, e.g. the appearance of a type with free type variables, and marking judgements corresponding to each judgement in the original language, e.g. here defining marking for types. One small subtlety in doing so is that a marked free variable might end up on the right side of the typing arrows. However, it is straightforward to treat a marked free variable simply as another form of unknown type for the purposes of type consistency and other operations. Type functions and type application operate much like standard functions and function application after this additional judgemental structure is accounted for.
-We leave as future work the task of defining a marked version of even more elaborate bidirectional type systems, e.g. \citet{dunfield13}'s rather substantial formulation of implicit type application in a bidirectional setting (which would have to handle, for example, the situation where no implicit argument can be resolved).
+In calculi with richer judgemental structure---for example, System F, which introduces type validity and type variables \cite{reynolds1988introduction}---the general approach is again to define marks for any new kind of error that might arise, e.g. the appearance of a type with free type variables, and marking judgements corresponding to each judgement in the original language, e.g. here defining marking for types. One small subtlety in doing so is that a marked free variable might end up on the right side of the typing arrows. However, it is straightforward to treat a marked free variable simply as another form of unknown type for the purposes of type consistency and other operations. Type functions and type application operate much like standard functions and function application after this additional judgemental structure is accounted for.
+We leave as future work the task of defining a marked version of even more elaborate bidirectional type systems, e.g. \citet{dunfield2013complete}'s rather substantial formulation of implicit type application in a bidirectional setting (which would have to handle, for example, the situation where no implicit argument can be resolved).
 
 
 \section{Integrating Marking with Editing}
@@ -906,14 +901,14 @@ We leave as future work the task of defining a marked version of even more elabo
 \subsection{Hazel Implementation}
 \label{sec:calculus-hazel}
 
-We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching \cite{oopsla23}, strings, and explicit polymorphism (all following the same recipe we developed above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
 
-The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing.
+The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter2020hazel}, semantic navigation, semantic code completion \cite{potter2020hazel,blinn2022integrative}, contextualized documentation \cite{potter2022contextualized}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelLive}, even semantic services that require run-time information, like testing.
 % 
 
 Hazel offers both a textual syntax, with explicit empty holes, and more interestingly,
 a structure editor that is able to additionally offer partial syntactic error recovery.
-In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automaticallys insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{tylr}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
+In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automatically insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{moon2022tylr}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
 
 
 \subsection{Fixing Holes in Hazelnut}

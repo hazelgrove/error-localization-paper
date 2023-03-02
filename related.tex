@@ -1,15 +1,14 @@
 \section{Related Work}
 \label{sec:related}
 
-\paragraph{Error Localization}
+The contributions of this paper build directly on the Hazelnut type system \cite{HazelnutPOPL}, which is discussed extensively throughout. Non-empty holes in Hazelnut generalize to marks in this work. In brief, we contribute a total marking procedure and type hole inference procedure for a system based closely on Hazelnut, and use it to fix some expressiveness issues in Hazelnut's edit action calculus.
 
-\paragraph{Type Inference and Unification}
+Our focus is on localization and recovery but not type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
+
 \citet{GradualInfer} explore a version of unification for gradually typed languages based on Huet's unification algorithm \cite{Huet}. Other common approaches to unification are generally based on Hindley-Milner type inference \cite{MilnerInfer}. These algorithms are efficient, but can fail to solve constraints in the face of inconsistencies.
 
 % Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 
 
-\paragraph{Correcting Sets and Assigning Blame}
-The generation of correcting sets is a common approach to error localization. The correcting set is assigned blame for failure in type inference \cite{sherrloc, typeinferDif, Pavlinovic2015}. Other approaches to assigning blame include statistically derived approaches that leverage machine learning to predict the best candidates for blame \cite{SeidelBlame}.
+The generation of correcting sets is a common approach to error localization. The correcting set is assigned blame for failure in type inference \cite{sherrloc, typeinferDif, Pavlinovic2015}. Other approaches to assigning blame include statistically derived approaches that leverage machine learning to predict the best candidates for blame \cite{SeidelBlame}. Our focus in this paper was to avoid heuristics and data-driven approaches and instead focus on systematic semantic approaches. Data-driven approaches could perhaps be layered to improve suggestions.
 
-\paragraph{Dynamic Witnesses}
 Explanations for type errors can be well illustrated by providing sample inputs (dynamic witnesses) that elicit runtime errors. With this approach, one can generate graphs for visualizing the execution of witnesses and heuristically identify the source of errors with around 70\% accuracy \cite{Seidel2016}.
