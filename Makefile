@@ -13,7 +13,7 @@ supplement.pdf : *.tex
 
 supplement.zip : supplement.pdf
 	zip -r supplement.zip supplement.pdf
-	cd supplement && zip -r ../supplement.zip agda hazel
+	cd supplement && zip -r ../supplement.zip README.md agda hazel
 
 .PHONY : clean
 clean :
