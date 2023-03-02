@@ -41,3 +41,38 @@ let (*$\amalg_{UF}$*) => if (UnionFind.eq t1 t2) then () else merge_sets_UF t1 t
 \caption{An Implementation of \textit{PossibleTypeSet} using UnionFind}
 \label{fig:ufalgcode}
 \end{figure}
+
+\begin{figure}[htb!]
+\begin{lstlisting}[escapeinside={(*}{*)}]
+let create_traversable_edge (graph, t1, t2) =
+    let (rep1, rep2) = (UnionFind.find(t1), UnionFind.find(t2)) in
+    let (s1, s2) = (Map.find(graph, rep1), Map.find(graph, rep2)) in
+    let union_rep = UnionFind.union(rep1, rep2) in
+    let s_merged = s1 (*$\amalg_{UF}$*) s2 in
+    Map.update(graph, union_rep, s_merged);;
+let create_solution_edge (graph, t1, t2) =
+    let rep1 = UnionFind.find(t1) in
+    let s = Map.find(graph, rep1) in
+    let s' = s (*$\amalg_{UF}$*) UnionFind.elem(single(t2)) in
+    Map.update(graph, t1, s');;
+\end{lstlisting}
+\hrule
+\caption{Constraint solving algorithm helper functions, using Union-Find.}
+\label{fig:algcode_construct_graph_helpers}
+\end{figure}
+
+
+\begin{figure}[htb!]
+\begin{lstlisting}[escapeinside={(*}{*)}]
+let handle_occurs_check (graph) =
+    let annotate_with_error (key) =
+        let s = Map.find(graph, UnionFind.find(key) in
+        let pass_occurs = is_acyclic(s)
+        (key, s, pass_occurs)
+    in
+    List.map(Map.keys(graph), annotate_with_error);;
+\end{lstlisting}
+ \hrule
+\caption{Occurs check assessment}
+\label{fig:occurs_check}
+\end{figure}

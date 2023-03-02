@@ -1,27 +1,29 @@
 \section{Type Hole Inference}
-\subsection{Introduction}
-\label{sec:intro}
-\emph{Type inference} allows programmers to omit most or all type annotations, but requires complex constraint solving for type checking, making it difficult for users to reason about types and producing complex error messages \cite{typeinferDif}. This paper develops \emph{type hole inference}, which combines the benefits of bidirectional type systems and type inference. Our approach takes the bidirectional type system of the marked lambda calculus and adds constraint solving as a layer on top to suggest type hole fillings without making constraint solving necessary for typing. 
+\label{sec:thi}
 
-We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type fillings and (2) reporting the most informative fillings to the user. If all possible fillings are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
+While local type inference reduces the number of necessary annotations, 
+constraint-based type inference as found in languages like ML and Haskell allows programmers to omit most or all type annotations \cite{HM, pierce}. The trade-off is that type error localization and recovery 
+become considerably more difficult, because inconsistencies can now arise between 
+constraints derived from many distant locations in a program. 
+Heuristic approaches, e.g. based on manually tuned weights or machine learning methods, are necessary to intelligently guess which uses of a variable are what is  intended.\todo{cites}
 
-\emph{Type hole inference} takes two steps: (1) use bidirectional typing for type checking, type synthesis and constraint generation; (2) solve the constraint set to infer types for type holes. In contrast to \emph{type inference}, our approach has the following features: (1) we separate type checking and constraint solving into two steps. The system only does type checking and triggers static errors at the first step; (2) expressions remain well-typed when the constraint solver can not find a solution for type variables, for instance when one type variable is equal to multiple inconsistent types. Since  type variables may be unconstrained after unification, we can generalize those type holes by introducing polymorphism in the future work. 
+This is reminiscent of the situation considered in Sec.~\ref{sec:conditionals}\todo{cite} of inconsistent branches in a conditional, but there is no parent expression where we can localize the inconsistency. However,
+this gives us a hint at the approach we introduce in this section: we \emph{gradually} harmonize local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints after the bidirectional process as described in the previous sections finishes. We then unify, recovering from inconsistent constraints by localizing the problem 
+to \emph{type holes} that cannot be solved by constraint unification and computing a graph of partial solutions. The user can  interactively investigate various partial solutions to clarify their intent, which might allow local type inference to localize the error to the relevant expressions. \todo{subsec refs}
 
-Through the constraint solving layer of \emph{type hole inference}, the user is given suggestions for type holes which are \textit{solvable}. In addition, \emph{type hole inference} provides debug information for \emph{unsolvable} type holes by presenting a \emph{PotentialTypeSet} containing all possible fillings. When the user selects an \emph{unsolvable} type hole, rather than blaming one particular expression, the editor displays all types that rendered it \emph{unsolvable}. Error localization feedback is visual and updated as edits occur, allowing the user to interactively repair their program.
+% We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type fillings and (2) reporting the most informative fillings to the user. If all possible fillings are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
 
-The contributions of this paper are: (1) a new bidirectional typing system extended with type constraints in section ~\ref{sec:typinf}; (2) a type inference algorithm to handle type holes in section without failure upon hitting unsolvable constraints in section ~\ref{sec:infalg}.
+\subsection{Type Hole Inference in Hazel}
+% Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
 
-\subsection{User Interaction}
-Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
-
-In Figure \ref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$.
+In Figure \ref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$, leaving the return type unknown.
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_holes.png}
 \includegraphics[width=9cm]{images/example_holes_CI.png}
 \caption{Incomplete program with partial hole filling suggestion}
 \label{fig:editor_holes}
 \end{figure}
-Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and surrounded by a dotted line, just like expressions wrapped in error holes. The user is informed via the Cursor Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} contains a mock-up of the editor temporarily filling the type hole when the user hovers over a constraint, deferring to bidirectional error localization.
+Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization. (This interaction has not yet been implemented, but there is no barrier to doing so. For now, 
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
 \includegraphics[width=9cm]{images/example_conflict_CI.png}
@@ -465,59 +467,15 @@ let rec construct_graph (~graph=Map.empty(), constraints) =
 \subsubsection{Computing PotentialTypeSets Using Constraint Graphs} 
 The function \lstinline{construct_graph} builds a mapping from each type hole to a \emph{PotentialTypeSet} containing a subset of its connected component. However, in order to generate all potential type hole fillings, we require that each \emph{PotentialTypeSet} represent the entire connected component. One method to expand our \emph{PotentialTypeSet}s would be to conduct a depth first search of our graph. Instead of this, we choose to simply augment our current approach using union find, yielding a version of \lstinline{construct_graph} that is reminiscent of Huet's unification algorithm \cite{Huet}.
 
-In order to change our graph construction algorithm to a constraint solver, all we need to do is update our definitions of \lstinline{create_traversable_edge} and \lstinline{create_solution_edge} to use a union find based merging logic. We outline this approach in \ref{fig:algcode_construct_graph_helpers}, where we assume suitable definitions of a mutable union find library as well as the functions \lstinline{Map.update} and \lstinline{Map.find}, which each change and return the value associated with some key in a map respectively.
+In order to change our graph construction algorithm to a constraint solver, all we need to do is update our definitions of \lstinline{create_traversable_edge} and \lstinline{create_solution_edge} to use represent each potential type set using union find. In order to accommodate this change, minor adjustments must be made to the definitions presented in Figure \ref{fig:possible_type_sets} to create union findable possible type sets and their extension logic, $\amalg_{UF}$. These definitions are left to the supplemental material for reference.
 
-\begin{figure}[htb!]
-\begin{lstlisting}[escapeinside={(*}{*)}]
-let create_traversable_edge (graph, t1, t2) =
-    let (rep1, rep2) = (UnionFind.find(t1), UnionFind.find(t2)) in
-    let (s1, s2) = (Map.find(graph, rep1), Map.find(graph, rep2)) in
-    let union_rep = UnionFind.union(rep1, rep2) in
-    let s_merged = s1 (*$\amalg_{UF}$*) s2 in
-    Map.update(graph, union_rep, s_merged);;
-let create_solution_edge (graph, t1, t2) =
-    let rep1 = UnionFind.find(t1) in
-    let s = Map.find(graph, rep1) in
-    let s' = s (*$\amalg_{UF}$*) UnionFind.elem(single(t2)) in
-    Map.update(graph, t1, s');;
-\end{lstlisting}
-\hrule
-\caption{Constraint solving algorithm helper functions, using Union-Find.}
-\label{fig:algcode_construct_graph_helpers}
-\end{figure}
-
-In order to accommodate this change, minor adjustments must be made to the definitions presented in Figure \ref{fig:possible_type_sets} to create union findable possible type sets and their extension logic, $\amalg_{UF}$. The definitions are somewhat redundant, and are consequently left to the supplemental material for reference.
-
-An additional step is taken to mark type holes with an error if their \emph{PotentialTypeSet} contains a cycle that is not a self loop. In Hindley-Milner type inference this is referred to as the occurs-check. We provide sample code for this check in Figure \ref{fig:occurs_check}.
-
-\begin{figure}[htb!]
-\begin{lstlisting}[escapeinside={(*}{*)}]
-let handle_occurs_check (graph) =
-    let annotate_with_error (key) =
-        let s = Map.find(graph, UnionFind.find(key) in
-        let pass_occurs = is_acyclic(s)
-        (key, s, pass_occurs)
-    in
-    List.map(Map.keys(graph), annotate_with_error);;
-\end{lstlisting}
- \hrule
-\caption{Constraint solving algorithm of type hole inference}
-\label{fig:occurs_check}
-\end{figure}
+An additional step is taken to mark type holes with an error if their \emph{PotentialTypeSet} contains a cycle that is not a self loop. In Hindley-Milner type inference this is referred to as the occurs-check.
 
 After our union find based \lstinline{construct_graph} and occurs check marking have been completed, we are ready to identify the solvability of our type holes. We consider type holes solvable if their \textit{PotentialTypeSet} contains at most one type that is not a hole. On the other hand, if a type hole's \textit{PotentialTypeSet} contains multiple conflicting types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases, helpful visual feedback can be provided to the user as in Figure \ref{fig:editor_conflict}.
 
 \subsection{Future Work}
 \subsubsection{Other Binary Types}
-Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. 
-
-In order to define new constraint generating bidirectional typing rules for this extended syntax of the marked calculus, we follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. We leave a definition of these rules for perusal in the supplemental material.
-% \begin{enumerate}
-%     \item If an expression is in a hole, we prevent expectations from analysis from reaching beyond the hole and instead constrain the hole itself as needed.
-%     \item If matched products are ever required on a hole, it must be constrained to its matched product form.
-% \end{enumerate}
-
-In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
+Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. We follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
 
 \subsubsection{Parametric Polymorphism}
 In order to extend our definitions of \emph{PotentialTypeSet}s to allow parametric polymorphism, we simply include a new ground type: $\TVar$.

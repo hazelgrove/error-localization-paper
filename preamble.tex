@@ -63,3 +63,28 @@ otherkeywords = {match,Some,None,substitute,postpone,to, runtime,type, checking,
 \newcommand{\Hazelnut}{\textsf{Hazelnut}\xspace}
 % The mockup, work-in-progress system.
 \newcommand{\Hazel}{\textsf{Hazel}\xspace}
+
+% rounded boxes and colors
+\usepackage{scalerel}
+\usepackage[most]{tcolorbox}
+\usepackage[dvipsnames]{xcolor}
+\newtcolorbox{mybox}[2][]
+{
+  on line,
+  hbox,
+  boxsep=0pt,
+  left=1pt,
+  right=1pt,
+  top=1pt,
+  bottom=1pt,
+  colframe=white,
+  colback=#2
+  #1,
+}
+\newcommand\goodcolor[2]{%
+  \protect\leavevmode
+  \begingroup
+    \color{#1}%
+    #2%
+  \endgroup
+}
