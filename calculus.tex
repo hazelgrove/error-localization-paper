@@ -252,14 +252,14 @@ analytic mode and rebuild the marked addition expression. The marked typing rule
 %
 \begin{mathpar}
   \judgment{
-    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TNum} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TNum} \\
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TNum}
   }{
     \ctxSynFixedInto{\ctx}{\EPlus{\EMV_1}{\EMV_2}}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
   }{MKSPlus}
 
   \judgment{
-    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TNum} \\\\
+    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TNum} \\
     \ctxAnaTypeM{\ctx}{\ECMV_2}{\TNum}
   }{
     \ctxSynTypeM{\ctx}{\ECPlus{\ECMV_1}{\ECMV_2}}{\TNum}
@@ -622,7 +622,7 @@ synthesizes the unknown type.
 \begin{mathpar}
   \judgment{
     \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV} \\
-    \notMatchedArrow{\TMV} \\\\
+    \notMatchedArrow{\TMV} \\
     \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
   }{
     \ctxSynFixedInto{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\ECApSynNonMatchedArrow{\ECMV_1}{\ECMV_2}}{\TUnknown}
@@ -630,7 +630,7 @@ synthesizes the unknown type.
 
   \judgment{
     \ctxSynTypeM{\ctx}{\ECMV_1}{\TMV} \\
-    \notMatchedArrow{\TMV} \\\\
+    \notMatchedArrow{\TMV} \\
     \ctxAnaTypeM{\ctx}{\ECMV_2}{\TUnknown}
   }{
     \ctxSynTypeM{\ctx}{\ECApSynNonMatchedArrow{\ECMV}{\ECMV}}{\TUnknown}
@@ -1018,14 +1018,14 @@ accompanied by corresponding typing rules for marked expressions:
   }{MSPair}
 
   \judgment{
-    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\
+    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\\\
     \matchedProd{\TMV}{\TMV_1}{\TMV_2}
   }{
     \ctxSynTypeM{\ctx}{\ECProjL{\ECMV}}{\TMV_1}
   }{MSProjL1}
 
   \judgment{
-    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\
+    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\\\
     \matchedProd{\TMV}{\TMV_1}{\TMV_2}
   }{
     \ctxSynTypeM{\ctx}{\ECProjR{\ECMV}}{\TMV_2}
@@ -1033,7 +1033,7 @@ accompanied by corresponding typing rules for marked expressions:
 
   \judgment{
     \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TMV_1} \\
+    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TMV_1} \\\\
     \ctxAnaTypeM{\ctx}{\ECMV_2}{\TMV_2}
   }{
     \ctxAnaTypeM{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
@@ -1153,13 +1153,34 @@ errors.
 
 % TODO example
 
-Hazelnut, however, is unable to cope with actions that require non-local hole fixes. % TODO example of this
-Such actions remain undefined, i.e. unperformable.
+Hazelnut, however, is unable to cope with actions that require \emph{non-local} hole fixes. For
+example, though the system can wrap an arbitrary expression in an arithmetic operation, it cannot
+wrap an arbitrary expression $\EMV$ in a lambda abstraction, i.e. construct
+$\ELam{x}{\TUnknown}{\EMV}$ directly from $\EMV$. The binding of $x$ with the unknown type may
+shadow a previous declaration and require the removal of error holes anywhere in body, but Hazelnut
+may only perform such fixes for immediately local holes. Such actions remain undefined, i.e.
+unperformable.
 
 By applying the marked lambda calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
 from the typing semantics. Under this new system, the action calculus is concerned only with the
 manipulation of syntax, and the marking procedure yields statically meaningful terms with error
-holes inserted at the appropriate positions. Furthermore, marking solves the problem of non-local
-hole fixes; actions may be performed anywhere (as long as they are of the correct sort), and marking
-totality ensures that they give meaningful terms.
-% TODO this is not strictly true, only for 'wrapping' actions
+marks, now error holes, inserted at the appropriate positions as a kind of editor decoration. This
+solves the problem outlined above; since marking operates on the entire program after each action,
+arbitrary constructions are permitted.
+
+Instead of a wholly untyped action calculus, one may re-adapt the existing Hazelnut calculus with
+scope-based marking. Action operate over \emph{marked expressions}, and error marks operate as error
+holes. When wrapping $\ECMV$ into $\ECLam{x}{\TUnknown}{\ECMV}$, we may re-mark the body under the
+context with $x$ binding type $\TUnknown$:
+\[%
+  \judgment{
+    \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TUnknown}}{\erase{\ECMV}}{\ECMV'}{\TMV'}
+  }{
+    \ASEConLam{\ctx}{\ECMV}{\TMV}{\ECMV'}{\TMV'}{x}
+  }{ASEConLam}
+\]%
+This system optimizes over the untyped version by performing marking only when necessary. In
+particular, whenever binders are introduced around an expression, marking redraws error holes. The
+supplemental material contains a complete formal description of both variants, and the untyped
+action semantics and related metatheory are mechanized in Agda.
+% TODO note that we have not verified the metatheory for the typed system
