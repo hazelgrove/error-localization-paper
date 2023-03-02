@@ -1,18 +1,15 @@
 \subsection{Destructuring Let with Type Annotated Composite Patterns}
 \label{sec:calculus-let}
 
-To ease the use of products, many languages feature destructuring bindings [cite]\todo{cite}. Let us add let
+To ease the use of products, many languages feature destructuring bindings. In a typed setting, we may want to granularly add type annotations in patterns as well. As it turns out this combination of features is surprisingly tricky to get right! Let us add let
 expressions and simple patterns, writing $\PWild$ for the wildcard pattern, $\PVar{x}$ for a
-variable pattern, $\PPair{\PMV_1}{\PMV_2}$ for a pair. In a bidirectional setting, the pattern
-itself synthesizes a type which constrains the definition.
+variable pattern, $\PPair{\PMV_1}{\PMV_2}$ for a pair. 
 %
 \[\begin{array}{rrcl}
   \EMName  & \EMV  & \Coloneqq & \cdots \mid \ELet{\PMV}{\EMV}{\EMV} \\
   \PMName  & \PMV  & \Coloneqq & \PWild \mid \PVar{x} \mid \PPair{\PMV}{\PMV} \mid \PAsc{\PMV}{\TMV}
 \end{array}\]
 %
-It turns out, however, that these composite patterns with type annotations can complicate type error
-localization in subtle ways.
 
 Consider the following program:
 \[%
@@ -29,8 +26,8 @@ mode.
 
 Though the distinction is benign in this example, there is a subtle semantic distinction: synthetic
 mode imposes \emph{no} type constraints, whereas analytic mode imposes a \emph{trivial} type
-constraint. This manifests when expressions may have internal type inconsistencies, such as in the
-following program:
+constraint. This manifests when expressions may have internal type inconsistencies,  as in the
+following:
 \[%
   \ELet{\PVar{a}}{\EIf{\ETrue}{1}{\EFalse}}{\EMV}
 \]%
