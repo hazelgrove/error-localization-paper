@@ -1175,8 +1175,10 @@ The Hazelnut action calculus introduced by \citet{HazelnutPOPL} gives a structur
 that employs \emph{expression holes}, denoted $\EEHole$, which represent syntactically incomplete
 part of the program. Not only are terms always syntactically well-formed, they are always
 \emph{well-typed}, ensuring that semantic services are always available. To accomplish this, the
-action calculus inserts on-demand \emph{error holes}, denoted $\hhole{\EMV}{}$, which indicate type
-errors.
+bidirectional action calculus---given by the synthetic action judgment, written
+$\ASEAction{\ctx}{\EMV}{\TMV}{\EMV'}{\TMV'}{\AMV}$, and the analytic action judgment, written
+$\AAEAction{\ctx}{\EMV}{\EMV'}{\TMV}{\AMV}$---inserts on-demand \emph{error holes}, denoted
+$\hhole{\EMV}{}$, which indicate type errors.
 
 % TODO example
 
@@ -1189,16 +1191,20 @@ may only perform such fixes for immediately local holes. Such actions remain und
 unperformable.
 
 By applying the marked lambda calculus to Hazelnut, the action calculus may be \emph{wholly decoupled}
-from the typing semantics. Under this new system, the action calculus is concerned only with the
-manipulation of syntax, and the marking procedure yields statically meaningful terms with error
-marks, now error holes, inserted at the appropriate positions as a kind of editor decoration. This
-solves the problem outlined above; since marking operates on the entire program after each action,
-arbitrary constructions are permitted.
+from the typing semantics. Under this new system, the action calculus, given by the singular action
+judgment, written $\AUEAction{\EMV}{\EMV'}{\AMV}$, is concerned only with the manipulation of
+syntax, and the marking procedure yields statically meaningful terms with error marks, now error
+holes, inserted at the appropriate positions as a kind of editor decoration. This solves the problem
+outlined above; since marking operates on the entire program after each action, arbitrary
+constructions are permitted.
 
-Instead of a wholly untyped action calculus, one may re-adapt the existing Hazelnut calculus with
-scope-based marking. Action operate over \emph{marked expressions}, and error marks operate as error
-holes. When wrapping $\ECMV$ into $\ECLam{x}{\TUnknown}{\ECMV}$, we may re-mark the body under the
-context with $x$ binding type $\TUnknown$:
+Alternatively, instead of a wholly untyped action calculus, one may re-adapt the existing Hazelnut
+calculus with scope-based marking. Action operate over \emph{marked expressions}, and error marks
+operate as error holes. The system is once again bidirectional, writing (note $\ECMV$ instead of
+$\EMV$) the judgments $\ASEAction{\ctx}{\ECMV}{\TMV}{\ECMV'}{\TMV'}{\AMV}$ and
+$\AAEAction{\ctx}{\ECMV}{\ECMV'}{\TMV}{\AMV}$. Then, when wrapping $\ECMV$ into
+$\ECLam{x}{\TUnknown}{\ECMV}$, we may simply re-mark the body under the context with $x$ binding
+the unknown type:
 \[%
   \judgment{
     \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TUnknown}}{\erase{\ECMV}}{\ECMV'}{\TMV'}
@@ -1210,4 +1216,5 @@ This system optimizes over the untyped version by performing marking only when n
 particular, whenever binders are introduced around an expression, marking redraws error holes. The
 supplemental material contains a complete formal description of both variants, and the untyped
 action semantics and related metatheory are mechanized in Agda.
+
 % TODO note that we have not verified the metatheory for the typed system
