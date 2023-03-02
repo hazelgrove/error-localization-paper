@@ -27,25 +27,35 @@ The key contribution of this section is the \emph{marked lambda calculus}, a cal
 % bidirectional type error localization with gradual recovery. 
 \Cref{sec:calculus-calculus} introduces the syntax, judgemental structure, guiding metatheory, and then goes through the rules, organized by syntactic form rather than judgement, to build intuition about how the various judgements relate to one another \cite{Siek06a}. All rules and theorems may be found organized by judgement form in the supplementary appendix for reference, 
 alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis} (discussed in
-\cref{sec:calculus-agda}). We intentionally keep the marked lambda calculus minimal products, we then consider how error localization is complicated by
-patterned let expressions in \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how
-the system might be extended to more complex typing features, such as System F-style polymorphism.
+\cref{sec:calculus-agda}). We intentionally keep the marked lambda calculus minimal, because it is intended to capture the essential idea and introduce a general pattern that language designers can employ to created mark variants of their own type systems. As an initial example, we consider product types (in \cref{sec:calculus-products}). We then consider a surprisingly subtle combination of features as a more substantial case study: the combination of
+destructing let expressions with granular type annotations, in \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} briefly explores how
+the system might be extended to more complex typing features, such as polymorphism.
 
-\subsection{The Calculus}
+\subsection{The Core Calculus}
 \label{sec:calculus-calculus}
 
-We now formally introduce the marked lambda calculus through its application to the GTLC extended
-with numbers and booleans. Consider the syntax for such a language, given as $\EMName$ in
-\cref{fig:calculus-syntax}. The base types $\TNum$ and $\TBool$ classify number and boolean
-expressions. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$,
-and there is a single arithmetic operation of addition on numeric expressions. $\ETrue$ and
-$\EFalse$ correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
-$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives a conditional structure.
+The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a}\todo{snapl} extended
+with numbers and booleans and empty expression holes. The syntax is given in
+\cref{fig:calculus-syntax}. There are two expression languages:
+\begin{itemize}
+  \item The \textbf{unmarked language}, which is our original language. Expressions of this language
+    are called \emph{unmarked expressions}, denoted by the metavariable $\EMV$.
 
-In addition to these forms, $\TUnknown$ is the unknown type from gradual type theory \cite{Siek06a}.
-Modelling the edit state of a program in development, $\EEHole$ denotes an \emph{expression hole},
+  \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
+    extended with explicit \emph{error marks}. We call expressions of this language
+    \emph{marked expressions}, denoted $\ECMV$.
+\end{itemize}
+In this simple setting, we only need one sort for types, $\tau$. 
+The base types $\TNum$ and $\TBool$ classify number and boolean
+expressions. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$,
+and there is a single arithmetic operation, addition. $\ETrue$ and
+$\EFalse$ are the boolean values and
+$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ is the boolean conditional. Arrow types classify lambdas in the usual way.
+
+$\TUnknown$ is a type hole, which we identify with the unknown type from gradual type theory \cite{Siek06a}.
+Finally, to model the edit state of a program in development, $\EEHole$ denotes an \emph{empty expression hole},
 used to represent syntactically incomplete portions of the program à la Hazelnut
-\cite{HazelnutPOPL}. Note, however, that these are not critical to the calculus.
+\cite{HazelnutPOPL}. Note, however, that empty expression holes are not semantically critical to the calculus---they are included to emphasize that the system can handle program sketches.
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
@@ -54,108 +64,84 @@ used to represent syntactically incomplete portions of the program à la Hazelnu
                        \mid           \ENumMV \mid \EPlus{\EMV}{\EMV} \\
              &       & \mid         & \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
                        \mid           \EPair{\EMV}{\EMV}
-                       \mid           \EProjL{\EMV} \mid \EProjR{\EMV}
                        \mid           \EEHole \\
     \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV}
                        \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV} \\
              &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
-                       \mid           \ECPair{\ECMV}{\ECMV} \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
                        \mid           \ECEHole \\
              &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV} \mid \ECInconAsc{\ECMV} \\
              &       & \mid         & \ECSynNonMatchedArrow{\ECMV} \mid \ECAnaNonMatchedArrow{\ECMV}
-                       \mid           \ECSynNonMatchedProd{\ECMV} \mid \ECAnaNonMatchedProd{\ECMV}
   \end{array}\]
-  \caption{Syntax of an extended GTLC and its marked version.}
+  \caption{Syntax of the marked lambda calculus.}
   \label{fig:calculus-syntax}
 \end{figure}
 
-Types classify expressions by a \emph{bidirectional type system} \cite{BidirTyping}, which employs
+Before giving any of the rules, let us summarize the overall judgemental structure of the calculus. Note that colors in the judgement forms below are entirely redundant reading aids---color has no semantic significance.
+
+As our starting point, types classify unmarked expressions by a completely standard \emph{bidirectional type system} \cite{BidirTyping,LocalInf}, which employs
 two mutually defined judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$,
-establishes that, under the typing context $\ctx$, the expression $e$ synthesizes or locally infers
-\cite{Localinf} the type $\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
-states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected. We may
-give these typing semantics traditionally, without consideration for error localization and
-recovery.
+establishes that, under the typing context $\ctx$, the expression $e$ synthesizes or locally infers the type $\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
+states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected.
 
-The marked lambda calculus builds atop these typing semantics into a two-layer system:
-%
-\begin{itemize}
-  \item The \textbf{unmarked language}, which is the original language. Expressions of this language
-    are called \emph{unmarked expressions}, denoted by the metavariable $\EMV$.
 
-  \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
-    extended with explicit \emph{error marks}. We call expressions of this language to be
-    \emph{marked expressions}, denoted $\ECMV$.
-
-  \item \textbf{Marking}, which \emph{marks} any unmarked expression into a marked expression,
+The key operation is marking, which transforms an unmarked expression into a marked expression,
     inserting error marks where appropriate.
-\end{itemize}
 %
-In other words, we extend the ordinary typing semantics of a language with a secondary ``marked''
-language and ``mark'' unmarked programs into marked ones. This corresponds to a type checking
+This corresponds to a type checking
 process with error localization and recovery. The marked language may then serve as a foundation for
-other semantic services, such as constraint-based inference assistance (as discussed in
-\cref{sec:thi}).
-
-\Cref{fig:calculus-syntax} furthermore gives the syntax for marked expressions (as $\ECMName$),
-which replicates all the forms of unmarked expressions. There are additionally several kinds of
-\emph{error marks}, which represent the different type errors that may arise. Intuitively, they each
-denote a different error message that might be shown by an editor or emitted by a compiler.
+other semantic services, such as constraint-based inference (as discussed in
+\cref{sec:thi}). 
+Intuitively, each of the mark forms corresponds to a different kind of error message that might be shown by an editor or emitted by a compiler. (We do not specify what the error message should say in this paper.)
 
 Throughout the remainder of this section, as we formulate marking for the GTLC, we will motivate and
-give precise semantics for these error marks. Note that these constitute a non-exhaustive list;
-depending on the syntactic forms and typing features found in a given language, other kinds of marks
-may be necessary. Indeed, in \cref{sec:calculus-poly}, we consider the kinds of marks that may be
-required in an language with explicit polymorphism.
+give precise semantics for each error mark. When the core is extended, new marks may be needed, as we discuss below.
 
-The marked language possesses its own typing semantics, also formulated bidirectionally. We write
-$\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis.
-Finally, marking is bidirectional as well. The synthetic marking judgment
+The marked language possesses its own type system, also formulated bidirectionally. We write
+$\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis (in addition to the color difference, note the subscript on the turnstile to distinguish marked from unmarked typing). 
+
+Finally, the key judgement, \emph{marking}, is also specified bidirectionally. The synthetic marking judgment
 $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
 $\TMV$. Analogously, the analytic marking judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
 states that $\EMV$ is marked into $\ECMV$, which analyzes against $\TMV$.
 
 How can we ensure that the marking procedure is correctly defined? There are two critical
-metatheorems to keep in mind as we continue. The first is a \emph{totality} of marking:
+metatheorems that guide us as we continue. The first is a \emph{totality} of marking:
 %
 \begin{theorem}[name=Marking Totality] \
   \label{thm:calculus-marking-totality}
   \begin{enumerate}
     \item For all $\ctx$ and $\EMV$, there exist $\ECMV$ and $\TMV$ such that
-      $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$.
+      $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ and  $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$.
     \item For all $\ctx$, $\EMV$, and $\TMV$, there exists $\ECMV$ such that
-      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$.
+      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$.
   \end{enumerate}
 \end{theorem}
 %
-That is, we may mark \emph{any} syntactically well-formed program.
+That is, we may mark \emph{any} syntactically well-formed program in any context, resulting in a \emph{well-typed} marked program.
 
-\input{figs/calculus-mark-erasure}
 
 Furthermore, since error marks are effectively annotations on top of the program, marking should
-preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} thus gives a
-notion of \emph{mark erasure}, which converts marked expressions back into unmarked expression by
-removing error marks. Then, \cref{thm:calculus-marking-well-formedness} provides a
+preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} defines \emph{mark erasure}, which converts marked expressions back into unmarked expression by
+removing error marks. 
+\input{figs/calculus-mark-erasure}
+
+Then, \cref{thm:calculus-marking-well-formedness} provides a
 \emph{well-formedness} criterion for marking.
 %
 \begin{theorem}[name=Marking Well-Formedness] \
   \label{thm:calculus-marking-well-formedness}
   \begin{enumerate}
-    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ and
+    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then 
       $\erasesTo{\ECMV}{\EMV}$.
-    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ and
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then  and
       $\erasesTo{\ECMV}{\EMV}$.
   \end{enumerate}
 \end{theorem}
 %
-In other words, marking and then erasing error marks from the result gives the original unmarked
-expression. We also ensure that marking gives well-typed marked expressions; indeed, their types
-should match those synthesized or analyzed against in marking.
 
-In the remainder of this subsection, we consider the different type errors that may arise in the
-unmarked language while keeping in mind these two theorems; in this way, the traditional typing
-semantics of the unmarked language guide the construction of the marking process.
+These metatheorems imply that to go from a standard bidirectional system for the unmarked language to a marking system, we need to handle all possible failure modes with appropriate marks and marking logic (otherwise totality would be violated) and without otherwise changing the program (otherwise well-formedness would be violated).
+Let us consider each form in turn. 
 
 \subsubsection{Numbers}
 \label{sec:calculus-numbers}
@@ -889,11 +875,8 @@ written $\ECSynNonMatchedProd{\ECMV}$. These cases give the final marking rules 
 
 \input{let}
 
-\subsection{Polymorphism and Other Typing Features}
-\label{sec:calculus-poly}
 
-We now consider how the calculus might be extended to richer typing features such as parametric
-polymorphism. Specifically, we consider System F-style explicit polymorphism.\todo{write me}
+
 
 \subsection{Agda Mechanization}
 \label{sec:calculus-agda}
@@ -905,14 +888,30 @@ more detailed discussion regarding technical decisions made therein, we highligh
 aspects here.
 
 The standard approach of modeling judgments as inductive datatypes and rules as constructors for
-those datatypes is taken. For marked expressions, we opt for implicitly typed terms [citation],
+those datatypes is taken. For marked expressions, we opt for implicitly typed terms,
 which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
 readers interested in browsing the mechanization, all rule names match those presented here.
 
-\section{The Marked Lambda in Structured Editing}
-\label{sec:calculus-structured-editing}
+\subsection{Polymorphism and Judgemental Structure}
+\label{sec:calculus-poly}
 
-[Something about structure editors]
+The case studies above demonstrate that the judgemental structure of the marked lambda calculus is suitable to support a variety of extensions. We hope that this spurs language designers to designed mark variants of other calculi, following the recipe discussed above.
+
+In calculi with richer judgemental structure---for example, System F, which introduces type validity and type variables \cite{tapl}---the general approach is again to define marks for any new kind of error that might arise, e.g. the appearance of a type with free type variables, and marking judgements corresponding to each judgement in the original language, e.g. here defining marking for types. One small subtlety in doing so is that a marked free variable might end up on the right side of the typing arrows. However, it is straightforward to treat a marked free variable simply as another form of unknown type for the purposes of type consistency and other operations. Type functions and type application operate much like standard functions and function application after this additional judgemental structure is accounted for.
+We leave as future work the task of defining a marked version of even more elaborate bidirectional type systems, e.g. \citet{dunfield13}'s rather substantial formulation of implicit type application in a bidirectional setting (which would have to handle, for example, the situation where no implicit argument can be resolved).
+
+
+\section{Integrating Marking with Editing}
+\label{sec:calculus-structured-editing}
+\subsection{Hazel Implementation}
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching \cite{oopsla23}, strings, and explicit polymorphism (all following the same recipe we took above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
+
+The result of this effort is the first full-scale typed functional language equipped with a language server that solves the gap problem: all of Hazel's semantic services, which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing, are available as long as the program sketch is syntactically well-formed.
+% 
+
+Hazel offers both a textual syntax, with explicit empty holes, and more interestingly,
+a structure editor that is able to additionally maintain a form
+
 
 The previous section presented a formal calculus for error localization and recovery. We now discuss
 its usage in a structured editing setting. In particular, the calculus has been integrated into the
