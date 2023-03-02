@@ -69,7 +69,9 @@ or training a machine learning model \todo{cite}.
 The other approach, which Hazel takes, is to localize the inconsistency to the conditional expression itself, reporting that the problem is that the branch types differ, as indicated in
 the screenshot in \autoref{fig:hazel-intro}. When the cursor is on the conditional expression, the Hazel type inspector---a status bar that reports typing information, including type error messages, about the term at the cursor \cite{hannah1}---shows the following error:
 
-TODO\todo{tpye inspector}
+\begin{center}
+  \includegraphics[width=0.9\textwidth]{images/haz3l-inconsistent-branches-cursor-inspector.png}
+\end{center}
 
 This localization decision affects how the system recovers as it proceeds into the let body, \li{x + 1}. 
 If localization had assumed that the \li{then} branch correct, as for example in the Elm type checker, then \li{x : Bool} and an error should be reported on the left operand (though this error might mislead the programmer if this earlier localization guess was incorrect).
