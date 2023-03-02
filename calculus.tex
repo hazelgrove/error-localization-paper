@@ -645,7 +645,7 @@ entire application.
 \subsubsection{Booleans}
 \label{sec:calculus-booleans}
 
-The boolean values are straightforward to handle:
+The boolean values are straightforward to handle, behaving in a similar manner as numbers: 
 %
 \begin{mathpar}
   \judgment{ }{
@@ -676,7 +676,7 @@ The boolean values are straightforward to handle:
 \end{mathpar}
 
 Conditionals, however, offer an interesting case. In the unmarked language, we have both explicit
-synthetic and analytic rules: % TODO intuition why
+synthetic and analytic rules:
 %
 \begin{mathpar}
   \judgment{
@@ -783,11 +783,24 @@ conditionals:
   }{MSInconsistentBranches}
 \end{mathpar}
 
-These rules complete the development of the marked lambda calculus for the gradually typed lambda
-calculus.
+The framework also allows for other localization approaches. For example, we may regard the first
+branch as ``correct'' and localize any errors to the second. The following rule formalizes such a
+design:
+\[%
+  \judgment{
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\
+    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV}
+  }{
+    \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV}
+  }{MKSIf'}
+\]%
+Of course, corresponding unmarked and marked typing rules would follow similar structure, and other
+heuristics may be devised for different kinds of branching structures.
 
 % TODO mini conclusion on methodology
 
+\subsubsection{Additional Theorems}
 To conclude this section, we present two more metatheorems that help ensure correctness of the
 system. Though \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
 the syntactic structure of a program, it makes no statement about the presence of error marks in the
