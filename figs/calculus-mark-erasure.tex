@@ -5,22 +5,23 @@
     \erasesToRow{x}{x} \\
     \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
     \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    & \cdots & \\
     % \erasesToRow{(\ECLet{x}{\ECMV_1}{\ECMV_2})}{\ELet{x}{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
-    \erasesToRow{\ECNumMV}{\ENumMV} \\
-    \erasesToRow{(\ECPlus{\ECMV_1}{\ECMV_2})}{\EPlus{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
-    \erasesToRow{\ECTrue}{\ETrue} \\
-    \erasesToRow{\ECFalse}{\EFalse} \\
-    \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    % \erasesToRow{\ECNumMV}{\ENumMV} \\
+    % \erasesToRow{(\ECPlus{\ECMV_1}{\ECMV_2})}{\EPlus{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    % \erasesToRow{\ECTrue}{\ETrue} \\
+    % \erasesToRow{\ECFalse}{\EFalse} \\
+    % \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
     \erasesToRow{\ECUnbound{x}}{x} \\
     \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
     \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
-    \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
-    \erasesToRow{\ECSynNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
-    \erasesToRow{\ECSynNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
-    \erasesToRow{\ECAnaNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
-    \erasesToRow{\ECAnaNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
+    % \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    % \erasesToRow{\ECSynNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
+    % \erasesToRow{\ECSynNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
+    % \erasesToRow{\ECAnaNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
+    % \erasesToRow{\ECAnaNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
   \end{array}\]
   %
-  \caption{Mark erasure.}
+  \caption{Mark erasure (selected)}
   \label{fig:calculus-mark-erasure}
 \end{figure}
