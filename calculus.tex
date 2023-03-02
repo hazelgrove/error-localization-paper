@@ -22,10 +22,10 @@ while other tools may choose one branch to be ``correct'' and ``blame'' the type
 the other.
 
 The key contribution of this section is the \emph{marked lambda calculus}, a formal calculus for
-bidirectional type error localization and recovery. Namely, the calculus provides a judgmental
-framework with a unified theory for the design of typing semantics that support ill-typed programs.
-\Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
-lambda calculus (GTLC) \cite{Siek06a}, extending it with binary product types in
+bidirectional type error localization with gradual recovery. Namely, the calculus provides a
+judgmental framework with a unified theory for the design of typing semantics that support ill-typed
+programs. \Cref{sec:calculus-calculus} describes its form and metatheory by example on a small
+gradually typed lambda calculus (GTLC) \cite{Siek06a}, extending it with binary product types in
 \cref{sec:calculus-products}. All rules and theorems may be found in the supplementary appendix,
 alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis} (discussed in
 \cref{sec:calculus-agda}). With products, we then consider how error localization is complicated by
@@ -34,9 +34,6 @@ the system might be extended to more complex typing features, such as System F-s
 
 \subsection{The Calculus}
 \label{sec:calculus-calculus}
-
-% TODO outline the structure of this section at the beginning
-% TODO make it clear unmarked/marked languages share same types
 
 We now formally introduce the marked lambda calculus through its application to the GTLC extended
 with numbers and booleans. Consider the syntax for such a language, given as $\EMName$ in
@@ -90,7 +87,6 @@ The marked lambda calculus builds atop these typing semantics into a two-layer s
   \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
     extended with explicit \emph{error marks}. We call expressions of this language to be
     \emph{marked expressions}, denoted $\ECMV$.
-    % TODO more intuition for what marked expressions are?
 
   \item \textbf{Marking}, which \emph{marks} any unmarked expression into a marked expression,
     inserting error marks where appropriate.
@@ -99,7 +95,8 @@ The marked lambda calculus builds atop these typing semantics into a two-layer s
 In other words, we extend the ordinary typing semantics of a language with a secondary ``marked''
 language and ``mark'' unmarked programs into marked ones. This corresponds to a type checking
 process with error localization and recovery. The marked language may then serve as a foundation for
-other semantic services. % TODO such as THI.
+other semantic services, such as constraint-based inference assistance (as discussed in
+\cref{sec:thi}).
 
 \Cref{fig:calculus-syntax} furthermore gives the syntax for marked expressions (as $\ECMName$),
 which replicates all the forms of unmarked expressions. There are additionally several kinds of
@@ -307,12 +304,10 @@ of ``subsumability'' for marked expressions, written $\subsumable{\ECMV}$.
 But what happens when the synthesized type of an expression is \emph{not} consistent with the
 expected type, i.e. that the premise $\consistent{\TMV}{\TMV'}$ fails? Recalling the example of
 \cref{fig:calculus-examples-inconsistent-types}, subsumption would be used to analyze $\ETrue$
-against $\TNum$ in $\EPlus{\ETrue}{5}$, which fails since $\inconsistent{\TNum}{\TBool}$, i.e.
+against $\TNum$ in $\EPlus{\ETrue}{1}$, which fails since $\inconsistent{\TNum}{\TBool}$, i.e.
 \textsc{UASubsume} does not apply, and traditional typing semantics would simply fail the type
 checking process at this point. \textsc{MKASubsume} would also not be applicable, leaving marking
 undefined in those cases.
-
-% TODO use example more closely related to num here since we haven't talked about booleans yet?
 
 To satisfy marking totality, such a possibility motivates an \emph{inconsistent type mark}
 $\ECInconType{\ECMV}$, which states exactly that the synthesized type of $\ECMV$ is inconsistent
@@ -369,7 +364,6 @@ rules:
     \ctxSynTypeM{\ctx}{x}{\TMV}
   }{MSVar}
 \end{mathpar}
-% TODO more intuition on why this makes sense?
 
 However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-unbound}, is \emph{not}
 bound. Again, \textsc{USVar} would not apply. A total marking should, however, report the error and
@@ -391,14 +385,15 @@ continue, motivating an \emph{unbound variable mark} $\ECUnbound{x}$ and the acc
 %
 An unbound variable is marked as such, and since nothing may be said about their types, we
 synthesize the unknown type. Similarly to the inconsistent type mark, this allows type checking to
-proceed, with usage of the unbound variable permitted in any expression.
-% TODO clarify/give intuition as to why this is correct
+proceed, with usage of the unbound variable permitted in any expression. \todo{intution for
+correctness} \todo{relate to gradual recovery}
 
 \subsubsection{Lambda Abstractions}
 \label{sec:calculus-lambda-abstractions}
 
 Unlike numbers and variables, there are explicit synthesis and analysis rules for unmarked lambda
-abstractions: % TODO intuition why
+abstractions. This is because expected input and output types are known, and we may verify that the
+type annotation and body match them.
 %
 \begin{mathpar}
   \judgment{
@@ -416,15 +411,10 @@ abstractions: % TODO intuition why
   }{UALam}
 \end{mathpar}
 %
-The synthesis rule is standard. The analysis rule employs the judgment
-$\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$, which establishes that $\TMV$ is a \emph{matched arrow type}
-\cite{cimini:2016}, i.e. it may be considered an arrow type. Defined in
-\cref{fig:calculus-matched-arrow}, this notion is purely a technical mechanism to avoid duplication
-of rules related to arrow types.
-
-% TODO mention explicitly that by inductive hypothesis, the marking of body cannot fail?
-% TODO more intuition on these two judgments
-% TODO more intuition on USLam and UALam
+The synthesis rule is standard. Analysis employs the judgment $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$,
+which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini:2016}, i.e. it may be
+considered an arrow type. Defined in \cref{fig:calculus-matched-arrow}, this notion is purely a
+technical mechanism to avoid duplication of rules related to arrow types.
 
 \begin{figure}[htbp]
   \raggedright
@@ -657,10 +647,9 @@ synthetic and analytic rules:
 \end{mathpar}
 %
 In synthetic position, conditionals synthesize the \emph{join} of the branch types $\TMV_1$ and
-$\TMV_2$, which we define inductively in \cref{fig:calculus-type-join}. In analytic position, since
+$\TMV_2$, which we define inductively in \cref{fig:calculus-type-join}. We choose the ``more
+specific'' type of the two\todo{intuition for why this is correct}. In analytic position, since
 there is an expected type for both branches, we shift the blame for any errors to them.
-
-% TODO intuition why we use join
 
 \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
 \begin{figure}[htbp]
@@ -678,7 +667,6 @@ there is an expected type for both branches, we shift the blame for any errors t
   \caption{Type join.}
   \label{fig:calculus-type-join}
 \end{figure}
-% TODO intuition for type join?
 
 Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking and typing rules.
 Similar to previous cases, we recursively mark the guard and branches, constructing the marked
@@ -777,8 +765,6 @@ rules.
   }{MSHole}
 \end{mathpar}
 
-% TODO mini conclusion on methodology
-
 \subsubsection{Additional Metatheorems}
 To conclude this section, we present two more metatheorems that help ensure correctness of the
 system. Though \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
@@ -786,7 +772,7 @@ the syntactic structure of a program, it makes no statement about the presence o
 resulting marked program. Following the logic of constructing marking rules, we have
 \cref{thm:calculus-marking-well-ill-typed}.
 
-\begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \ % TODO better name for this
+\begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \
   \label{thm:calculus-marking-well-ill-typed}
   \begin{enumerate}
     \item \begin{enumerate}
@@ -922,6 +908,7 @@ polymorphism. Specifically, we consider System F-style explicit polymorphism.\to
 
 \subsection{Agda Mechanization}
 \label{sec:calculus-agda}
+% TODO clarify exactly what is/isn't mechanized
 
 The semantics and metatheory presented above, including the extension with binary products, have
 been fully mechanized in the Agda proof assistant. Though the mechanization's documentation contains
@@ -955,9 +942,7 @@ part of the program. Not only are terms always syntactically well-formed, they a
 bidirectional action calculus---given by the synthetic action judgment, written
 $\ASEAction{\ctx}{\EMV}{\TMV}{\EMV'}{\TMV'}{\AMV}$, and the analytic action judgment, written
 $\AAEAction{\ctx}{\EMV}{\EMV'}{\TMV}{\AMV}$---inserts on-demand \emph{error holes}, denoted
-$\hhole{\EMV}{}$, which indicate type errors.
-
-% TODO example
+$\hhole{\EMV}{}$, which indicate type errors. \todo{example?}
 
 Hazelnut, however, is unable to cope with actions that require \emph{non-local} hole fixes. For
 example, though the system can wrap an arbitrary expression in an arithmetic operation, it cannot
@@ -993,5 +978,3 @@ This system optimizes over the untyped version by performing marking only when n
 particular, whenever binders are introduced around an expression, marking redraws error holes. The
 supplemental material contains a complete formal description of both variants, and the untyped
 action semantics and related metatheory are mechanized in Agda.
-
-% TODO note that we have not verified the metatheory for the typed system
