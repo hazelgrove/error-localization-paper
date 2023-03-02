@@ -38,11 +38,11 @@ with little in the way of unifying theory of the sort that grounds the design of
 Consider, the example program below, which is shown as presented to the user in
 this paper's version of Hazel \cite{hazel}, a typed functional dialect of Elm \cite{elm}. Hazel  
 supports local type inference, specified in the well-established bidirectional style \cite{pierce,hazelnut,BidirTyping}:
-
+\vspace{-3px}
 \begin{center}
     \includegraphics[scale=0.5]{images/hazel-intro-screenshot.png}
 \end{center}
-
+\vspace{-3px}
 A type checker with no support for error localization or recovery---%
 as students in an undergraduate course might write---%
 would simply report that this program is ill-typed. 
@@ -77,9 +77,8 @@ If the \li{else} branch was chosen, then \li{x : Int} and an error would not be 
 If the inconsistency is localized to the conditional expression as a whole, as in our language server, then we again confront the problem of missing type information: 
 \li{x} does not have a known type,
 though it \emph{is} known to be bound. 
-There is no definitive type or binding error here, based on the incomplete information available in the typing context, 
+There is no definitive type or binding error here, 
 so we choose not to report an error in Hazel.
-
 No matter how localization handles the left operand, we would like to be able to recover and 
 localize the type inconsistency on the right operand (the \li{+} operator is integer addition in Hazel).
 
@@ -96,8 +95,9 @@ The Hazelnut calculus \cite{HazelnutPOPL} previously brought these ideas togethe
 We resolve these problems to formally establish, with accompanying metatheory mechanized in Agda, that the marked lambda calculus features \emph{total error recovery}: {every} syntactically well-formed program sketch (a program structure with, optionally, empty holes \cite{sketching}) can be marked, i.e. its errors can be localized, such that the resulting program has a well-defined type and binding structure.
 As we define the calculus, we consider a number of situations where error localization decisions are subtle, including conditionals and destructuring let with granular type annotations.
 
-This system, scaled up and implemented in Hazel (Sec.~\ref{sec:calculus-hazel}), solves the semantic gap problem: Hazel's semantic services, which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing, 
-are available at all times and at all cursor locations, as long as the program sketch is syntactically well-formed.
+This system, scaled up and implemented in Hazel (Sec.~\ref{sec:calculus-hazel}), solves the semantic gap problem: Hazel's semantic services are available as long as the program sketch is syntactically well-formed.
+% which include type hints \cite{potter1}, semantic navigation, semantic code completion \cite{potter1,blinn}, contextualized documentation \cite{potter2}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelnutLive}, even semantic services that require run-time information, like live testing, 
+% 
 
 Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as is featured in Agda \cite{agda}, GHC Haskell \cite{haskell-holes}, Idris \cite{idris-holes}, and other languages), syntax error recovery \cite{error-reovery}, and structure editing \cite{HazelnutPOPL}. 
 Hazel has both a textual syntax and a structure editor, which are briefly described in Sec.~\ref{sec:calculus-hazel}.\todo{sec} 
@@ -108,28 +108,21 @@ we briefly discuss in Sec.~\ref{sec:calculus-structured-editing} how (1)  total 
 and (2) integrating marking with typed structure editing allows us to re-mark only where necessary based on the edit location and the type and binding structure.
 
 Local type inference pairs well with type error localization and recovery because information flows systematically through the tree, leading to predictable and systematic localization decisions (as informally observed also by \cite{pierce}). Languages with constraint-based type inference gather constraints from all relevant locations in a program. This approach is powerful, but it is also notorious for complicating type error localization and recovery, because inconsistencies can arise through a confluence of constraints originating from any number of locations in the program. 
-Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 
+
 In Sec.~\ref{sec:thi}\todo{sec}, we describe how we blend local and constraint-based type inference in Hazel. In particular,  
-we generate constraints for each type hole that appears in the program explicitly or that is  generated internally during the  bidirectional type error localization and recovery process from Sec.~\ref{sec:calculus}. 
-We develop a unification algorithm that can recover from inconsistent constraints by maintaining possible type hole fillings. For holes that can be uniquely solved, we suggest the solution. 
+we generate constraints for each type hole that arises (either explicitly in the program or during type error localization and recovery as defined in  Sec.~\ref{sec:calculus}). 
+We develop a unification algorithm that can recover from inconsistent constraints by maintaining possible type hole solutions. For holes that can be uniquely solved, we suggest the solution. 
 If conflicting constraints arise, we localize the errors to the relevant type holes, rather 
-than attempting to localize to expressions. 
-The user can explore the different partial type hole fillings. Making a choice then allows the bidirectional system to localize the error to relevant expressions.
-Until the choice is finalized, the system continues to recover gradually.
+than to expressions. 
 
 
-
-
-let x : ? = ? in 
-if x then x(x + 1) else 0
-
-
-bool int int -> int
-
-
-
-if x then >x<(>x< + 1) else 0
-
-if >x< then >x<(x + 1) else 0
-
-if >x< then x(>x< + 1) else 0
+For example, in the following Hazel expression, bidirectional error localization 
+does not mark any expressions as erroneous because a type for \li{x} cannot locally be inferred (the bound expression is a hole). The type hole at the cursor therefore behaves gradually. 
+However, by gathering constraints from the three uses of \li{x} and attempting to unify, we see that this type hole is unfillable -- it is being used at three different types. This error is localized, with a \li{!}, to the type hole itself.
+\begin{center}
+\vspace{-3px}
+    \includegraphics[scale=0.55]{images/intro-thi.png}
+    \includegraphics[scale=0.4]{images/example_CI.png}
+\end{center}
+The user can investigate by choosing a partial solution, which (temporarily) fills the type hole (not shown) and thus allows the local inference system to systematically localize the error.
+Here, each choice causes different set of two uses of \li{x} to be marked, e.g. the first and third use for \li{Int -> Int} (not shown). Until the choice is finalized, the system continues to recover gradually.

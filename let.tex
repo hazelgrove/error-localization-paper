@@ -9,7 +9,7 @@ In a traditional bidirectional presentation (CITE 'Strict Bidirectional Type Che
 %
 \[\begin{array}{rrcl}
   \EMName  & \EMV  & \Coloneqq & \cdots \mid \ELet{\PMV}{\EMV}{\EMV} \\
-  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECLet{\PMV}{\ECMV}{\ECMV} \\
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECLet{\PCMV}{\ECMV}{\ECMV} \\
   \PMName  & \PMV  & \Coloneqq & \PWild \mid \PVar{x} \mid \PPair{\PMV}{\PMV} \mid \PAsc{\PMV}{\TMV} \\
   \PCMName & \PCMV & \Coloneqq & \PCWild \mid \PCVar{x} \mid \PCPair{\PCMV}{\PCMV} \mid \PCAsc{\PCMV}{\TMV}
                                \mid \PCInconType{\PCMV} \mid \PCAnaNonMatchedProd{\PCMV}
@@ -30,9 +30,9 @@ $\ELet{(a, b:\TUnknown)}{(\ECInconBr{\ETrue}{1}{\EFalse},\EIf{\ETrue}{2}{\EFalse
 To accomplish this, we use a variation on the first distinction-erasure option, but with a twist. We do not unconditionally switch from analysis against unknown to synthesis, but instead augment our type system with a new variant on the unknown type which triggers the switch. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the matched arrow and product judgements, and the join metafunction. In our previous example, the pattern variable $a$ will synthesize the $\TUnknownSwitch$ type, whereas the annotation $b: \TUnknown$ synthesizes $\TUnknown$. Thus $1$ will end up in synthetic position and $2$ in analytic, achieving the desired distinction.
 \begin{mathpar}
   \judgment{
-    \ctxSynType{\ctx}{\EMV}{\ctx'}
+    \ctxSynTypeU{\ctx}{\EMV}{\ctx'}
   }{
-    \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
+    \ctxAnaTypeU{\ctx}{\EMV}{\TUnknownSwitch}
   }{UASynSwitch}
 \end{mathpar}
 
@@ -46,7 +46,7 @@ To accomplish this, we use a variation on the first distinction-erasure option, 
     \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
     \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
   }{
-    \ctxSynType{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
+    \ctxSynTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
   }{USLetPat}
    
   \judgment{
@@ -249,7 +249,7 @@ And finally, the typing rules for marked expression precisely parallel the unmar
   }{MSPWild}
 
   \judgment{ }{
-    \ctxSynPatU{\ctx}{\PCVar{x}}{\TUnknownSwitch}
+    \ctxSynPatM{\ctx}{\PCVar{x}}{\TUnknownSwitch}
   }{MSPVar}
 
   \judgment{
@@ -270,11 +270,11 @@ And finally, the typing rules for marked expression precisely parallel the unmar
 %
 \begin{mathpar}
   \judgment{ }{
-    \ctxAnaPatU{\ctx}{\PCWild}{\TMV}{\ctx}
+    \ctxAnaPatM{\ctx}{\PCWild}{\TMV}{\ctx}
   }{MAPWild}
    
   \judgment{ }{
-    \ctxAnaPatU{\ctx}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
+    \ctxAnaPatM{\ctx}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
   }{MAPVar}
 
   \judgment{
