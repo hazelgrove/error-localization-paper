@@ -21,13 +21,13 @@ In Figure \ref{fig:editor_holes}, the user has written an incomplete program whe
 \caption{Incomplete program with partial hole filling suggestion}
 \label{fig:editor_holes}
 \end{figure}
-Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and surrounded by a dotted line, just like expressions wrapped in error holes. The user is informed via the Cursor Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} illustrates a mock-up of the editor highlighting the source of conflicting constraints the user hovers over.
+Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and surrounded by a dotted line, just like expressions wrapped in error holes. The user is informed via the Cursor Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} contains a mock-up of the editor temporarily filling the type hole when the user hovers over a constraint, deferring to bidirectional error localization.
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
 \includegraphics[width=9cm]{images/example_conflict_CI.png}
 \includegraphics[width=9cm]{images/example_conflict_hover.png}
 \includegraphics[width=9cm]{images/example_conflict_hover_CI.png}
-\caption{User types '2' and error is localized to f(2) type hole [mock-up]}
+\caption{User types '2' and error is localized to type hole. Error is localized to '2' on hover [mock-up]}
 \label{fig:editor_conflict}
 \end{figure}
 % \begin{figure}[H]
