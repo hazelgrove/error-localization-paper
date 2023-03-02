@@ -526,13 +526,11 @@ Similarly, we construct corresponding analytic rules:
 %
 However, recalling totality, we look again to the premises of \textsc{UALam} to see what type errors
 may arise. First, what if $\TMV_3$ is not a matched arrow type? This would be the case if it were
-$\TNum$, for example. The lambda abstraction's synthesized type would be inconsistent with the
-expected type, but this case is slightly distinct from that of the inconsistent types mark;
-
-Thus,
-to the syntax we add an \emph{inconsistent type mark} $\ECInconType{\ECMV}$, which indicates that
-the expression does not synthesize a type consistent with the expected type. We then have the
-following rules, in which the lambda abstraction is placed inside the inconsistent type mark.
+$\TNum$, for example. The lambda abstraction's synthesized type would indeed be inconsistent with
+the expected type, but this case is slightly distinct from that of the inconsistent types mark: the
+lambda expression is in analytic position. Instead, we mark $\ECAnaNonMatchedArrow{\ECMV}$ to
+indicate that an expression of the non-matched arrow type $\TMV_3$ was expected, but a lambda
+abstraction was encountered.
 %
 \begin{mathpar}
   \judgment{
@@ -553,7 +551,11 @@ following rules, in which the lambda abstraction is placed inside the inconsiste
 Though no expected output type is known, we still need to check and mark the body; it is thus
 analyzed against the unknown type in \textsc{MKALam2}.
 
-A similar situation arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
+In this example language, the distinction from the inconsistent type mark is of reduced
+significance---all expressions synthesize a type. However, the addition of unannotated lambda
+abstractions, for example, would necessitate such a disctinction.
+
+Another error arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
 $\inconsistent{\TMV}{\TMV_1}$, i.e. the actual type annotation for $x$ is inconsistent with the
 expected input type. The \emph{inconsistent ascription mark} $\ECInconAsc{x}$ indicates exactly this
 error, and we add a final pair of analytic rules:
