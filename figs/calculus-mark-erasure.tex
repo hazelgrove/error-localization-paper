@@ -1,7 +1,7 @@
 \newcommand{\erasesToRow}[2]{\erase{#1} & = & #2}
 \begin{figure}[htbp]
   \[\begin{array}{rcl}
-    % \erasesToRow{\ECEHole}{\EEHole} \\
+    \erasesToRow{\ECEHole}{\EEHole} \\
     \erasesToRow{x}{x} \\
     \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
     \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
@@ -14,6 +14,11 @@
     \erasesToRow{\ECUnbound{x}}{x} \\
     \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
     \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    \erasesToRow{\ECSynNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
+    \erasesToRow{\ECSynNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
+    \erasesToRow{\ECAnaNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
+    \erasesToRow{\ECAnaNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
   \end{array}\]
   %
   \caption{Mark erasure.}

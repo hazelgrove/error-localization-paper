@@ -1,128 +1,73 @@
 \subsection{Destructuring Let with Composite Patterns}
 \label{sec:calculus-let}
 
-%TODO(andrew): justification, examples
-
-To ease the use of products, many languages have destructuring let expressions th
-
-In a traditional bidirectional presentation (CITE 'Strict Bidirectional Type Checking' Chlipala et al), let-expressions without composite patterns have two rules: A type-annotated version placing the definition in analytic position, and an unannotated synthetic version. With composite patterns, this straightforward division is no longer possible, as type constraints on the definition may depend on the (arbitrarily nested) sub-components of the pattern.
+To ease the use of products, many languages feature destructuring bindings [cite]. Let us add let
+expressions and simple patterns, writing $\PWild$ for the wildcard pattern, $\PVar{x}$ for a
+variable pattern, $\PPair{\PMV_1}{\PMV_2}$ for a pair. In a bidirectional setting, the pattern
+itself synthesizes a type which constrains the definition.
 %
 \[\begin{array}{rrcl}
   \EMName  & \EMV  & \Coloneqq & \cdots \mid \ELet{\PMV}{\EMV}{\EMV} \\
-  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECLet{\PMV}{\ECMV}{\ECMV} \\
-  \PMName  & \PMV  & \Coloneqq & \PWild \mid \PVar{x} \mid \PPair{\PMV}{\PMV} \mid \PAsc{\PMV}{\TMV} \\
-  \PCMName & \PCMV & \Coloneqq & \PCWild \mid \PCVar{x} \mid \PCPair{\PCMV}{\PCMV} \mid \PCAsc{\PCMV}{\TMV}
-                               \mid \PCInconType{\PCMV} \mid \PCAnaNonMatchedProd{\PCMV}
+  \PMName  & \PMV  & \Coloneqq & \PWild \mid \PVar{x} \mid \PPair{\PMV}{\PMV} \mid \PAsc{\PMV}{\TMV}
 \end{array}\]
 %
-The most obvious approach is to instead use a single rule which synthesizes a type from the let-expression's pattern, then analyzes the definition against that type. However, this may run afoul of user expectation. Consider the expression $\ELet{(a,b)}{(1,2)}{e}$, which a user would reasonably expect to be semantically equivalent to the expanded expression $\ELet{a}{1}{\ELet{b}{2}{e}}$. Notice that in the un-expanded expression, $1$ and $2$ are in analytic against the unknown type, whereas in the latter, they are in synthetic position.
+It turns out, however, that these composite patterns with type annotations can complicate type error
+localization in subtle ways.
 
-One may ask if there a meaningful difference between these two situations. There is at least a subtle semantic distinction: Synthetic means 'no type constraints', whereas analysis against unknown imposes a trivial type constraint.
+Consider the following program:
+\[%
+  \ELet{\PPair{\PVar{a}}{\PVar{b}}}{\EPair{1}{2}}{\EMV}
+\]%
 
-This distinction manifests behaviorally in the case of expressions that can have internal type inconsistencies. As per the previous section on booleans, given the expression $\ELet{a}{\EIf{\ETrue}{1}{\EFalse}}{...}$, the conditional will be marked with an inconsistent branches error when in synthetic position, but if analyzed against the unknown type---with which both branches are consistent---no mark will be placed.
+To type this, the most obvious approach is to synthesize a type from the pattern and analyze the
+definition against that type. However, this may run afoul of user expectation, which might
+reasonably suppose it to be equivalent to the expanded expression
+$\ELet{\PVar{a}}{1}{\ELet{\PVar{b}}{2}{\EMV}}$. In the original, the pattern synthesizes the type
+$\TProd{\TUnknown}{\TUnknown}$, and $\EPair{1}{2}$ is analyzed against it, hence $1$ and $2$ are
+each analyzed against $\TUnknown$. In the expanded version, however, they are typed in synthetic
+mode.
 
-One option would be to erase the distinction entirely, adding a rule to switch to synthetic mode whenever we analyze against unknown, or to simply eliminate synthetic mode altogether. We consider these options too drastic; we wish to preserve the above behavioral distinction for conditionals, both indicating an inconsistency error in the unconstrained synthetic case, and permitting the user to defer that error via annotation by the unknown type. To this effect, we add a compositional pattern annotation form, which can be applied to sub-patterns: 
-$\ELet{(a, b:\TUnknown)}{(\ECInconBr{\ETrue}{1}{\EFalse},\EIf{\ETrue}{2}{\EFalse})}{e}$. Here we want the first condition to be in synthetic and hence marked as inconsistent, and the second to be in analytic against unknown and thus unmarked.
-\[\begin{array}{rrcl}
-  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch \\
-\end{array}\]
+Though the distinction is benign in this example, there is a subtle semantic distinction: synthetic
+mode imposes \emph{no} type constraints, whereas analytic mode imposes a \emph{trivial} type
+constraint. This manifests when expressions may have internal type inconsistencies, such as in the
+following program:
+\[%
+  \ELet{\PVar{a}}{\EIf{\ETrue}{1}{\EFalse}}{\EMV}
+\]%
+If the pattern $\PVar{a}$ suggests that the conditional is in synthetic position, it will be marked
+with an inconsistent branches error following our development of marking above. If instead it is in
+analytic position against the unknown type, no mark will be produced.
 
-To accomplish this, we use a variation on the first distinction-erasure option, but with a twist. We do not unconditionally switch from analysis against unknown to synthesis, but instead augment our type system with a new variant on the unknown type which triggers the switch. The new type $\TUnknownSwitch$ behaves identically to $\TUnknown$ with respect to type consistency, the matched arrow and product judgements, and the join metafunction. In our previous example, the pattern variable $a$ will synthesize the $\TUnknownSwitch$ type, whereas the annotation $b: \TUnknown$ synthesizes $\TUnknown$. Thus $1$ will end up in synthetic position and $2$ in analytic, achieving the desired distinction.
+To remedy this situation and preserve the semantic distinction between synthesis and analysis
+against the unknown type, we introduce a pattern annotation form, written $\PAsc{\PMV}{\TMV}$, which
+allows the explicit imposition of typing constraints. That is, the absence of any type annotation on
+a variable pattern places the corresponding definition in synthetic mode, while the programmer may
+impose typing constraints---the trivial constraint, if they wish---on the definition.
+
+As illustration, consider the following program:
+\[%
+  \ELet{\PPair{\PVar{a}}{\PAsc{\PVar{b}}{\TUnknown}}}{\EPair{\EIf{\ETrue}{1}{\EFalse}}{\EIf{\ETrue}{2}{\EFalse}}}{\EMV}
+\]%
+Since $\PVar{a}$ has no constraint, the left component is in synthetic position, leading to an
+inconsistent branches error. The type annotation on $\PVar{b}$ puts the right component in analytic
+mode against the unknown type, leading to no error marks.
+
+This system is achieved by augmenting the type system with a variant of the unknown type, written
+$\TUnknownSwitch$, that triggers a ``switch'' to synthesis and otherwise behaves identically to
+$\TUnknown$. In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
+$\TUnknownSwitch$, and the annotated pattern $\PAsc{\PVar{b}}{\TUnknown}$ synthesizes $\TUnknown$.
+We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesizes type $\TMV$.
+%
 \begin{mathpar}
   \judgment{
     \ctxSynType{\ctx}{\EMV}{\ctx'}
   }{
     \ctxAnaType{\ctx}{\EMV}{\TUnknownSwitch}
   }{UASynSwitch}
-\end{mathpar}
 
-(It is worth noting that, despite the lack of marking for the $\TUnknown$-annotated conditional, there is no possible filling of the type hole, so it is also reasonable that the annotated unknown type itself should be considered as an error state. Indeed, precisely this will be accomplished in section 4 via type hole inference.)
-
-\begin{mathpar}
-  \judgment{
-    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
-    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
-    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
-    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
-    \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
-  }{
-    \ctxSynType{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
-  }{USLetPat}
-   
-  \judgment{
-    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
-    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
-    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
-    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
-    \ctxAnaTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
-  }{
-    \ctxAnaTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
-  }{UALetPat}
-\end{mathpar}
-In order to ensure propagation of type information between the pattern and definition, we require a bit more machinery than a typical let rule. First, we synthesize the pattern type and analyze the definition against that type. These two steps are needed to ensure that the pattern and definition types are consistent. Then we synthesize the definition's type, and analyze the pattern against that type. This analysis of the pattern is guaranteed to succeed; however is is required, as we want the context produced by the pattern $\ctx_b$ to take into account the definition's type. Finally, the let body is synthesized or analyzed (depending on whether the let itself is being synthesized or analyzed) within that context.
-
-The marking rules are directly analogous:
-\begin{mathpar}
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
-    \ctxAnaFixedInto{\ctx}{\EMV_{1}}{\ECMV_{1}}{\TMV_{p}} \\\\
-    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\
-    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
-    \ctxSynFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
-  }{
-    \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
-  }{ISLetPat}
-
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
-    \ctxAnaFixedInto{\ctx}{\EMV_{1}}{\ECMV_{1}}{\TMV_{p}} \\\\
-    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\
-    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
-    \ctxAnaFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
-  }{
-    \ctxAnaFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
-  }{IALetPat}
-
-  \judgment{
-    \ctxSynPatM{\ctx}{\PCMV}{\TMV_p} \\
-    \ctxAnaTypeM{\ctx}{\ECMV_{1}}{\TMV_p} \\
-    \ctxSynTypeM{\ctx}{\ECMV_{1}}{\TMV_{1}} \\\\
-    \ctxAnaPatM{\ctx}{\PCMV}{\TMV_{1}}{\ctx'} \\
-    \ctxSynTypeM{\ctx'}{\ECMV_{2}}{\TMV_2}
-  }{
-    \ctxSynTypeM{\ctx}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
-  }{MSLetPat}
-
-  \judgment{
-    \ctxSynPatM{\ctx}{\PCMV}{\TMV_p} \\
-    \ctxAnaTypeM{\ctx}{\ECMV_{1}}{\TMV_p} \\
-    \ctxSynTypeM{\ctx}{\ECMV_{1}}{\TMV_{1}} \\\\
-    \ctxAnaPatM{\ctx}{\PCMV}{\TMV_{1}}{\ctx'} \\
-    \ctxAnaTypeM{\ctx'}{\ECMV_{2}}{\TMV_2}
-  }{
-    \ctxAnaTypeM{\ctx}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
-  }{MALetPat}
-\end{mathpar}
-
-Note that the $\TUnknownSwitch$ exists entirely to insure that sub-expressions of the definition are assigned an appropriate mode. As per the pattern rules below, it is never added to the context, which might result in spooky synthesis-at-a-distance:
-
-\judgbox{\ensuremath{\ctxSynPatU{\ctx}{\PMV}{\TMV}}} $\PMV$ synthesizes type $\TMV$
-%
-\begin{mathpar}
-  \judgment{ }{
-    \ctxSynPatU{\ctx}{\PWild}{\TUnknownSwitch}
-  }{USPWild}
- 
   \judgment{ }{
     \ctxSynPatU{\ctx}{\PVar{x}}{\TUnknownSwitch}
   }{USPVar}
-
-  \judgment{
-    \ctxSynPatU{\ctx}{\PMV_1}{\TMV_1} \\
-    \ctxSynPatU{\ctx}{\PMV_2}{\TMV_2}
-  }{
-    \ctxSynPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TProd{\TMV_1}{\TMV_2}}
-  }{USPPair}
  
   \judgment{
     \ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}
@@ -130,29 +75,17 @@ Note that the $\TUnknownSwitch$ exists entirely to insure that sub-expressions o
     \ctxSynPatU{\ctx}{\PAsc{\PMV}{\TMV}}{\TMV}
   }{USPAnn}
 \end{mathpar}
-  %
-  \label{fig:calculus-pattern-synthesis}
-
-For our analytic pattern judgement, out output context is produced, consisting of the input context augmented with any bindings made within the pattern: \\
-\\
-\judgbox{\ensuremath{\ctxAnaPatU{\ctx_1}{\PMV}{\TMV}{\ctx_2}}} $\PMV$ analyzes against type $\TMV$ producing context $\ctx_2$
+ 
+Given by the judgment $\ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}$, patterns are also typed analytically,
+in which case they produce an output context $\ctx'$, which extends $\ctx$ with bindings introduced
+by the pattern. Note that $\TUnknownSwitch$ exists entirely to ensure that sub-expressions of the
+definition are assigned an appropriate typing mode---it is never added to the context, i.e. it
+cannot escape into the rest of the program and cause body expressions to synthesize accidentally.
 %
 \begin{mathpar}
   \judgment{ }{
-    \ctxAnaPatU{\ctx}{\PWild}{\TMV}{\ctx}
-  }{UAPWild}
- 
-  \judgment{ }{
     \ctxAnaPatU{\ctx}{\PVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
   }{UAPVar}
-
-  \judgment{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaPatU{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
-    \ctxAnaPatU{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
-  }{
-    \ctxAnaPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
-  }{UAPPair}
  
   \judgment{
     \ctxAnaPatU{\ctx}{\PMV}{\TMV'}{\ctx'} \\
@@ -162,151 +95,38 @@ For our analytic pattern judgement, out output context is produced, consisting o
   }{UAPAnn}
 \end{mathpar}
 
-Marking judgements for patterns introduce two error types which parallel those for expressions:\\
-\\
-\judgbox{\ensuremath{\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}}} $\PMV$ is marked into $\PCMV$ and synthesizes $\TMV$
-\judgbox{\ensuremath{\ctxAnaFixedIntoPat{\ctx_1}{\PMV}{\PCMV}{\TMV}{\ctx_2}}} $\PMV$ is marked into $\PCMV$ and analyzes against $\TMV$ producing $\ctx_2$
-   %
-\begin{mathpar}
-  \judgment{ }{
-    \ctxSynFixedInto{\ctx}{\PWild}{\PCWild}{\TUnknownSwitch}
-  }{ISPWild}
-   
-  \judgment{ }{
-    \ctxSynFixedInto{\ctx}{\PVar{x}}{\PCVar{x}}{\TUnknownSwitch}
-  }{ISPVar}
-
+To ensure propagation of type information between pattern, definition, and body, the destructuring
+let requires some extra machinery.
+\[%
   \judgment{
-    \ctxSynFixedInto{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1} \\\\
-    \ctxSynFixedInto{\ctx}{\PMV_2}{\PCMV_2}{\TMV_2}
+    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
+    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
   }{
-     \ctxSynFixedInto{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\ECPair{\PCMV_1}{\PCMV_2}}{\TProd{\TMV_1}{\TMV_2}}
-  }{ISPPair}
+    \ctxSynType{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
+  }{USLetPat}
+\]%
+First, to ensure that the pattern and definition types are consistent, the pattern synthesizes a
+type, against which the definition is analyzed. Then, the definition synthesizes a type, against
+which the pattern is analyzed. This analysis is guaranteed to succeed; we need the context it
+produces for use in the synthesis of the body's type. The analytic rule is similar, with the final
+premise and conclusion changed to analysis.
 
+The marking rule is directly analogous and utilizes the marking of patterns, which we omit---they
+may be derived in the same way as those for expressions. In the analytic cases, we introduce error
+marks that parallel to $\ECInconType{\ECMV}$ and $\ECAnaNonMatchedProd{\ECMV}$.
+\[%
   \judgment{
-    \ctxAnaPatU{\ctx}{\PMV{}}{\TMV}{\ctx'} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\ctx''}
+    \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_{1}}{\ECMV_{1}}{\TMV_{p}} \\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxSynFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
   }{
-    \ctxSynFixedInto{\ctx}{\PAsc{\PMV}{\TMV}}{\PCAsc{\PCMV}{\TMV}}{\tau}
-  }{ISPAnn1}
+    \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
+  }{ISLetPat}
+\]%
 
-  \judgment{
-    \ctxNotAnaPatU{\ctx}{\PMV{}}{\TMV}{\ctx'} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TUnknown}{\ctx''}
-  }{
-    \ctxSynFixedInto{\ctx}{\PAsc{\PMV}{\TMV}}{\PCAsc{\PCInconType{\PCMV}}{\TMV}}{\TMV}
-  }{ISPAnn2}
-
-  \judgment{ }{
-    \ctxAnaFixedIntoPat{\ctx}{\PWild}{\PCWild}{\TMV}{\ctx}
-  }{IAPWild}
-   
-  \judgment{ }{
-    \ctxAnaFixedIntoPat{\ctx}{\PVar{x}}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
-  }{IAPVar}
-
-  \judgment{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
-    \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TMV_2}{\ctx_2}
-  }{
-    \ctxAnaFixedIntoPat{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\PCPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
-  }{IAPPair1}
-
-  \judgment{
-    \notMatchedProd{\TMV} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TUnknown}{\ctx_1} \\\\
-    \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TUnknown}{\ctx_2}
-  }{
-    \ctxAnaFixedIntoPat{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\PCAnaNonMatchedProd{\PCPair{\PCMV_1}{\PCMV_2}}}{\TMV}{\ctx_2}
-  }{IAPPair2}
-
-  \judgment{
-    \consistent{\TMV}{\TMV'} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}{\ctx'}
-  }{
-    \ctxAnaFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV'}}{\PCAsc{\PCMV}{\TMV'}}{\TMV}{\ctx'}
-  }{IAPAnn1}
-
-  \judgment{
-    \inconsistent{\TMV}{\TMV'} \\
-    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}{\ctx'}
-  }{
-    \ctxAnaFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV'}}{\PCInconType{\PCAsc{\PCMV}{\TMV'}}}{\TMV}{\ctx'}
-  }{IAPAnn2}
-\end{mathpar}
-  %
-  % \caption{Pattern Marking}
-  % \label{fig:calculus-pattern-synthesis-marking}
-
-And finally, the typing rules for marked expression precisely parallel the unmarked ones:
-
-\judgbox{\ensuremath{\ctxSynPatM{\ctx}{\PCMV}{\TMV}}} $\PCMV$ synthesizes type $\TMV$
-%
-\begin{mathpar}
-  \judgment{ }{
-    \ctxSynPatM{\ctx}{\PCWild}{\TUnknownSwitch}
-  }{MSPWild}
-
-  \judgment{ }{
-    \ctxSynPatU{\ctx}{\PCVar{x}}{\TUnknownSwitch}
-  }{MSPVar}
-
-  \judgment{
-    \ctxSynPatM{\ctx}{\PCMV_1}{\TMV_1} \\
-    \ctxSynPatM{\ctx}{\PCMV_2}{\TMV_2}
-  }{
-    \ctxSynPatM{\ctx}{\PCPair{\PCMV_1}{\PCMV_2}}{\TProd{\TMV_1}{\TMV_2}}
-  }{MSPPair}
-
-  \judgment{
-    \ctxAnaPatM{\ctx}{\PCMV}{\TMV}{\ctx'}
-  }{
-    \ctxSynPatM{\ctx}{\PCAsc{\PCMV}{\TMV}}{\TMV}
-  }{MSPAnn}
-\end{mathpar}
-
-\judgbox{\ensuremath{\ctxAnaPatM{\ctx_1}{\PCMV}{\TMV}{\ctx_2}}} $\PCMV$ analyzes against type $\TMV$ producing context $\ctx_2$
-%
-\begin{mathpar}
-  \judgment{ }{
-    \ctxAnaPatU{\ctx}{\PCWild}{\TMV}{\ctx}
-  }{MAPWild}
-   
-  \judgment{ }{
-    \ctxAnaPatU{\ctx}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
-  }{MAPVar}
-
-  \judgment{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaPatM{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
-    \ctxAnaPatM{\ctx_1}{\PCMV_2}{\TMV_2}{\ctx_2}
-  }{
-    \ctxAnaPatM{\ctx}{\PCPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
-  }{MAPPair1}
-
-  \judgment{
-    \notMatchedProd{\TMV} \\
-    \ctxAnaPatM{\ctx}{\PCMV_1}{\TUnknown}{\ctx_1} \\\\
-    \ctxAnaPatM{\ctx_1}{\PCMV_2}{\TUnknown}{\ctx_2}
-  }{
-    \ctxAnaPatM{\ctx}{\PCAnaNonMatchedProd{\PCPair{\PCMV_1}{\PCMV_2}}}{\TMV}{\ctx_2}
-  }{MAPPair2}
-
-  \judgment{
-    \consistent{\TMV}{\TMV'} \\
-    \ctxAnaPatM{\ctx}{\PCMV}{\TMV'}{\ctx'}
-  }{
-    \ctxAnaPatM{\ctx}{\PCAsc{\PCMV}{\TMV'}}{\TMV}{\ctx'}
-  }{MAPAnn1}
-
-  \judgment{
-    \inconsistent{\TMV}{\TMV'} \\
-    \ctxAnaPatM{\ctx}{\PCMV}{\TMV'}{\ctx'}
-  }{
-    \ctxAnaPatM{\ctx}{\PCInconType{\PCAsc{\PCMV}{\TMV'}}}{\TMV}{\ctx'}
-  }{MAPAnn2}
-\end{mathpar}
-  %
-  % \caption{Marked Pattern Typing}
-  % \label{fig:calculus-pattern-marked-typing}
+% TODO conclude briefly?
