@@ -21,38 +21,16 @@ $\textsf{false}$ is a boolean. Hazel opts to highlight the entire expression in 
 while other tools may choose one branch to be ``correct'' and ``blame'' the type mismatch error on
 the other.
 
-% TODO elaborate on this part
-
-Unfortunately, formal typing semantics usually only give meaning to well-typed programs, leaving
-such ill-typed ones meaningless. This is insufficient for editor services and language servers,
-which must provide users feedback on where and why a program is ill-typed. Moreover, they must
-continue providing semantic services even when an error is encountered. Indeed, similarly to
-error-recovering parsers, real-world type checkers must robustly recover from type errors.
-Traditionally, this has been performed in an \emph{ad hoc} manner [citations?], with different
-languages and tools adopting varying approaches in the localization, reportage, and recovery of
-errors.
-
 The key contribution of this section is the \emph{marked lambda calculus}, a formal calculus for
-bidirectional type error localization. Namely, the calculus employs bidirectional and gradual typing
-to provide a judgmental framework with a unified theory for the design of typing semantics that
-support ill-typed programs. \Cref{sec:calculus-calculus} describes its form and metatheory by
-example on a small gradually typed lambda calculus (GTLC) \cite{Siek06a}, extending it with binary
-product types in \cref{sec:calculus-products}. All rules and theorems may be found in the
-supplementary appendix, alongside a complete mechanization in the Agda proof assistant
-\cite{norell:thesis} (discussed in \cref{sec:calculus-agda}). With products, we then consider how
-error localization is complicated by patterned let expressions in \cref{sec:calculus-let}. Finally,
-\cref{sec:calculus-poly} explores how the system might be extended to more complex typing features,
-such as System F-style polymorphism.
-
-% TODO not really sure when to start talking about bidirectional typing
-
-% \emph{Bidirectional typing} combines type checking, which determines if a program satisfies a given
-% type, and type synthesis, which generates a type from the program. This gives a simple algorithmic
-% system in which type information is recursively propagated through terms and allows for local type
-% inference.
-
-% TODO talk about idea that bidirectional typing makes error localization easy? i.e. why choose
-% bidirectional?
+bidirectional type error localization and recovery. Namely, the calculus provides a judgmental
+framework with a unified theory for the design of typing semantics that support ill-typed programs.
+\Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
+lambda calculus (GTLC) \cite{Siek06a}, extending it with binary product types in
+\cref{sec:calculus-products}. All rules and theorems may be found in the supplementary appendix,
+alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis} (discussed in
+\cref{sec:calculus-agda}). With products, we then consider how error localization is complicated by
+patterned let expressions in \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how
+the system might be extended to more complex typing features, such as System F-style polymorphism.
 
 \subsection{The Calculus}
 \label{sec:calculus-calculus}
