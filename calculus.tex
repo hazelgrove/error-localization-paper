@@ -32,18 +32,17 @@ Traditionally, this has been performed in an \emph{ad hoc} manner [citations?], 
 languages and tools adopting varying approaches in the localization, reportage, and recovery of
 errors.
 
-% TODO examples of this ad hoc stuff
-
 The key contribution of this section is the \emph{marked lambda calculus}, a formal calculus for
-type error localization in bidirectional systems. Namely, the calculus provides a judgmental
-framework with a unified theory for the design of typing semantics that support ill-typed programs.
-\Cref{sec:calculus-calculus} describes its form and metatheory by example on a small gradually typed
-lambda calculus (GTLC), extending it with binary product types in \cref{sec:calculus-products}. All
-rules and theorems may be found in the supplementary appendix, alongside a complete mechanization in
-the Agda proof assistant \cite{norell:thesis} (discussed in \cref{sec:calculus-agda}). With
-products, we then consider how error localization is complicated by patterned let expressions in
-\cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} explores how the system might be extended
-to more complex typing features, such as System F-style polymorphism.
+bidirectional type error localization. Namely, the calculus employs bidirectional and gradual typing
+to provide a judgmental framework with a unified theory for the design of typing semantics that
+support ill-typed programs. \Cref{sec:calculus-calculus} describes its form and metatheory by
+example on a small gradually typed lambda calculus (GTLC) \cite{Siek06a}, extending it with binary
+product types in \cref{sec:calculus-products}. All rules and theorems may be found in the
+supplementary appendix, alongside a complete mechanization in the Agda proof assistant
+\cite{norell:thesis} (discussed in \cref{sec:calculus-agda}). With products, we then consider how
+error localization is complicated by patterned let expressions in \cref{sec:calculus-let}. Finally,
+\cref{sec:calculus-poly} explores how the system might be extended to more complex typing features,
+such as System F-style polymorphism.
 
 % TODO not really sure when to start talking about bidirectional typing
 
@@ -65,12 +64,14 @@ We now formally introduce the marked lambda calculus through its application to 
 with numbers and booleans. Consider the syntax for such a language, given as $\EMName$ in
 \cref{fig:calculus-syntax}. The base types $\TNum$ and $\TBool$ classify number and boolean
 expressions. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$,
-and there is a single addition operation on numeric expressions. $\ETrue$ and $\EFalse$ correspond
-to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
-$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives a conditional structure. In addition to these forms,
-$\TUnknown$ is the unknown type from gradual type theory. Finally, $\EEHole$ denotes an
-\emph{expression hole}, which are used to model syntactically incomplete programs. Note, however,
-that these are not critical to the calculus.
+and there is a single arithmetic operation of addition on numeric expressions. $\ETrue$ and
+$\EFalse$ correspond to the boolean values $\textsf{true}$ and $\textsf{false}$, respectively, and
+$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ gives a conditional structure.
+
+In addition to these forms, $\TUnknown$ is the unknown type from gradual type theory \cite{Siek06a}.
+Modelling the edit state of a program in development, $\EEHole$ denotes an \emph{expression hole},
+used to represent syntactically incomplete portions of the program à la Hazelnut
+\cite{HazelnutPOPL}. Note, however, that these are not critical to the calculus.
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
@@ -94,12 +95,13 @@ that these are not critical to the calculus.
   \label{fig:calculus-syntax}
 \end{figure}
 
-Types classify expressions by a \emph{bidirectional type system}, which employs two mutually defined
-judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$, establishes that, under
-the typing context $\ctx$, the expression $e$ synthesizes or locally infers \cite{Localinf} the type
-$\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$, states that the expression
-$\EMV$ may appear where an expression of type $\TMV$ is expected. We may give these typing semantics
-traditionally, without considering error localization and recovery.
+Types classify expressions by a \emph{bidirectional type system} \cite{BidirTyping}, which employs
+two mutually defined judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$,
+establishes that, under the typing context $\ctx$, the expression $e$ synthesizes or locally infers
+\cite{Localinf} the type $\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
+states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected. We may
+give these typing semantics traditionally, without consideration for error localization and
+recovery.
 
 The marked lambda calculus builds atop these typing semantics into a two-layer system:
 %
@@ -112,43 +114,25 @@ The marked lambda calculus builds atop these typing semantics into a two-layer s
     \emph{marked expressions}, denoted $\ECMV$.
     % TODO more intuition for what marked expressions are?
 
-  \item \textbf{Marking}, which \emph{marks}, i.e. type checks and localizes errors for, any unmarked
-    expression into a marked expression, inserting error marks where appropriate.
+  \item \textbf{Marking}, which \emph{marks} any unmarked expression into a marked expression,
+    inserting error marks where appropriate.
 \end{itemize}
 %
 In other words, we extend the ordinary typing semantics of a language with a secondary ``marked''
 language and ``mark'' unmarked programs into marked ones. This corresponds to a type checking
 process with error localization and recovery. The marked language may then serve as a foundation for
-other semantic services. % such as THI.
-
-% TODO more intuition
+other semantic services. % TODO such as THI.
 
 \Cref{fig:calculus-syntax} furthermore gives the syntax for marked expressions (as $\ECMName$),
 which replicates all the forms of unmarked expressions. There are additionally several kinds of
 \emph{error marks}, which represent the different type errors that may arise. Intuitively, they each
-denote a different error message that might be shown in an editor or emitted by a compiler.
-%
-% \begin{itemize}
-  % \item $\ECUnbound{x}$, the \emph{unbound variable mark}, indicates the use of an unbound variable
-    % $x$, as in \cref{fig:calculus-examples-unbound}.
-%
-  % \item $\ECInconType{\ECMV}$, the \emph{inconsistent type mark}, indicates that the type of an
-    % expression does not match an expected type.
-%
-  % \item $\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}$, the \emph{inconsistent branches mark}, indicates
-    % that the branches of a conditional have mismatched types.
-%
-  % \item $\ECLamInconAsc{x}{\TMV}{\ECMV}$, the \emph{inconsistent ascription mark}, indicates that
-    % the type ascription $\TMV$ is mismatches with an expected type.
-%
-  % \item $\ECSynNonMatchedArrow{\ECMV}$
-% \end{itemize}
-%
+denote a different error message that might be shown by an editor or emitted by a compiler.
+
 Throughout the remainder of this section, as we formulate marking for the GTLC, we will motivate and
-give precise semantics for these error marks. Note that this is a non-exhaustive list; depending on
-the syntactic forms and typing features found in the language, other kinds of marks may be
-necessary. Indeed, in \cref{sec:calculus-poly}, we consider the kinds of marks that may be required
-in an language with explicit polymorphism.
+give precise semantics for these error marks. Note that these constitute a non-exhaustive list;
+depending on the syntactic forms and typing features found in a given language, other kinds of marks
+may be necessary. Indeed, in \cref{sec:calculus-poly}, we consider the kinds of marks that may be
+required in an language with explicit polymorphism.
 
 The marked language possesses its own typing semantics, also formulated bidirectionally. We write
 $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis.
@@ -173,11 +157,13 @@ metatheorems to keep in mind as we continue. The first is a \emph{totality} of m
 %
 That is, we may mark \emph{any} syntactically well-formed program.
 
-Furthermore, marking should preserve the syntactic structure of programs, modulo error marks. Thus,
-we define a notion of \emph{mark erasure}, whose definition is given
-\cref{fig:calculus-mark-erasure}, which converts marked expressions back into unmarked expression by
+\input{figs/calculus-mark-erasure}
+
+Furthermore, since error marks are effectively annotations on top of the program, marking should
+preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} thus gives a
+notion of \emph{mark erasure}, which converts marked expressions back into unmarked expression by
 removing error marks. Then, \cref{thm:calculus-marking-well-formedness} provides a
-\emph{well-formedness} criterion marking.
+\emph{well-formedness} criterion for marking.
 %
 \begin{theorem}[name=Marking Well-Formedness] \
   \label{thm:calculus-marking-well-formedness}
@@ -187,20 +173,15 @@ removing error marks. Then, \cref{thm:calculus-marking-well-formedness} provides
     \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ and
       $\erasesTo{\ECMV}{\EMV}$.
   \end{enumerate}
-  % TODO split this into two theorems?
-  % TODO not really sure how to intuitively describe the part about types matching up
 \end{theorem}
 %
 In other words, marking and then erasing error marks from the result gives the original unmarked
 expression. We also ensure that marking gives well-typed marked expressions; indeed, their types
-should match the types synthesized or analyzed against in marking.
-% TODO more intuition for this theorem
-
-\input{figs/calculus-mark-erasure}
+should match those synthesized or analyzed against in marking.
 
 In the remainder of this subsection, we consider the different type errors that may arise in the
-unmarked language while keeping in mind these two theorems; in this way, the typing semantics of the
-unmarked language guide the construction of the marking process.
+unmarked language while keeping in mind these two theorems; in this way, the traditional typing
+semantics of the unmarked language guide the construction of the marking process.
 
 \subsubsection{Numbers}
 \label{sec:calculus-numbers}
@@ -231,8 +212,8 @@ the following rules for marking numbers and typing the results:
 \end{mathpar}
 
 For addition expressions, the type of both operands should be $\TNum$. To denote this in a
-bidirectional system, the operands are analyzed against $\TNum$, giving the following typing rule
-for unmarked addition expressions:
+bidirectional system, they are analyzed against $\TNum$, giving the following typing rule for
+unmarked addition expressions:
 %
 \begin{mathpar}
   \judgment{
@@ -245,8 +226,8 @@ for unmarked addition expressions:
 
 The marking rule mirrors \textsc{USPlus} closely. Since an expected type for each operand is known,
 we shift the responsibility for any type errors to them. Hence, we recursively mark each operand in
-analytic mode and rebuild the marked addition expression. The marked typing rule then mirrors
-\textsc{USPlus} exactly.
+analytic mode and rebuild the marked addition expression. The typing rule for marked addition
+expressions then mirrors \textsc{USPlus} exactly.
 %
 \begin{mathpar}
   \judgment{
