@@ -23,13 +23,13 @@ In Figure \ref{fig:editor_holes}, the user has written an incomplete program whe
 \caption{Incomplete program with partial hole filling suggestion}
 \label{fig:editor_holes}
 \end{figure}
-Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization. (This interaction has not yet been implemented, but there is no barrier to doing so. For now, 
+Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. Figure \ref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization from there. (This interaction has not yet been implemented, but there is no barrier to doing so. For our experiments, copy/paste was used to simulate.)
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
 \includegraphics[width=9cm]{images/example_conflict_CI.png}
 \includegraphics[width=9cm]{images/example_conflict_hover.png}
 \includegraphics[width=9cm]{images/example_conflict_hover_CI.png}
-\caption{User types '2' and error is localized to type hole. Error is localized to '2' on hover [mock-up]}
+\caption{User types '2' and error is localized to type hole. Error is localized to '2' when hovering over a selection, which transiently fills the hole [interaction mocked up for presentation]}
 \label{fig:editor_conflict}
 \end{figure}
 % \begin{figure}[H]
@@ -38,7 +38,7 @@ Figure \ref{fig:editor_conflict} demonstrates visual feedback shown when a type 
 % \caption{user hovers over conflicting constraint to show origin [mock-up]}
 % \label{fig:editor_conflict_hover}
 % \end{figure}
-Figure \ref{fig:editor_ghost} illustrates a program which has a full solution for $f$'s type annotation. The user can then press the Enter key to accept the suggested filling for the type hole.
+Figure \ref{fig:editor_ghost} illustrates a program which has a full solution for $f$'s type annotation. The user can then press the Tab key to accept the suggested filling for the type hole.
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_ghost.png}
 \includegraphics[width=9cm]{images/example_complete_CI.png}
@@ -53,12 +53,12 @@ Figure \ref{fig:editor_ghost} illustrates a program which has a full solution fo
 % \label{fig:editor_complete}
 % \end{figure}
 
-\subsection{Type System}
+\subsection{Unique Identifiers}
 
 \label{sec:typinf}
-It is crucial that we be able to uniquely identify type holes within our constraint solving system. Doing so allows us to generate distinct results for each type hole during unification. Thus, we make two modifications to the marked lambda calculus's syntax:
+It is crucial that we be able to uniquely identify holes within our constraint solving system. Doing so allows us to generate distinct results for each type hole during unification. Thus, we make two modifications to the marked lambda calculus's syntax:
 \begin{enumerate}
-    \item We add a unique id $u$ to all expression holes and user inserted type holes. This creates an avenue by we can to link type holes to their locus in the program. We assume that the assignment of ids to expression holes and user inserted type holes is taken care of by some action semantics on insertion of expression or type holes. 
+    \item We add a unique id $u$ to all expression holes and user inserted type holes. This creates an avenue by we can to link type holes to their locus in the program. We assume that the assignment of ids to expression holes and user inserted type holes is handled separately by the editor.
     \item We add a \emph{type hole provenance}, drawn as a superscript such as $\tehole^p$. This allows the differentiation of type holes while describing the manner each type hole was generated.
 \end{enumerate}
 % These changes are depicted in Figure ~\ref{fig:adjusted-calculus-syntax}.
@@ -401,7 +401,7 @@ Now that we have a clear approach to generating constraint graphs, how might we 
 
 A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. A single \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of information, we continuously extend some \emph{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in Figure \ref{fig:possible_type_sets}.
 
-\begin{figure}[hbp!]
+\begin{figure}[hbt!]
 \centering
 \vspace{-3px} 
 $\arraycolsep=4pt\begin{array}{lll}
