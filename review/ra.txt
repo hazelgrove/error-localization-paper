@@ -1,0 +1,93 @@
+Review #59A
+===========================================================================
+
+Overall merit
+-------------
+B. Weak accept
+
+Reviewer expertise
+------------------
+X. Expert
+
+Reviewer confidence
+-------------------
+1. High
+
+Paper summary
+-------------
+This article presents a new technique to compute and locate type errors,
+including in partial programs, in a way that is complete and correct.
+For this purpose, they leverage bi-directional typing, and a simple form of gradual types.
+The authors first present the theory on a small simply typed lambda calculus,
+then extend it with local type inference using constraint solving.
+They mechanize their work in Agda and implement it in the structural editor Hazel.
+
+Comments for authors
+--------------------
+I found the early presentation of this article highly enjoyable. The topic is well motivated and, in my opinion, of huge importance for partical usage of static typing.
+The two core ideas (the marked λ-calculus and located instantiation variables) are simple but developed in a very effective manner.
+I'm a bit less convinced by the later developement made in the article, notably the handling of constraint solving, which seems quite naive compared to current state of the art techniques, and of polymorphism, which is a bit too sketchy for my tastes.
+I would definitely move to an A given a more solid development for some of the two aspects.
+
+Pros:
+- Simple but highly effective idea of the marked λ calculus
+- Understudied topic of huge importance
+- Very readable and well-developed
+
+Cons:
+- Base language is a bit too simplistic
+- Polymorphism is not developed
+- Constraint solving part clearly less mature (lack of related work and technical details)
+
+Questions for authors’ response
+-------------------------------
+1. Presentation and polymorphism
+
+While I enjoyed the pedagogy, a good part of the early presentation is a bit repetitve in nature,
+and could be summarised by stating that valid unmarked typing derivations are left as-is in the marked word.
+Is that correct? This would allow you to focus only on the erronous cases.
+
+Similarly, while I agree polymorphism is well understood, it's also the source of many questions, first of which: what about errors during generalization (which are particularly difficult for beginner OCaml users, for instance)?
+I think a more formal development of polymorphism, possibly directly in the initial presentation, would be quite beneficial (and inspire more confidence).
+
+2. Encoding of patterns/pairs
+
+Your present an extension to pairs with destructuring bindings.
+Being used to inference and unification, I found this extension particularly weird.
+The traditional way when encountering `let (x,y) = a in e` is
+to infer $\tau$ from $e$, emit the *unification* constraint $(\alpha, \beta)$ with $\tau_e$, and insert $x:\alpha, y:\beta$ in the environment.
+Naively, this technique seems compatible with the approach developed in the constraint solving section.
+
+Why aren't destructuring bindings implemented like this at all? The proposed way seems much more complicated,
+more expansive, and it's unclear to me why it would provide better error messages.
+
+3. Constraint graph and error messages
+
+You reify the system of constraints as graph, in order to walk it to build the graph of possible types. This reifycation is fairly common to explain constraint systems (although it's generally not necessary neither for the formalization nor the implementation). If I remember correctly, Elm also uses this graph to *diagnose* type errors, by recognizing specific patterns in the graph of types and/or constraints. Is that something you do as well, and can you develop a bit on that ?
+
+4. Constraint solving
+
+The section on constraint solving left me wanting.
+
+First off, The use of $?^u$ for unification variables confuses me a lot. It seems to mix up
+unification variables with the gradual unknown, which seems completely wrong to me.
+A gradual unknown is any type (possibly several different ones during the execution),
+a unification variable is a single type that isn't determined yet.
+Am I missing something motivating your usage?
+
+Your general approach seems to be: local bidirectional type inference/checking, with elaboration of terms into the marked form, followed by global constraint solving. This choice doesn't seem to be properly motivated in the article. Could you develop, in comparison with various other typechecking approaches? In particular, I see two other approaches that would work very well in your setting and avoid your stratification between local and global reasoning.
+- Local constraint solving in the style of HM(X) ("Type Inference with Constrained Types", Odersky et al), interleaves local reasoning and constraint solving.
+- Inferno ("Hindley-milner elaboration in applicative style: functional pearl", by Pottier) showcases how to elaborate and solve constraints at the same time,
+which would allow you to emit marked terms and build up constraints in one fell swoop.
+
+In general, the presentation of constraint solving is a bit simplistic: to my knowledge, no language in production uses Huet's and Milner's algorithms anymore, which are quite slow and limiting by modern standards. Many are evolved from Pottier & Remy's "The essence of ML type inference" (for instance, OutsideIn(X) for GHC Haskell). Could you expand your related work on this, and give your opinion on how your work adapt to these more moderns techniques (and thus, its applicability to modern large-scale type checkers)?
+
+
+
+Misc:
+Section 3.2 isn't really understandable as-is. It uses undefined notations (from the Hazel paper, I presume), and the motivation for the whole thing is barely explained.
+Similarly, I have no idea what appendix B and C are here for. I feel like this whole part should either be left out for another article, or developed significantly.
+
+
+Typos:
+Fig 2.: pairs in UExp but not MExp

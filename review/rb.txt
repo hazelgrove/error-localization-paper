@@ -1,0 +1,76 @@
+Review #59B
+===========================================================================
+
+Overall merit
+-------------
+B. Weak accept
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Reviewer confidence
+-------------------
+1. High
+
+Paper summary
+-------------
+The paper introduces the "marked lambda calculus" which aims to improve type error localization and recovery especially for interactive editing of programs with holes. As the authors note, these mechanisms have typically been developed on an ad hoc basis by many language implementers, so even if, as is typical, an error is caused by problems in multiple places in a source file, only one place is reported. The main contribution of this paper, the marked lambda calculus, therefore, serves to introduce a type-theoretic formulation of type error recovery in the context of the Hazel system. The metatheory has been mechanized in Agda, and there is discussion of how the calculus is implemented in a realistic language like Hazel.
+
+Comments for authors
+--------------------
+Overall I liked this paper. It's well written and, at least for me, clearly presented with the justifications for the typing rules and the marking judgements well explained. The marked lambda calculus is an interesting contribution, and the metatheoretic result (totality of marking) seems valuable for producing helpful and complete error messages.
+
+The problem is well motivated with a clear introduction, and the example will be familiar to anyone who has developed any kind of statically typed language.
+
+It's good to have the formalized type theoretic foundations, and I'm pleased to see the goal is to have predictable behaviour (rather than, say, heuristics established by machine learning). I think a weakness, though, is that the type system presented is pretty simple. This is certainly good for the presentation, and there is a small amount said about polymorphism in section 4.5, but that section on its own it didn't make me feel I had enough to be able to adapt the work to a more sophisticated type system with, e.g. dependent or linear types.
+
+Less important, given the stage the work is at, is that I'd have liked to read a little bit about how the system would be evaluated (e.g. how do users react to it, does it help the way you'd expect) although the details are probably best left to future work.
+
+In conclusion, I'd like to see this accepted, though I'd have been more interested in reading about extensions of the type system to support other advanced features, rather than integration with Hazel.
+
+Minor comments, typos, thinking out loud, etc:
+
+p2 "If localization had assumed that the then branch [was] correct"
+
+Also presumably this error depends on 'if' being a language primitive? What if the language defines 'if' using an if_then_else function or desugaring to a case expression?
+
+p3 has a lot of text saying what's in the coming sections - I think I'd rather have seen just a brief list of contributions here because I was more looking forward to reaching the technical content!
+
+"The type hole at the cursor therefore behaves gradually" - I'm not sure exactly what this means.
+
+p4 "we keep the marked lambda calculus minimal" - perhaps say what this means here? I'm wondering here if it means, e.g. simply typed is enough to  demonstrate the concepts but extending to polymorphism, refinement types, linear types, dependent types etc is still feasible.
+
+p5 Is an empty expression hole essentially the same as a typed hole as far as the calculus is concerned?
+
+For readability I think I'd have preferred as explicit if/then/else to a ternary ?: operator because ? and : have other meanings in the calculus.
+
+p6 For the "marking" judgement, because of totality of marking, can I essentially think of this as type checking, but that it will always produce a type where there may nevertheless be marks to indicate the location of type errors? And an unmarked expression is not necessarily well typed but is well formed?
+
+p7 Please don't use phrases like "Quite straightforwardly" and words like "simply", especially all together - better to let the reader judge this! (I agree it is here, but even so it doesn't add anything to say so, and these words are used a lot in the following pages.)
+
+p8 typo "a analogous"
+
+p9 Again thinking about how this might be extended to other type systems. I assume I'd need a marked expression form for every kind of error I might encounter.
+
+p10 It seems that the proof of totality is really useful, then, in that it forces you to explain every error that might come up.
+
+p12 Binary products is a nice addition and one I'd expect in a realistic language in some form , though I wonder if any of this is surprising enough  to explain here rather than, for example, saying more about what issues one might encounter when extending the type system. Similarly for destructuring let.
+
+p15 typo "spurs language designers to designed [...]"
+
+p15 "explicit polymorphism" since this is done, I'd love to have seen it as an extension. Maybe it's not surprising either but it might give me a better sense that I could design mark variants of other calculi. I'm interested in linearity, in particular.
+
+p18 "the usual approach" - maybe another sentence or two to explain exactly what you mean here? I think I know, but might be good to be explicit.
+
+p19 "marks act as quarantines" - what does this mean?
+
+p21 "it would be beneficial to provide holistic type-related feedback for all edit states" - is this self evident? I'm not entirely sure what it means, though I can make a reasonable guess. I think maybe I'm worried about overwhelming a user with too much information and starting to wonder how users react to the system in practice.
+
+p24 Aha, here's polymorphism! It would have been good to say more about this earlier, and it would still be good to have some discussion about other more advanced type systems.
+
+Questions for authors’ response
+-------------------------------
+Would the approach to marking work similarly for languages with advanced type systems, where the errors may get very complex and have lots of possible causes? What about linear types, for example?
+
+How do you plan to evaluate the work? It's good to have the type theoretic foundations, and therefore have predictable behaviour with some formal guarantees, but it would also be good to know a bit about how it works in practice.

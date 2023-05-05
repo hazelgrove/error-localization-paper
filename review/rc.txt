@@ -1,0 +1,32 @@
+Review #59C
+===========================================================================
+
+Overall merit
+-------------
+B. Weak accept
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Reviewer confidence
+-------------------
+2. Medium
+
+Paper summary
+-------------
+The paper presents marked lambda calculus, a formal calculus that supports type error localization and recovery. Section 2 presents the formal calculus with its extensions and totality and unicity theorems. Section 3 describes the implementation on top of the Hazel language. Section 4 describes how the (local) bidirectional core calculus is combined with the (global) constraint-based type inference to achieve type recovery.
+
+Comments for authors
+--------------------
+Pros: + The paper is pleasant to read (well written and with various examples), well motivated, and especially in the introduction, the novelties are well placed with respect to the related works. + The presented calculus comes with an Agda mechanization and a realistic implementation.
+Cons: - The primary contribution of the paper is not very clear, given that the implementation is not evaluated and that the type hole inference part is not mechanized.
+I liked reading this paper and I think it would be a great contribution to ICFP. Especially, I found the introduction very convincing for the design of this calculus, that is that a system with error localization and recovery that can analyze partial programs is missing from the current languages. My suggestion though, is that an explicit list of contributions is missing from the paper.
+Concretely, a type theoretic formulation is promised (and it is great that the error localization is mechanized), but it was unsatisfactory that the recovery part is not fully mechanized and the algorithm is presented without any theorems/guarantees. On the other hand, it is great that the calculus comes with an implementation and it is obvious that user experience has influenced various design decisions taken, but the implementation is not evaluated.
+As a more minor comment, the algorithmic nature of typing (end of section 2.1) it is not obvious,  because of the Subsumption rule that can be applied to any type and expression. Maybe if all the rules were collected in one figure the algorithmic property would be easy to observe, but now it is not. Can you please justify it.
+
+TYPOS: - In theorem 2.2 case 2. -  (sec 2.2) "an explicit analysis rules"
+
+Questions for authors’ response
+-------------------------------
+- How do you formalize/mechanize the type hole inference part? - Would it be possible to evaluate your implementation (using some metric or a user study)? - Why are your rules algorithmic?

@@ -1,0 +1,70 @@
+Review #59D
+===========================================================================
+
+Overall merit
+-------------
+C. Weak reject
+
+Reviewer expertise
+------------------
+X. Expert
+
+Reviewer confidence
+-------------------
+1. High
+
+Paper summary
+-------------
+This paper presents the marked lambda calculus, a core language with error marks in addition to type and expression holes. The key idea is to be able to provide a marked typing derivation for any well-formed term, irrespective of the type errors it may have that would prevent a standard type system to say anything about such term. The type system is given in a bidirectional style. The paper proposes key criteria for the marked calculus, namely marking totality, marking well-formedness, marking of well/ill-typed terms, and marking unicity. The scalability of the calculus is illustrated with two small extensions, namely binary products and let-patterns. Richer typing structures are left for future work. The paper then discusses the integration of these core ideas with a full-fledged programming experience in Hazel, including structured editing and support for error-tolerant inference.
+
+Comments for authors
+--------------------
+Points in favor:
+- addresses an interesting and relevant problem
+- overall nicely written and well illustrated - backed by an implementation and a mechanized formalization
+
+Points against:
+- the section on inference is dense and hard to follow
+- more problematic, the section on inference presents no metatheory
+- the related work discussion lacks depth and misses important references
+
+
+The first part of the paper (sections 1 and 2) is a breeze to read. The marked calculus is simple and effective, the identified properties meaningful, and even if (or rather, given that) the technicalities seem not very challenging, one can see how this core calculus can serve as useful basis for future developments in the area. To make the paper about the marked calculus itself, it would have been expected to go beyond this simply-typed example, for instead to deal with subtyping and/or polymorphism, but instead the paper moves on to other aspects.
+
+Section 3 discusses the integration with Hazel structured editing. While informative, it is harder to identify the key contribution of this section.
+
+Section 4 then turns to type hole inference, which is designed to allow recovery from inconsistent constraints by localizing the issues to type holes, with the idea to expose the identified issues and possible resolutions to users. To do so, the paper extends the mark calculus with provenances, in order to track dependencies between holes and expressions. Here the paper takes a less crystal clear turn, leaving this reviewer pondering time and time again where the story is going and why. The impression of elegance from the first part of the paper dissolves in what seem rather ad hoc and technically less readable prose. The lack of actual formal results at the end of section 4, or clear "punchlines", which would close the development reflects a certain loss of focus. I think a treatment of inference with recovery requires stating and proving formal results about it.
+
+The related work discussion is quite minimalist. In the area of gradual type inference, it misses some important related references. The first is Garcia and Cimini's POPL 2015 paper on type inference for gradually-typed languages, which improves substantially on the prior work of Siek and Vachharajani. The second is Vazoy et al's OOPSLA 2018 paper on gradual liquid type inference, which features a similar treatment of holes and interactive exploration of possible solutions (in that case, for unknown refinements, but the underlying concepts are very close).
+Also, Lennon-Bertrand et al.'s TOPLAS 2022 paper on Gradual CIC includes an integration of bidirectional typing and gradual typing. Overall, while these related approaches do not interfere with the contributions of this article, they should be clearly and characterized in relation to the proposed techniques.
+
+As a final minor note, the meaning of "gradual recovery" remains a bit unclear. Is it the recovery that is gradual, or is it that recovery is achieved thanks to the underlying reliance on gradual typing? (my understanding suggests the latter, while the title suggests the former)
+
+
+Details:
+- it's annoying that the submission doesn't use the `review` latex option, which gives line numbers...
+- p2: "let body, x+1" -> the body isn't this one
+- p3: "by [Pierce and Turner 2000]" -> use `\citet` to obtain "by Pierce and Turner [2000]"
+- Fig1: why are cases b and c different cases? they're both ill-used elimination forms - using `?` as syntax for both the unknown type and conditional expressions is a bit unfortunate
+- theorem 2.2 "then and" -> "then"
+- use a spellchecker (which would catch bugs like "disctinction" on p9)
+- why using the same mark for both "got a function but needed something else" and "wanted a function but got something else"? together with my previous comment, it questions a bit the principles used to decide what categories to adopt
+- in fig6, calling this operation the "type join" is a bit confusing regarding the "traditional" treatment of precision in gradual typing, where `?` is the top of the (im)precision partial order, and conditionals then use the meet operation (exactly the one defined here).
+- p12: Rule UAPair is mentioned in the last paragraph but not shown. It should probably be MKAPair1.
+- theorem 2.3 "markless" is a negative characterization ("no marks") that is then negated in point (2) ("it is not the case that it is markless"). It's a bit convoluted to use double negation here.
+- p14 the premise of UASynSwitch is buggy, it uses an undefined judgment form (I guess it should say $\tau$ instead of $\Gamma'$)
+- p14 technically, USPVar conflicts with USVar, given that the judgments and syntactic forms of term/pattern variables are the same. A simple fix would be to introduce a pattern typing judgment `|-_p` instead of using `|-_U` in USPVar.
+- USLetPat requires double analysis of $e_1$, which is rather unconventional as formulation
+- section 2.5 what about subtyping?
+- p15 "designers to designed"
+- using $p$ as metavariable for provenance clashes with the use of $p$ for patterns
+- end of 4.3: maybe the choice of syntax based on the `?` shows its limits here. It should be possible to find more readable notations
+- fig12 (and others) use `\mathit` to write names in math mode, otherwise the typesetting gets ugly (compare PotentialTypeSet in the paragraph above fig12, and in fig12)
+- section 4.5 this section is rather weak, it could be skipped to make room for developing other aspects, or needs to be revisited. This contributes to the unfinished/rushed feel of section 4 overall.
+
+Questions for authors’ response
+-------------------------------
+- could you clarify what would happen if a conditional would be subsumable?
+- could you clarify the meaning of "gradual recovery"?
+- any comment on the lack of metatheory for the proposed inference approach?
+- could you provide (early) comparison to the missing references mentioned in the review?
