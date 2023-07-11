@@ -35,10 +35,10 @@ the system might be extended to more complex judgemental structure, e.g. polymor
 \label{sec:calculus-calculus}
 
 The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a} extended
-with numbers, booleans, and empty expression holes \cite{HazelnutSNAPL}. The syntax is given in
-\cref{fig:calculus-syntax}. There are two expression languages:
+with numbers, booleans, pairs, and empty expression holes \cite{HazelnutSNAPL}. Given in
+\cref{fig:calculus-syntax}, the syntax consists of two expression languages:
 \begin{itemize}
-  \item The \textbf{unmarked language}, which is our original language. Expressions of this language
+  \item The \textbf{unmarked language}, which is the original language. Expressions of this language
     are called \emph{unmarked expressions}, denoted by the metavariable $\EMV$.
 
   \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
@@ -50,7 +50,7 @@ The base types $\TNum$ and $\TBool$ classify number and boolean
 expressions. The number literal corresponding to the mathematical number $n$ is given by $\ENumMV$,
 and there is a single arithmetic operation, addition. $\ETrue$ and
 $\EFalse$ are the boolean values and
-$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ is the boolean conditional. Arrow types classify lambdas in the usual way.
+$\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ is the boolean conditional. Arrow and product types classify lambda abstractions and pairs, respectively, in the usual way.
 
 $\TUnknown$ is a type hole, which we identify with the unknown type from gradual type theory \cite{Siek06a}.
 Finally, to model the edit state of a program in development, $\EEHole$ denotes an \emph{empty expression hole},
@@ -59,18 +59,22 @@ used to represent syntactically incomplete portions of the program à la Hazelnu
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
-    \TMName  & \TMV  & \Coloneqq & \TUnknown \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \TProd{\TMV}{\TMV} \\
-    \EMName  & \EMV  & \Coloneqq & x \mid \ELam{x}{\TMV}{\EMV} \mid \EAp{\EMV}{\EMV} \mid \ELet{x}{\EMV}{\EMV}
-                       \mid           \ENumMV \mid \EPlus{\EMV}{\EMV} \\
-             &       & \mid         & \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
-                       \mid           \EPair{\EMV}{\EMV}
-                       \mid           \EEHole \\
-    \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV}
-                       \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV} \\
-             &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
-                       \mid           \ECEHole \\
-             &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV} \mid \ECInconAsc{\ECMV} \\
-             &       & \mid         & \ECSynNonMatchedArrow{\ECMV} \mid \ECAnaNonMatchedArrow{\ECMV}
+      \TMName  & \TMV  & \Coloneqq & \TUnknown \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \TProd{\TMV}{\TMV} \\
+      \EMName  & \EMV  & \Coloneqq & x \mid \ELam{x}{\TMV}{\EMV} \mid \EAp{\EMV}{\EMV} \mid \ELet{x}{\EMV}{\EMV}
+                     \mid           \ENumMV \mid \EPlus{\EMV}{\EMV} \\
+           &       & \mid         & \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
+                     \mid           \EPair{\EMV}{\EMV}
+                     \mid           \EProjL{\EMV} \mid \EProjR{\EMV}
+                     \mid           \EEHole \\
+      \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV}
+                     \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV} \\
+           &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
+                     \mid           \ECPair{\ECMV}{\ECMV} \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
+                     \mid           \ECEHole \\
+           &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \\
+           &       & \mid         & \ECLamInconAsc{x}{\TMV}{\ECMV} \mid \ECLamAnaNonMatchedArrow{x}{\TMV}{\ECMV} \mid \ECApSynNonMatchedArrow{\ECMV}{\ECMV} \\
+           &       & \mid         & \ECInconBr{\ECMV}{\ECMV}{\ECMV} \\
+           &       & \mid         & \ECPairAnaNonMatchedProd{\ECMV}{\ECMV} \mid \ECProjLSynNonMatchedProd{\ECMV} \mid \ECProjRSynNonMatchedProd{\ECMV}
   \end{array}\]
   \caption{Syntax of the marked lambda calculus.}
   \label{fig:calculus-syntax}
@@ -84,22 +88,21 @@ establishes that, under the typing context $\ctx$, the expression $e$ synthesize
 states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected.
 
 
-The key operation is marking, which transforms an unmarked expression into a marked expression,
-    inserting error marks where appropriate.
+The key operation is \emph{marking}, which transforms an unmarked expression into a marked expression,
+inserting error marks where appropriate.
 %
 This corresponds to a type checking
 process with error localization and recovery. The marked language may then serve as a foundation for
 other semantic services, such as constraint-based inference (as discussed in
 \cref{sec:thi}). 
-Intuitively, each of the mark forms corresponds to a different kind of error message that might be shown by an editor or emitted by a compiler. (We do not specify what the error message should say in this paper.)
-
+Intuitively, each of the mark forms corresponds to a different kind of error message that might be shown by an editor or emitted by a compiler. Note that we do not specify what the error message should say in this paper.
 Throughout the remainder of this section, as we formulate marking for the GTLC, we will motivate and
-give precise semantics for each error mark. When the core is extended, new marks may be needed, as we discuss below.
+give precise semantics for each error mark. Furthermore, when the core is extended, new marks may be needed, as we discuss below.
 
 The marked language possesses its own type system, also formulated bidirectionally. We write
 $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis (in addition to the color difference, note the subscript on the turnstile to distinguish marked from unmarked typing). 
 
-Finally, the key judgement, \emph{marking}, is also specified bidirectionally. The synthetic marking judgment
+Finally, the key judgement, \emph{marking}, is also of a bidirectional nature. The synthetic marking judgment
 $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
 $\TMV$. Analogously, the analytic marking judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
@@ -122,11 +125,11 @@ That is, we may mark \emph{any} syntactically well-formed program in any context
 
 
 Furthermore, since error marks are effectively annotations on top of the program, marking should
-preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} defines \emph{mark erasure}, which converts marked expressions back into unmarked expression by
+preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} gives selected clauses of the definition of \emph{mark erasure}, which converts marked expressions back into unmarked ones by
 removing error marks. 
 \input{figs/calculus-mark-erasure}
 
-Then, \cref{thm:calculus-marking-well-formedness} provides a
+Then, \cref{thm:calculus-marking-well-formedness} provides the necessary
 \emph{well-formedness} criterion for marking.
 %
 \begin{theorem}[name=Marking Well-Formedness] \
@@ -140,13 +143,13 @@ Then, \cref{thm:calculus-marking-well-formedness} provides a
 \end{theorem}
 %
 
-These metatheorems imply that to go from a standard bidirectional system for the unmarked language to a marking system, we need to handle all possible failure modes with appropriate marks and marking logic (otherwise totality would be violated) and without otherwise changing the program (otherwise well-formedness would be violated).
-Let us consider each form in turn. 
+Together, these metatheorems imply that to go from a standard bidirectional system for the unmarked language to a marking system, we need to handle all possible failure modes with appropriate marks and marking logic (otherwise totality would be violated) and without otherwise changing the program (otherwise well-formedness would be violated).
+Now, let us consider each form in turn. 
 
 \subsubsection{Numbers}
 \label{sec:calculus-numbers}
 
-To start, let us consider the simple case of numbers. Because of \emph{subsumption}, which is
+To start, consider the simple case of numbers. Because of \emph{subsumption}, which is
 discussed in more detail next, we need only define a synthesis rule for unmarked numbers, in which
 number literals synthesize the type $\TNum$:
 %
@@ -156,8 +159,8 @@ number literals synthesize the type $\TNum$:
   }{USNum}
 \end{mathpar}
 
-How should numbers be marked? Quite straightforwardly, we simply give the same number as a marked
-expression, synthesizing again $\TNum$. No type errors may occur in a single number, so we only need
+How should numbers be marked? Straightforwardly, we simply give the same number as a marked
+expression, synthesizing again $\TNum$. No type errors may occur in a just single number, so we only need
 the following rules for marking numbers and typing the results: 
 %
 \begin{mathpar}
@@ -208,9 +211,9 @@ expressions then mirrors \textsc{USPlus} exactly.
 \subsubsection{Subsumption}
 \label{sec:calculus-subsumption}
 
-Only synthetic rules were necessary for typing numbers and addition because of \emph{subsumption},
+Only synthetic rules are necessary for typing numbers and addition because of \emph{subsumption},
 given below, which states that if an expression synthesizes a type, it may also be analyzed against
-that type or any \emph{consistent} type.
+that type or any consistent type.
 \[%
   \judgment{
     \ctxSynTypeU{\ctx}{\EMV}{\TMV'} \\
@@ -259,10 +262,10 @@ consistent with $\TNum$, the type that $\ENumMV$ synthesizes. This succeeds for 
 $\TNum$.
 
 We also restrict the usage of subsumption to ``subsumable'' syntactic forms, written
-$\subsumable{\EMV}$. This judgment is defined on all syntactic forms except lambda abstractions and
-conditionals, the only ones with both synthesis and analysis rules (see below). In other words, we restrict subsumption to
+$\subsumable{\EMV}$. This judgment is defined for all syntactic forms except lambda abstractions,
+conditionals, and pairs, the only ones with both synthesis and analysis rules (see below). In other words, we restrict subsumption to
 be the rule of ``last resort'', which is necessary to establish that marking and typing are
-deterministic (discussed later in \cref{thm:calculus-marking-unicity}).
+deterministic (see \cref{thm:calculus-marking-unicity}).
 
 Now, to define analytic marking on forms without explicit analytic typing rules, we also need
 subsumption rules for marking and marked expression typing. Note that we define a analogous notion
@@ -289,9 +292,9 @@ of ``subsumability'' for marked expressions, written $\subsumable{\ECMV}$.
 But what happens when the synthesized type of an expression is \emph{not} consistent with the
 expected type, i.e. that the premise $\consistent{\TMV}{\TMV'}$ fails? Recalling the example of
 \cref{fig:calculus-examples-inconsistent-types}, subsumption would be used to analyze $\ETrue$
-against $\TNum$ in $\EPlus{\ETrue}{1}$, which fails since $\inconsistent{\TNum}{\TBool}$, i.e.
-\textsc{UASubsume} does not apply, and traditional typing semantics would simply fail the type
-checking process at this point. \textsc{MKASubsume} would also not be applicable, leaving marking
+against $\TNum$ when checking $\EPlus{\ETrue}{1}$, which fails since $\inconsistent{\TNum}{\TBool}$, i.e.
+\textsc{UASubsume} does not apply. At this point, traditional typing semantics would simply fail the type
+checking process. \textsc{MKASubsume} would also not be applicable, leaving marking
 undefined in those cases.
 
 To satisfy marking totality, such a possibility motivates an \emph{inconsistent type mark}
@@ -317,8 +320,7 @@ with the expected type:
 \end{mathpar}
 %
 Observe that the premises of \textsc{MKAInconsistentTypes} are identical to those of
-\textsc{MKASubsume}, except that $\inconsistent{\TMV}{\TMV'}$. By marking an error, type-checking
-may continue---instead of simply failing.
+\textsc{MKASubsume}, except that $\inconsistent{\TMV}{\TMV'}$. By marking an error, the type checking process may carry on and provide semantic feedback for the rest of the program.
 
 \subsubsection{Variables}
 \label{sec:calculus-variables}
@@ -351,7 +353,7 @@ rules:
 \end{mathpar}
 
 However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-unbound}, is \emph{not}
-bound. Again, \textsc{USVar} would not apply. A total marking should, however, report the error and
+bound. Similar to above, \textsc{USVar} would not apply. A total marking procedure should, however, report the error and
 continue, motivating an \emph{unbound variable mark} $\ECUnbound{x}$ and the accompanying rules:
 %
 \begin{mathpar}
@@ -369,7 +371,7 @@ continue, motivating an \emph{unbound variable mark} $\ECUnbound{x}$ and the acc
 \end{mathpar}
 %
 An unbound variable is marked as such, and since nothing may be said about their types, we
-synthesize the unknown type. Similarly to the inconsistent type mark, this allows type checking to
+synthesize the unknown type. As with the inconsistent type mark, this allows type checking to
 proceed, with usage of the unbound variable permitted in any expression.
 
 \subsubsection{Lambda Abstractions}
@@ -418,8 +420,8 @@ technical mechanism to avoid duplication of rules related to arrow types \cite{s
   \label{fig:calculus-matched-arrow}
 \end{figure}
 
-The synthesis rule for marking intuitively follows \textsc{USLam} closely. We should recursively
-mark the body with an extended context binding $x$ to $\TMV$ and construct a new marked lambda
+The synthesis rule for marking intuitively follows \textsc{USLam} closely. We recursively
+mark the body with an extended context and construct a new marked lambda
 abstraction:
 %
 \begin{mathpar}
@@ -455,7 +457,7 @@ Similarly, we construct corresponding analytic rules:
     \ctxAnaTypeM{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}
   }{MALam1}
 \end{mathpar}
-%
+
 However, recalling totality, we look again to the premises of \textsc{UALam} to see what type errors
 may arise. First, what if $\TMV_3$ is not a matched arrow type? This would be the case if it were
 $\TNum$, for example. The lambda abstraction's synthesized type would indeed be inconsistent with
@@ -483,13 +485,13 @@ abstraction was encountered.
 Though no expected output type is known, we still need to check and mark the body; it is thus
 analyzed against the unknown type in \textsc{MKALam2}.
 
-In this example language, the distinction from the inconsistent type mark is of reduced
+Note that in this example language, the distinction from the inconsistent type mark is of reduced
 significance---all expressions synthesize a type. However, the addition of unannotated lambda
 abstractions, for example, would necessitate such a disctinction.
 
 Another error arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
 $\inconsistent{\TMV}{\TMV_1}$, i.e. the actual type annotation for $x$ is inconsistent with the
-expected input type. The \emph{inconsistent ascription mark} $\ECInconAsc{x}$ indicates exactly this
+expected input type. The \emph{inconsistent ascription mark} $\ECLamInconAsc{x}{\TMV}{\ECMV}$ indicates exactly this
 error, and we add a final pair of analytic rules:
 %
 \begin{mathpar}
@@ -523,7 +525,7 @@ In the unmarked language, only a synthesis rule is necessary for applications:
     \ctxSynTypeU{\ctx}{\EAp{\EMV_1}{\EMV_2}}{\TMV_2}
   }{USAp}
 \]%
-Following the same methodology, we have the following marking and typing
+Following the same methodology up to this point, we have the following marking and typing
 rules:
 %
 \begin{mathpar}
@@ -548,7 +550,7 @@ Again, to satisfy totality, we must consider the case when $\TMV$ is not a match
 as in the example of \cref{fig:calculus-examples-app-non-lambda}. There is no expected type for the
 argument, so we perform analytic marking on $\EMV_2$ against the unknown type. In this case, it is
 not quite right to mark $\EMV_1$ with the inconsistent type mark; rather than any single type, it is
-any type within the family of arrow types that is expected. For such a ``constrained'' synthetic
+any member of the family of arrow types that is expected. For such a ``constrained'' synthetic
 mode, we use a specialized mark $\ECSynNonMatchedArrow{\ECMV}$, which indicates that $\ECMV$ was
 expected to be a function---but was not. The output type is unknown, so the entire expression
 synthesizes the unknown type.
@@ -572,10 +574,8 @@ synthesizes the unknown type.
 \end{mathpar}
 
 It is natural to extend this approach to other elimination forms that require the handling of
-unmatched types, such as products. Indeed, the same approach is taken for projections in
-\cref{sec:calculus-products}. 
-% Another approach might indicate the same kind of error but mark the
-% entire application.
+unmatched types, such as products. Indeed, the same approach is taken for projections below.
+Another similar approach might indicate the same kind of error but mark the entire application.
 
 \subsubsection{Booleans}
 \label{sec:calculus-booleans}
@@ -610,7 +610,7 @@ The boolean values are similar to numbers:
   }{MSFalse}
 \end{mathpar}
 
-Conditionals, however, are an interesting case. In the unmarked language, we have both explicit
+Conditionals, however, present a more interesting case. In the unmarked language, we have both explicit
 synthetic and analytic rules:
 %
 \begin{mathpar}
@@ -716,9 +716,9 @@ conditionals:
   }{MSInconsistentBranches}
 \end{mathpar}
 
-The framework also allows for other localization approaches. For example, as discussed at the
-beginning of the section, we may regard the first branch as ``correct'' and localize any errors to
-the second. The following rule formalizes such a design:
+As previously mentioned, we do not prescribe any single localization design as ``correct'', and the framework freely allows for other approaches.
+For example, as discussed in the introduction, we may choose to regard the first branch as ``correct'' and localize any 
+errors to the second. The following rule formalizes such a design:
 \[%
   \judgment{
     \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TBool} \\
@@ -730,6 +730,125 @@ the second. The following rule formalizes such a design:
 \]%
 % Of course, corresponding unmarked and marked typing rules would follow similar structure, and other
 % heuristics may be devised for different kinds of branching structures.
+
+\subsubsection{Pairs}
+At this point, the introduction of pairs expressions and the necessary projection operators poses no great challenge.
+Explicit synthesis and analysis rules govern the former.
+%
+\begin{mathpar}
+  \inferrule[USPair]{
+    \ctxSynTypeU{\ctx}{\EMV_1}{\TMV_1} \\
+    \ctxSynTypeU{\ctx}{\EMV_2}{\TMV_2}
+  }{
+    \ctxSynTypeU{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
+  
+  \inferrule[UAPair]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaTypeU{\ctx}{\EMV_1}{\TMV_1} \\
+    \ctxAnaTypeU{\ctx}{\EMV_2}{\TMV_2}
+  }{
+    \ctxAnaTypeU{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\TMV}
+  }
+\end{mathpar}
+%
+In similar fashion to above, we may derive marking rules from these in an intuitive manner:
+%
+\begin{mathpar}
+  \inferrule[MKSPair]{
+    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\
+    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
+
+  \inferrule[MSPair]{
+    \ctxSynTypeM{\ctx}{\ECMV_1}{\TMV_1} \\
+    \ctxSynTypeM{\ctx}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxSynTypeM{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  } \\
+
+  \inferrule[MKAPair1]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
+  }
+
+  \inferrule[MAPair1]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\\\
+    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TMV_1} \\
+    \ctxAnaTypeM{\ctx}{\ECMV_2}{\TMV_2}
+  }{
+    \ctxAnaTypeM{\ctx}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
+  }
+\end{mathpar}
+
+However, as when analyzing a lambda abstraction against a non-matched arrow type, the type against which a pair is analyzed may not match any product type. We solve this by adding an error mark $\ECPairAnaNonMatchedProd{\ECMV_1}{\ECMV_2}$ and the corresponding rules:
+%
+\begin{mathpar}
+  \inferrule[MKAPair2]{
+    \notMatchedProd{\TMV} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TUnknown} \\\\
+    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPairAnaNonMatchedProd{\ECMV_1}{\ECMV_2}}{\TMV}
+  }
+  
+  \inferrule[MAPair2]{
+    \notMatchedProd{\TMV} \\
+    \ctxAnaTypeM{\ctx}{\ECMV_1}{\TUnknown} \\\\
+    \ctxAnaTypeM{\ctx}{\ECMV_2}{\TUnknown}
+  }{
+    \ctxAnaTypeM{\ctx}{\ECPairAnaNonMatchedProd{\ECMV_1}{\ECMV_2}}{\TMV}
+  }
+\end{mathpar}
+
+As the elimination form for products, projections are handled in a similar manner as applications.
+In the interest of space, we give only the rules for the left projection operator; right projections are governed analogously.
+%
+\begin{mathpar}
+  \inferrule[USProjL]{
+    \ctxSynTypeU{\ctx}{\EMV}{\TMV} \\\\
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynTypeU{\ctx}{\EProjL{\EMV}}{\TMV_1}
+  }
+
+  \inferrule[MKSProjL1]{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV_1}
+  }
+
+  \inferrule[MSProjL1]{
+    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\\\
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2}
+  }{
+    \ctxSynTypeM{\ctx}{\ECProjL{\ECMV}}{\TMV_1}
+  }
+\end{mathpar}
+
+In the case that the subject of the projection does not synthesize a matched product type, we mark with an error, written $\ECProjLSynNonMatchedProd{\ECMV}$:
+%
+\begin{mathpar}
+  \inferrule[MKSProjL2]{
+    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
+    \notMatchedProd{\TMV}
+  }{
+    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjLSynNonMatchedProd{\ECMV}}{\TMV_1}
+  }
+  
+  \inferrule[MSProjL2]{
+    \ctxSynTypeM{\ctx}{\ECMV}{\TMV} \\
+    \notMatchedProd{\TMV}
+  }{
+    \ctxSynTypeM{\ctx}{\ECProjLSynNonMatchedProd{\ECMV}}{\TUnknown}
+  }
+\end{mathpar}
 
 \subsubsection{Holes}
 For completeness, we finish the development of the marked lambda calculus on the extended GTLC with
@@ -794,98 +913,21 @@ Finally, no less importantly, marking is deterministic. This is given by
 Together, totality and unicity give that marking may be implemented as a total
 function. Indeed, given the algorithmic nature of bidirectional typing, it is fairly direct to implement these rules.
 
-\subsection{Adding Binary Products}
-\label{sec:calculus-products}
-
-The marked lambda calculus is intended as a minimal core. The methodology described above can be used to extend the marked lambda calculus with new typing features. For example, let us add binary product types, written $\TProd{\TMV_1}{\TMV_2}$. In the interest of space, we focus on
-aspects related to marking and omit standard rules; a comprehensive set of rules is found in the supplemental material.
-
-% First, we extend the syntax of types and the accompanying notions of consistency and join, which
-% closely mirror the definitions for arrow types. Additionally, analogous to the notion of matched
-% arrow types, we need a matched product type relation $\matchedProd{\TMV}{\TMV_1}{\TMV_2}$.
-
-The unmarked language is extended with a pair constructor $\EPair{\EMV}{\EMV}$ and projection
-operators $\EProjL{\EMV}$ and $\EProjR{\EMV}$, governed by standard bidirectional rules. In addition
-to the synthesis rules, an explicit analysis rules is defined for pairs: if the expected type has a matched product type (cf. matched arrow types above), the responsibility for type errors is shifted to the components.
-
-We can devise the basic marking rules from the unmarked typing rules.
-%
-\begin{mathpar}
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\\\
-    \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
-  }{
-    \ctxSynFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TProd{\TMV_1}{\TMV_2}}
-  }{MKSPair}
-
-  \judgment{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
-    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TMV_1} \\\\
-    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_2}
-  }{
-    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPair{\ECMV_1}{\ECMV_2}}{\TMV}
-  }{MKAPair1}
-
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2}
-  }{
-    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjL{\ECMV}}{\TMV_1}
-  }{MKSProjL1}
-
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\\\
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2}
-  }{
-    \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjR{\ECMV}}{\TMV_2}
-  }{MKSProjR1}
-\end{mathpar}
-However, as previously seen with lambda abstractions and applications, two sets of rules are further
-necessary to satisfy totality. Firstly, the premise in \textsc{UAPair} that $\TMV$ is a matched
-binary product may fail, requiring the introduction of a new error mark,
-$\ECAnaNonMatchedProd{\ECMV}$, which is analogous to $\ECAnaNonMatchedArrow{\ECMV}$ for lambda
-abstractions. Another kind of error may arise when the subject of a projection does not synthesize a
-matched product type. As in our development of marking for applications, we utilize a new mark,
-written $\ECSynNonMatchedProd{\ECMV}$. These cases give the final marking rules for products:
-%
-\begin{mathpar}
-  \judgment{
-    \notMatchedProd{\TMV} \\
-    \ctxAnaFixedInto{\ctx}{\EMV_1}{\ECMV_1}{\TUnknown} \\
-    \ctxAnaFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TUnknown}
-  }{
-    \ctxAnaFixedInto{\ctx}{\EPair{\EMV_1}{\EMV_2}}{\ECPairAnaNonMatchedProd{\ECMV_1}{\ECMV_2}}{\TMV}
-  }{MKAPair2} \\
-
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
-    \notMatchedProd{\TMV}
-  }{
-    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjLSynNonMatchedProd{\ECMV}}{\TMV_1}
-  }{MKSProjL2}
-
-  \judgment{
-    \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
-    \notMatchedProd{\TMV}
-  }{
-    \ctxSynFixedInto{\ctx}{\EProjR{\EMV}}{\ECProjRSynNonMatchedProd{\ECMV}}{\TMV_2}
-  }{MKSProjR2}
-\end{mathpar}
-
-\input{let}
-
 \subsection{Agda Mechanization}
 \label{sec:calculus-agda}
 
-The semantics and metatheory presented above, including the extension with binary products, have
+The semantics and metatheory presented above, have
 been fully mechanized in the Agda proof assistant. The mechanization additionally includes the decoupled Hazelnut action semantics described in \cref{sec:calculus-hazelnut}. Though the mechanization's documentation contains
 more detailed discussion regarding technical decisions made therein, we highlight some important
 aspects here.
 
 The standard approach of modeling judgments as inductive datatypes and rules as constructors for
-those datatypes is taken. For marked expressions, we opt for implicitly typed terms,
-which gives us part of \cref{thm:calculus-marking-well-formedness} for free. For the convenience of
-readers interested in browsing the mechanization, all rule names match those presented here.
+those datatypes is taken. By representing marked expressions with implicitly typed terms,
+we get part of \cref{thm:calculus-marking-well-formedness} for free from the definition of marking. For the convenience of
+readers interested in browsing the mechanization, as possible, all rule names match those presented here.
+
+\input{let}
+\input{polymorphism}
 
 \subsection{Polymorphism and Richer Judgemental Structures}
 \label{sec:calculus-poly}
