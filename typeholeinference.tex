@@ -21,9 +21,15 @@ In \cref{fig:editor_holes}, the user has written an incomplete program where the
 \includegraphics[width=9cm]{images/example_holes.png}
 \includegraphics[width=9cm]{images/example_holes_CI.png}
 \caption{Incomplete program with partial hole filling suggestion}
+\todo[inline]{ideally figs should have consistent spacing after type annotation; prob also get rid of black lower-left corner on screenshots as it is visually distracting}
 \label{fig:editor_holes}
 \end{figure}
-\Cref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization from there. (This interaction has not yet been implemented, but there is no barrier to doing so. For our experiments, copy/paste was used to simulate.)
+\todo[inline]{
+idea. try to situate the beginning of this section by introducing a 'gradual typing workflow': unbias error attribution by inserting a blank type annotation for the relevant variable: look at all the uses and tell me what the constraints are instead of the local bidirectional flow.
+
+localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
+}
+\Cref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization from there. (This interaction has not yet been implemented, but there is no barrier to doing so. For our experiments, copy/paste was used to simulate\todo{phrasing}.)
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
 \includegraphics[width=9cm]{images/example_conflict_CI.png}
@@ -67,7 +73,7 @@ We must be able to uniquely identify type holes when constraint solving because 
     \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. We assume that id generation is handled by the editor.
     \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenances}, $p$. These serve two useful but non-critical purposes:
 \begin{enumerate}
-    \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.
+    \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3 \todo[inline]{this feels somewhat unclear to me; presumably this is the prospective synthesized type of what ends up filling the hole rather than the type of an expression hole (unknown)?}. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.\todo[inline]{this is unclear to me. does it mean e.g. jump-to-exp-hole from clicking on a constraint in the CI?}
     \item Provenances allow increased efficiency when compared to generating fresh type hole ids (which spawns larger constraint graphs during constraint generation.) 
 \end{enumerate}
 \end{enumerate}
@@ -91,8 +97,8 @@ The first step is constraint generation. Our approach closely follows the usual 
     $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
 \subsubsection{Constraints}
-Individual constraints are written $\tau_1 \approx \tau_2$. 
-The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ must have the same solution once the constituent type holes are filled. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types, following \citet{HazelnutPOPL}.
+Individual constraints are written $\tau_1 \approx \tau_2$\todo[inline]{might be nice to have a definition box defining this judgement and maybe listing properties}. 
+The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ must have the same solution \todo[inline]{not obvious to me at this point what a 'solution of a type' (vs constraint) refers to} once the constituent type holes are filled. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types, following \citet{HazelnutPOPL}.
 
 % Before detailing this relationship, consider an approach where constraints were transitive across complete types. In such a world, we may end up with the incorrect error localization below:
 % \begin{center}
@@ -181,7 +187,7 @@ Our rule for analysis of annotated lambdas when no local errors are present asse
   }{MALam1-C}
 \end{mathpar}
 
-Our rules for the remaining two lambda analysis cases where the lambda expression is wrapped in a marked hole are trickier. Let us begin by assessing the case where the analyzed type has no matched arrow form. In such cases, we previously analyzed the body of the lambda against the unknown type to ensure its validity. However, which unknown type are we analyzing the body against? As discussed earlier, performing analysis imparts the expectation that the type of the expression is consistent with the argument of analysis. If we were to simply analyze against the type of the hole membrane we use to surround the marked lambda, we'd impart the expectation that the lambda's body is consistent with the hole membrane itself. This would subvert our goal of separating the program outside the hole with that inside! In fact, any hole we choose would impart some invalid expectation with respect to the goals we've outlined. Consequently, we introduce the anonymous provenance: this will have its constraints ignored by the constraint solver when we later describe unification.
+Our rules for the remaining two lambda analysis cases where the lambda expression is wrapped in a marked hole are trickier. Let us begin by assessing the case where the analyzed type has no matched arrow form. In such cases, we previously analyzed the body of the lambda against the unknown type to ensure its validity. However, which unknown type are we analyzing the body against? As discussed earlier, performing analysis imparts the expectation that the type of the expression is consistent with the argument of analysis. If we were to simply analyze against the type of the hole membrane we use to surround the marked lambda, we'd impart the expectation that the lambda's body is consistent with the hole membrane itself. This would subvert our goal of separating the program outside the hole with that inside!\todo[inline]{i don't totally follow why this reasoning doesnt apply to MALam3-C as well} In fact, any hole we choose would impart some invalid expectation with respect to the goals we've outlined. Consequently, we introduce the anonymous provenance: this will have its constraints ignored by the constraint solver when we later describe unification.
 \begin{center}
     $\arraycolsep=4pt\begin{array}{lll}
     \Prov~~ p & ::= & 
@@ -210,7 +216,7 @@ We can analyze the lambda's body against an anonymous unknown type:
 % Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the expression hole's type, $?^{exp(u)}$.
 
 \subsubsection{Applications and Their Constraints}
-This brings us at last to the application of lambdas. When the function position expression $\ECMV_1$ lacks a matched arrow form, we proceed as if we had called matched arrow on the marked expression hole surrounding it. To this end, the function argument $\ECMV_2$ must be analyzed against $\TUnknown^{\rightarrow_L{u}}$ and we must return $\TUnknown^{\rightarrow_R{u}}$ as the result of synthesis. 
+This brings us at last to the application of lambdas. When the function position expression $\ECMV_1$ lacks a matched arrow form, we proceed as if we had called\todo{phrasing} matched arrow on the marked expression hole surrounding it. To this end, the function argument $\ECMV_2$ must be analyzed against $\TUnknown^{\rightarrow_L{u}}$ and we must return $\TUnknown^{\rightarrow_R{u}}$ as the result of synthesis. 
 \begin{mathpar}
   \judgment{
     \synConstraint{\ctx}{\ECMV_1}{\TMV}{C_1} \\
@@ -222,20 +228,21 @@ This brings us at last to the application of lambdas. When the function position
 \end{mathpar}
 
 \subsubsection{Other Constraint Generating Rules}
-The remaining rules either simply accumulate constraints from each of their premises as done above or are axiomatic and need not accumulate any constraints. As a result, they are somewhat repetitive and are consequently left to the supplemental material.
+The remaining rules either simply accumulate constraints from each of their premises as done above or are axiomatic and need not accumulate any constraints. As a result, they are somewhat repetitive and are consequently left to the supplemental material.\todo[inline]{wordy. instead maybe: 'See supplement for the remaining rules, which either express atomic constraints or simply accumulate the constraints of their premises'}
 
 \subsubsection{An Example of Constraint Generation}
 Now that we have defined a formal approach to constraint generation, let us revisit $\ECMV_{ex}$ and try once again to identify its constraints:
 $$\ECMV_{ex} \equiv \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}})}{~~\EEHole^0}$$
 We first consider the body of the lambda, $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}$. Based on the rule MSIf-C, we must analyze our scrutinee, $\EEHole^2$ against $\tbool$. This triggers subsumption, yielding the constraint $\{ \TUnknown^{exp(2)} \approx \tbool \}$. Next, we must synthesize the types of our branches: $\ECAp{f}{\underline{2}}$ and $\EEHole^3$. Synthesis of $\EEHole^3$ is simple; $\EEHole^3$ synthesizes $\TUnknown^{exp(3)}$ with no constraints.
 
-Syntheis of $\ECAp{f}{\underline{2}}$ is more complex. Following MSAp1-C, we attempt to take the matched arrow of $\TUnknown^1$, yielding the constraint $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}} \}$. Next, we analyze the argument $\underline{2}$ against the input type of $f$, $\TUnknown^{\rightarrow_L(1)}$. This triggers subsumption, which yields the constraint $\{ \TUnknown^{\rightarrow_L(1)} \approx \tnum \}$. With these results in hand, we can determine that the result of synthesis on  $\ECAp{f}{\underline{2}}$ is $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}}, ~\TUnknown^{\rightarrow_L(1)} \approx \tnum \}$.
+Synthesis of $\ECAp{f}{\underline{2}}$ is more complex. Following MSAp1-C, we attempt to take the matched arrow of $\TUnknown^1$, yielding the constraint $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}} \}$. Next, we analyze the argument $\underline{2}$ against the input type of $f$, $\TUnknown^{\rightarrow_L(1)}$. This triggers subsumption, which yields the constraint $\{ \TUnknown^{\rightarrow_L(1)} \approx \tnum \}$. With these results in hand, we can determine that the result of synthesis on  $\ECAp{f}{\underline{2}}$ is $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}}, ~\TUnknown^{\rightarrow_L(1)} \approx \tnum \}$.
 
 Combining these results and constraining the types of both branches to each other, we find that $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{\EEHole^3}$ synthesizes type $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum,  \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)}\}$. 
 
 Synthesis of our overarching lambda expression yields no additional constraints and returns the type $\tarr{\TUnknown^1}{\TUnknown^{\rightarrow_L(1)}}$. Application of the lambda on $\EEHole^0$ yields the constraint $\{ \TUnknown^{exp(0)} \approx \TUnknown^{1} \}$ due to subsumption and yields the final type  $\TUnknown^{\rightarrow_R(1)}$. Thus, we find that $\ctxSynType{\cdot}{\ECMV_{ex}}{\TUnknown^{\rightarrow_R(1)}} ~|~ C_{ex1}$ where 
 $$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
 
+\todo[inline]{i wonder if this section can be made more incremental. like, if the rules were introduced in the order in which they are required for the derivation of the motivating example, then you could interleave the rules with this derivation sketch. as it stands, i feel like i've forgotten the motivating example by the time i get here, whereas the other way it could serve to generate explicit sub-examples for the relevant rules. right now i feel this part at the end is a bit of an awkward balance of symbolic and conversational}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INFERENCE ALGORITHM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

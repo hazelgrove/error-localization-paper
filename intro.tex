@@ -16,7 +16,7 @@ These gaps in service are not always transient.
 For example, a change to a type definition might result in type errors at dozens of use sites in a large program, which might take hours or days to resolve, all without the full aid of these services.
 
 These service gaps are fundamentally rooted in a definitional gap: a type system defined in the conventional way, 
-e.g. in the tradition of the typed lambda calculus and its derivatives \cite{TaplBook,pfpl},
+e.g. in the tradition of the typed lambda calculus and its derivatives \cite{TaplBook},
 assigns meaning only to well-typed programs. 
 If a type error appears \emph{anywhere}, the program is formally meaningless \emph{everywhere}.
 
@@ -27,15 +27,14 @@ and continue on to locate other errors and provide downstream semantic services,
 ideally at every location in the program and with minimal degradation in service.
 Essentially all widely-used programming systems have some support for type error localization, 
 reporting error locations in compiler error messages 
-or directly in the editor via markings decorating the localized errors. Developers attend primarily to these error locations when debugging type errors \cite{DBLP:journals/jfp/JoostenBH93}.
-Many systems also attempt recovery in certain situations, discussed below.
-
+or directly in the editor via markings decorating the localized errors. Developers are known to attend to these error locations when debugging type errors \cite{DBLP:journals/jfp/JoostenBH93}.
+Many systems also attempt recovery in certain situations, discussed below. 
 However, type error localization and recovery mechanisms have developed idiosyncratically, 
 in part as folklore amongst language and tool implementors. 
 Different type checkers or language servers \cite{barros2022editing,bour2018merlin}, even for the same language, localize and recover from type errors in different ways, 
 with little in the way of unifying theory of the sort that grounds the design of modern type systems themselves.
 
-Consider, the example program below, which is shown as presented to the user in
+Consider, the example ill-typed program below, which is shown as presented to the user in
 this paper's version of Hazel \cite{hazel}, a typed functional dialect of Elm \cite{elm}. Hazel  
 supports local type inference, specified in the well-established bidirectional style \cite{Localinf,HazelnutPOPL,BidirTyping}:
 \vspace{-3px}
@@ -47,33 +46,33 @@ A type checker with no support for error localization or recovery---%
 as students in an undergraduate course might write---%
 would simply report that this program is ill-typed. 
 A more practical approach, and one common even in production type checkers, 
-is to localize the first error that causes local type inference to fail and emit an explanatory error message.
-In this example, the system might report that the variable \li{f} located on Line 2 is unbound, then stop.
+is to localize the first error that causes local type inference to fail and emit an explanatory error message before terminating.
+In this example, the system might report that the variable \li{f} located on Line 2 is unbound, then terminate.
 
 An implementation with support for type error recovery, like Elm's compiler or OCaml's \li{merlin} \cite{bour2018merlin}, would 
  be tasked with continuing past this first error.
  The general difficulty here is that there is now missing semantic information, namely the type of \li{f}, that 
  the bidirectional type system as specified 
  would appear to demand in order to proceed, here in order to determine which type the argument, \li{y}, is to be analyzed against.
- Intuitively, however, it seems that this type is actually \emph{unnecessary} to make an error localization decision about \li{y}: 
-it is unbound, so a second error can be simultaneously localized despite the missing information. Elm stops here.
+ Intuitively, however, it is clear that this knowledge is \emph{unnecessary} to make an error localization decision about \li{y}: 
+it is unbound, so a second error can be simultaneously localized despite the missing information about \li{f}. Elm's compiler stops here.
 
-To recover further, we might choose to also ignore the bidirectional type system's demand that the guard be confirmed to be a boolean expression 
+To recover further, we might choose to also ignore the bidirectional type system's demand that the conditional guard be confirmed to be a boolean expression 
 (because the type of \li{f(y)} is also not well-defined) 
 and continue into its branches, observing that they have inconsistent types, \li{Int} and \li{Bool}. 
 There are several ways to localize this error. 
-One approach, taken e.g. by \li{merlin}, would be to assume, arbitrarily, that one branch is correct, localizing the error to the other branch. 
+One approach, taken e.g. by Elm and \li{merlin}, would be to assume, arbitrarily, that one branch is correct, localizing the error to the other branch. 
 Heuristics have been developed to help make this choice less arbitrary, e.g. 
 by observing recent editing history \cite{steady-typing}, 
 or training a machine learning model \cite{SeidelBlame}. 
-The other approach, which Hazel takes, is to localize the inconsistency to the conditional expression itself, reporting that the problem is that the branch types differ, as indicated above. When the cursor is on the conditional expression, the Hazel type inspector---a status bar that reports typing information, including type error messages, about the term at the cursor \cite{potter2020hazel}---shows:
+The other approach, which Hazel takes above, is to localize the inconsistency to the conditional as a whole, reporting that the problem is that the branch types differ, as indicated above. When the cursor is on the conditional expression, the Hazel type inspector---a status bar that reports typing information, including type error messages, about the term at the cursor \cite{potter2020hazel}---shows:
 
 \begin{center}
-  \includegraphics[width=0.9\textwidth]{images/haz3l-inconsistent-branches-cursor-inspector.png}
+  \includegraphics[width=\textwidth]{images/haz3l-inconsistent-branches-cursor-inspector.png}
 \end{center}
 
 This localization decision affects how the system recovers as it proceeds into the let body, \li{x + 1}. 
-If localization had assumed that the \li{then} branch correct, as for example in the Elm type checker, then \li{x : Bool} and an error should be reported on the left operand (though this error might mislead the programmer if this earlier localization guess was incorrect).
+If localization had assumed that the \li{then} branch correct, as for example in Elm and \li{merlin}, then \li{x : Bool} and an error should be reported on the left operand (though this error might mislead the programmer if this earlier localization guess was incorrect).
 If the \li{else} branch was chosen, then \li{x : Int} and an error would not be reported. 
 If the inconsistency is localized to the conditional expression as a whole, as in our language server, then we again confront the problem of missing type information: 
 \li{x} does not have a known type,
@@ -84,7 +83,7 @@ No matter how localization handles the left operand, we would like to be able to
 localize the type inconsistency on the right operand (the \li{+} operator is integer addition in Hazel).
 
 This informal exercise demonstrates that (1) localization choices can vary, particularly with regard to whether they make \emph{ad hoc} guesses about intent;  
-(2) when combined with error recovery, localization decisions can influence downstream localization decisions; and 
+(2) when combined with error recovery, one localization decision can influence downstream localization decisions; and 
 (3) error recovery mechanisms must be able to reason without complete knowledge about types and binding. We argue that such semantic subtleties call for a rigorous theoretical treatment of the topic.
 
 This paper develops the first comprehensive {type-theoretic formulation} of type error localization and recovery, called the \emph{marked lambda calculus} (\cref{sec:calculus}).

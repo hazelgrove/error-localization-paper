@@ -1,0 +1,666 @@
+\newpage
+\section{Formalism for Type Hole Inference}
+
+\subsection{Syntax}
+\subsubsection{Potential Types and their Graphs}
+\begin{mathpar}
+    \arraycolsep=4pt\begin{array}{lll}
+    PotentialTypeSet~~ s & ::=
+    lead(u) ~\vert~
+    rep(\tau)
+    \\
+    PotentialTypes~~ u & ::= 
+    single(t) ~\vert~ 
+    cons(t, u)
+    \\
+    PotentialType~~ t & ::= 
+      \tnum ~\vert~
+      \tbool ~\vert~
+      \TUnknown^p ~\vert~
+      \tarr{s}{s}
+      \\
+    PotentialTypeGraph~~ G & ::= \tau_1: s_1, ..., \tau_n : s_n \\
+    \end{array}
+\end{mathpar}
+
+\subsubsection{Potential Type Snapshots and Solutions} 
+
+\begin{mathpar}
+    \arraycolsep=4pt\begin{array}{lll}
+    PotentialTypesList~~ l & ::= 
+    Nil ~\vert~ 
+    cons(t, l)
+    \\
+    PotentialTypesSnapshot~~ j & ::=
+    Nil ~\vert~
+    cons(h, j)
+    \\
+    PotentialTypeSnapshot~~ h & ::=
+    \tnum ~\vert~
+    \tbool ~\vert~
+    \TUnknown^p ~\vert~
+    \tarr{j}{j}
+    \\
+    \end{array}
+\end{mathpar}
+
+\subsection{Inference Rules} Let $P(\tau)$ be a total function mapping a type $\tau$ to its corresponding PotentialType $t$.
+Let $T(t)$ be a partial function mapping a PotentialType $t$ to its corresponding type $\tau$
+\vspace{7px}\\
+\judgbox{\ensuremath{\incomplete{\tau}}}
+\begin{mathpar}
+    \judgment{ }{
+        \incomplete{\TUnknown^{p}}
+    }{I-Unk}
+
+    \judgment{
+        \incomplete{\tau_1}
+    }{
+        \incomplete{\TArrow{\tau_1}{\tau_2}}
+    }{I-Arr-L}
+
+    \judgment{
+        \incomplete{\tau_2}
+    }{
+        \incomplete{\TArrow{\tau_1}{\tau_2}}
+    }{I-Arr-R}
+\end{mathpar}
+
+\judgbox{\ensuremath{\leader{G}{\tau}{\tau'}{u}}}
+\begin{mathpar}
+    \judgment{
+        \isIn{\ptypGraphNode{\tau}{\ptsLead{u}}}{G}
+    }{
+        \leader{G}{\tau}{\tau}{u}
+    }{L-self}
+
+    \judgment{
+        \isIn{
+            \ptypGraphNode{\tau_1}{\ptsRep{\tau_2}}
+        }{G}\\
+        \leader{G}{\tau_2}{\tau_3}{u}
+    }{
+        \leader{G}{\tau_1}{\tau_3}{u}
+    }{L-rep}
+\end{mathpar}
+
+% \judgbox{\ensuremath{\constrain{\tau_1}{\tau_2}}}
+% \begin{mathpar}
+%     \judgment{ }{\constrain{\tau}{\tau}}{Constrain-Refl}
+
+%     \judgment{
+%         \constrain{\tau_1}{\tau_2}
+%     }{
+%         \constrain{\tau_2}{\tau_1}
+%     }{Constrain-Sym}
+
+%     \judgment{
+%         \incomplete{\tau_1}\\
+%         \incomplete{\tau_2}\\
+%         \constrain{\tau_1}{\tau_2}\\
+%         \constrain{\tau_2}{\tau_3}
+%     }{
+%         \constrain{\tau_1}{\tau_3}
+%     }{Constrain-Trans}
+
+%     \judgment{
+%         \constrain{\TArrow{\tau_1}{\tau_2}}{\TArrow{\tau_3}{\tau_4}}
+%     }{
+%         \constrain{\tau_1}{\tau_3}
+%     }{Constrain-Arr-L}
+    
+%     \judgment{
+%         \constrain{\TArrow{\tau_1}{\tau_2}}{\TArrow{\tau_3}{\tau_4}}
+%     }{
+%         \constrain{\tau_2}{\tau_4}
+%     }{Constrain-Arr-R}
+% \end{mathpar}
+
+\judgbox{\ensuremath{\ptypsUnion{u_1}{u_2}} \equiv u_{3}}
+\[\begin{array}{rcl}
+    \ptypsUnion{\ptypSingle{\tarr{s_1}{s_2}}}{\ptypSingle{\tarr{s_3}{s_4}}} & = & \ptypSingle{{\tarr{(\ptypsUnion{s1}{s3})}{(\ptypsUnion{s2}{s4})}}} \\
+    \ptypsUnion{\ptypSingle{t}}{\ptypSingle{t'}} & = & \ptypCons{t}{\ptypSingle{t'}} \\
+    \ptypsUnion{\ptypCons{t}{u}}{\ptypSingle{t}} & = & \ptypCons{t}{u} \\
+    \ptypsUnion{\ptypCons{\tarr{s_1}{s_2}}{u}}{\ptypSingle{\tarr{s_3}{s_4}}} & = & \ptypCons{\tarr{(\ptypsUnion{s1}{s3})}{(\ptypsUnion{s2}{s4})}}{u} \\
+    \ptypsUnion{\ptypCons{t}{u}}{\ptypSingle{t'}} & = & \ptypCons{t}{(\ptypsUnion{u}{\ptypSingle{t'}})} \\
+    \ptypsUnion{\ptypCons{t}{u}}{\ptypCons{t'}{u'}} & = & \ptypsUnion{\ptypsUnion{\ptypCons{t}{u}}{\ptypSingle{t'}}}{u'} \\
+\end{array}\] 
+
+\judgbox{\ensuremath{\ptypSetSubset{G}{s_1}{s_2}}}
+
+\begin{mathpar}
+\judgment{
+    s_1 \equiv rep(\tau)\\
+    \leader{G}{\tau}{\tau_l}{s_{leader}}\\
+    \ptypSetSubset{G}{s_{leader}}{s_2}
+}{
+    \ptypSetSubset{G}{s_1}{s_2}
+}{S-Subset-Rep-1}
+
+\judgment{
+    s_2 \equiv rep(\tau)\\
+    \leader{G}{\tau}{\tau_l}{s_{leader}}\\
+    \ptypSetSubset{G}{s_1}{s_{leader}}
+}{
+    \ptypSetSubset{G}{s_1}{s_2}
+}{S-Subset-Rep-2}
+
+\judgment{
+    s_1 \equiv lead(u_1)\\
+    s_2 \equiv lead(u_2)\\
+    \ptypesSubset{s_1}{s_2}
+}{
+    \ptypSetSubset{G}{s_1}{s_2}
+}{S-Subset-Lead}
+\end{mathpar}
+
+\judgbox{\ensuremath{\ptypesSubset{u_1}{u_2}}}
+\begin{mathpar}
+
+\judgment{
+    u_1 \equiv single(\tau)\\
+    \tau \in u_2
+}{
+    \ptypesSubset{u_1}{u_2}
+}{U-Subset-Single}
+
+\judgment{
+    u_1 \equiv cons(\tau, u_{tl})\\
+    \tau \in u_2\\
+    \ptypesSubset{u_{tl}}{u_2}
+}{
+    \ptypesSubset{u_1}{u_2}
+}{U-Subset-Cons}
+
+\end{mathpar}
+
+\judgbox{\ensuremath{\ptypGraphUpdate{G}{\tau}{u}{G'}}}
+\begin{mathpar}
+    \judgment{
+        \isNotIn{\tau}{\dom(G)}
+    }{
+        \ptypGraphUpdate{G}{\tau}{u}{G,~\ptypGraphNode{\tau}{\ptsLead{u}}}
+    }{Update-New-Key}
+
+    \judgment{
+        \leader{G}{\tau}{\tau_l}{u_l}\\
+        \ptypsUnion{u_l}{u} \equiv u_l'
+    }{
+        \ptypGraphUpdate{G}{\tau}{u}{G,~\ptypGraphNode{\tau_l}{\ptsLead{u_l'}}}
+    }{Update-Old-Key}
+\end{mathpar}
+
+\judgbox{\ensuremath{\ptypGraphAdd{G}{\tau}{G'}}}
+\begin{mathpar}
+    \judgment{
+        \isIn{\tau}{\dom(G)}
+    }{
+        \ptypGraphAdd{G}{\tau}{G}
+    }{Add-Present}
+    
+    \judgment{
+        \incomplete{\tau_1}\\
+        \incomplete{\tau_2}\\
+        \ptypGraphAdd{G_1}{\tau_1}{G_2}\\
+        \ptypGraphAdd{G_2}{\tau_2}{G_3}\\
+        \ptypGraphUpdate{G_3}{\TArrow{\tau_1}{\tau_2}}{\ptypSingle{\TArrow{\ptsRep{\tau_1}}{\ptsRep{\tau_2}}}}{G_4}
+    }{
+        \ptypGraphAdd{G_1}{\TArrow{\tau_1}{\tau_2}}{G_4}
+    }{Add-Arr-I-I}
+
+    \judgment{
+        \incomplete{\tau_1}\\
+        \ptypGraphAdd{G_1}{\tau_1}{G_2}\\
+        \ptypGraphUpdate{G_2}{\TArrow{\tau_1}{\tau_2}}{\ptypSingle{\TArrow{\ptsRep{\tau_1}}{\ptsLead{\ptypSingle{P(\tau_2)}}}}}{G_3}
+    }{
+        \ptypGraphAdd{G_1}{\TArrow{\tau_1}{\tau_2}}{G_3}
+    }{Add-Arr-I-C}
+
+    \judgment{
+        \incomplete{\tau_2}\\
+        \ptypGraphAdd{G_1}{\tau_2}{G_2}\\
+        \ptypGraphUpdate{G_2}{\TArrow{\tau_1}{\tau_2}}{\ptypSingle{\TArrow{\ptsLead{\ptypSingle{P(\tau_1)}}}{\ptsRep{\tau_2}}}}{G_3}
+    }{
+        \ptypGraphAdd{G_1}{\TArrow{\tau_1}{\tau_2}}{G_3}
+    }{Add-Arr-C-I}
+
+    \judgment{
+        \incomplete{\tau}\\
+        \ptypGraphUpdate{G}{\tau}{\ptypSingle{P(\tau)}}{G'}
+    }{
+        \ptypGraphAdd{G}{\tau}{G'}
+    }{Add-I}
+\end{mathpar}
+
+\judgbox{\ensuremath{\unify{G}{C}{G'}}}
+\begin{mathpar}
+    \judgment{
+        \unify{G}{
+            \constraintCons{
+                \constrain{\tau_{L1}}{\tau_{L2}}
+            }{
+                \constraintCons{\constrain{\tau_{R1}}{\tau_{R2}}}{C}
+            }
+        }{G'}
+    }{
+        \unify{G}{
+            \constraintCons{
+                \constrain{\TArrow{\tau_{L1}}{\tau_{R1}}}{\TArrow{\tau_{L2}}{\tau_{R2}}}
+            }{C}
+        }{G'}
+    }{U-Arr}
+    
+    \judgment{
+        \unify{G_1}{C}{G_2}\\
+        \incomplete{\tau_1}\\
+        \incomplete{\tau_2}\\
+        \ptypGraphAdd{G_2}{\tau_1}{G_3}\\
+        \ptypGraphAdd{G_3}{\tau_2}{G_4}\\
+        \leader{G_4}{\tau_1}{\tau_{1l}}{u_{1l}}\\
+        \leader{G_4}{\tau_2}{\tau_{2l}}{u_{2l}}\\
+        \ptypsUnion{u_{1l}}{u_{2l}} \equiv u_{12}
+    }{
+        \unify{G_1}{
+            \constraintCons{\constrain{\tau_1}{\tau_2}}{C}
+        }{G_4,~\ptypGraphNode{\tau_{1l}}{\ptsLead{u_{12}}},~ \ptypGraphNode{\tau_{2l}}{\ptsRep{\tau_{1l}}}}
+    }{U-I-I}
+
+    \judgment{
+        \unify{G_1}{C}{G_2}\\
+        \incomplete{\tau_1}\\
+        \ptypGraphAdd{G_2}{\tau_1}{G_3}\\
+        \ptypGraphUpdate{G_3}{\tau_1}{\ptypSingle{P(\tau_2)}}{G_4}
+    }{
+        \unify{G_1}{
+            \constraintCons{\constrain{\tau_1}{\tau_2}}{C}
+        }{G_4}
+    }{U-I-C}
+
+    \judgment{
+        \unify{G_1}{C}{G_2}\\
+        \incomplete{\tau_2}\\
+        \ptypGraphAdd{G_2}{\tau_2}{G_3}\\
+        \ptypGraphUpdate{G_3}{\tau_2}{\ptypSingle{P(\tau_1)}}{G_4}
+    }{
+        \unify{G_1}{
+            \constraintCons{\constrain{\tau_1}{\tau_2}}{C}
+        }{G_4}
+    }{U-C-I}
+
+    \judgment{
+        \unify{G}{C}{G'}
+    }{
+        \unify{G}{\constraintCons{c}{C}}{G'}
+    }{U-C-C}
+
+    \judgment{ }{\unify{G}{\listNil}{G}}{U-Nil}
+
+\end{mathpar}
+
+\judgbox{\ensuremath{\ptsSnapshot{G}{s}{j}}}
+\begin{mathpar}
+    \judgment{
+        \leader{G}{\tau}{\tau_l}{u_l}\\
+        list(u_l) \equiv l_l \\
+        \listSnapshot{G}{l_l}{j}
+    }{
+        \ptsSnapshot{G}{\ptsRep{\tau}}{j}
+    }{Snap-Rep}
+
+    \judgment{
+        list(u_l) \equiv l_l \\
+        \listSnapshot{G}{l_l}{j}
+    }{
+        \ptsSnapshot{G}{\ptsLead{u}}{j}
+    }{Snap-Lead}
+\end{mathpar}
+
+\judgbox{\ensuremath{\listSnapshot{G}{l}{j}}}
+\begin{mathpar}
+    \judgment{ }{
+        \listSnapshot{G}{\listNil}{\listNil}
+    }{Snap-Nil}
+
+    \judgment{
+        \ptsSnapshot{G}{s_1}{j_1}\\
+        \ptsSnapshot{G}{s_2}{j_2}\\
+        \listSnapshot{G}{tl}{j_{tl}}
+    }{
+        \listSnapshot{G}{ 
+            \listCons{\TArrow{s_1}{s_2}}{tl}
+        }{
+            \listCons{\TArrow{j_1}{j_2}}{j_{tl}}
+        }
+    }{Snap-Arrow}
+
+    \judgment{
+        \listSnapshot{G}{tl}{j_{tl}}
+    }{
+        \listSnapshot{G}{\listCons{\TUnknown^p}{tl}}{j_{tl}}
+    }{Snap-Unk}
+
+    \judgment{
+        \listSnapshot{G}{tl}{j_{tl}}
+    }{
+        \listSnapshot{G}{\listCons{t}{tl}}{\listCons{t}{j_{tl}}}
+    }{Snap-Lit}
+\end{mathpar}
+
+\judgbox{\ensuremath{\solution{j}{\tau}}}
+\begin{mathpar}
+    \judgment{
+        \fresh{n}
+    }{
+        \solution{\listNil}{\TUnknown^n}
+    }{S-Solvable-Unk}
+
+    \judgment{
+        \solution{j_1}{\tau_1}\\
+        \solution{j_2}{\tau_2}
+    }{
+        \solution{\listCons{\TArrow{j_1}{j_2}}{\listNil}}{\TArrow{\tau_1}{\tau_2}}
+    }{S-Solvable-Arr}
+
+    \judgment{ }{
+        \solution{\listCons{k}{\listNil}}{T(k)}
+    }{S-Solvable-Lit}
+
+    \judgment{
+        \fresh{n}
+    }{
+        \solution{\listCons{k}{tl}}{\TUnknown^n}
+    }{S-Unsolvable}
+\end{mathpar}
+
+\judgbox{\ensuremath{\snapSubset{j_1}{j_2}}}
+\begin{mathpar}
+\judgment{
+    \snapElement{h}{j}\\
+    \snapSubset{tl}{j}
+}{
+    \snapSubset{\listCons{h}{tl}}{j}
+}{J-Cons-Subset}
+
+\end{mathpar}
+
+\judgbox{\ensuremath{\snapElement{h}{j}}}
+\begin{mathpar}
+\judgment{
+    h ~=~ hd
+}{
+    \snapElement{h}{\listCons{hd}{tl}}
+}{H-In-Equal}
+
+\judgment{
+    \snapSubset{j_1}{j_3}\\
+    \snapSubset{j_2}{j_4}
+}{
+    \snapElement{\TArrow{j_1}{j_2}}{\listCons{\TArrow{j_3}{j_4}}{tl}}
+}{H-In-Equal}
+
+\judgment{
+    \snapElement{h}{tl}
+}{
+    \snapElement{h}{\listCons{hd}{tl}}
+}{H-In-Equal}
+\end{mathpar}
+
+\subsection{Theorems}
+\begin{lemma}[name=Potential Types Union Totality] For any $u_1$ and $u_2$, it must be that there exists some $u_3$ such that $\ptypsUnion{u_1}{u_2} \equiv u_3$
+\begin{proof}
+By induction on the structure of $\ptypsUnion{u_1}{u_2}$
+\end{proof}
+\end{lemma}
+
+\noindent\rule{\textwidth}{1pt}
+
+\todo{Prove this}
+% TODO: needs to be snapshot(u_1) is subset of snapshot(u_1 UNION u_2)
+% TODO: and snapshot(u_2) is subset of snapshot(u_1 UNION u_2)
+\begin{lemma}[name=Potential Types Union Correctness]\
+\begin{enumerate}
+    \item $\ptypSetSubset{G}{snapshot_u u_1}{snapshot_u (\ptypsUnion{u_1}{u_2})}$
+    \item $\ptypSetSubset{G}{snapshot_u u_2}{snapshot_u (\ptypsUnion{u_1}{u_2})}$
+\end{enumerate}
+\begin{proof}
+\begin{enumerate}
+\item By totality (previous lemma) there must be some $u_3$ such that $u_3 \equiv \ptypsUnion{u_1}{u_2}$
+\item Let $j_1$ be the snapshot of $u_1$ and $j_2$ be the snapshot of $u_2$.
+\item Let $l_1$ be $list(u_1)$ and $l_2$ be $list(u_2)$.
+\item fdsa
+\end{enumerate}
+\end{proof}
+\end{lemma}
+
+\noindent\rule{\textwidth}{1pt}
+
+\begin{lemma}[name=Leader Correctness]
+Let any "well formed" graph be one for which all potential type sets $s$ associated with some type $\tau$ are either $\ptsLead{u}$ for some $u$ or eventually refer to a $\ptsLead{u}$ through a chain of $\ptsRep{\tau'}$ within $G$ where for all $\tau'$ referred to within some $\ptsRep{\tau'}$, it must be that $\isIn{\tau'}{\dom(G)}$.
+
+For any well formed $G$ and $\tau$, if $\isIn{\tau}{\dom(G)}$ then there must exist some $\tau_l$ and $u_l$ such that $\leader{G}{\tau}{\tau_l}{u_l}$.
+\end{lemma}
+
+\begin{proof}
+    Proceed by induction.
+    Assume $G$ well formed and that $\isIn{\ptypGraphNode{\tau}{s}}{G}$.
+
+    Base Case: $s = \ptsLead{u}$ for some $u$. By L-Self, it must be the case that $\leader{G}{\tau}{\tau_l}{u}$ 
+
+    Suppose $s = \ptsRep{\tau'}$
+    
+    Inductive Hypothesis: There exists some $\tau_l'$ and $u_l'$ such that $\leader{G}{\tau}'{\tau_l'}{u_l'}$.
+
+    Inductive Step: By the inductive hypothesis, we can determine that $\leader{G}{\tau'}{\tau_l'}{u_l'}$. Consequently, by L-Rep, it must be the case that $\leader{G}{\tau}{\tau_l'}{u_l'}$.
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+% Define graph well formatted-ness in terms of leader correctness
+
+\begin{lemma}[name=Update Correctness]
+For any $\tau$ and $u$ and well formed $G$, it must be the case that:
+\begin{enumerate}
+    \item If $\isNotIn{\tau}{\dom(G)}$, then $\ptypGraphUpdate{G}{\tau}{u}{(G, \ptypGraphNode{\tau}{\ptsLead{u}})}$
+    \item If $\isIn{\tau}{\dom(G)}$, then $\ptypGraphUpdate{G}{\tau}{u}{(G, \ptypGraphNode{\tau_l}{\ptsLead{\ptypsUnion{u_l}{u})}}}$
+\end{enumerate}
+Where the final graph outputted is well formed.
+\end{lemma}
+
+\begin{proof}
+    Let $G$ be an arbitrary well formed graph, $\tau$ be an arbitrary type, and $u$ be an arbitrary PotentialTypes. Proceed by cases.
+    \begin{itemize}
+        \item Suppose $\isNotIn{\tau}{\dom(G)}$. Then by Update-New-Key, it must be that $\ptypGraphUpdate{G}{\tau}{u}{(G, \ptypGraphNode{\tau}{\ptsLead{u}})}$. Since $G$ was well formed and $\tau$ was added with a direct link to some leader, the outputted graph is well formed.
+        \item Suppose that $\isIn{\tau}{\dom(G)}$. By Leader Correctness, since $G$ is well formatted, it must be the case that $\leader{G}{\tau}{\tau_l}{u_l}$. Furthermore, by Potential Types Union Totality, there exists some $u_l'$ such that $\ptypsUnion{u_l}{u} \equiv u_l'$. By Update-Old-Key, we can then conclude that $\ptypGraphUpdate{G}{\tau}{u}{(G, \ptypGraphNode{\tau_l}{\ptsLead{\ptypsUnion{u_l}{u}}})}$. Since $G$ was well formed and $\tau_l$ was previous a leader of some nodes and remains as such, it must be that the outputted graph is still well formed.
+    \end{itemize}
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+
+\begin{lemma}[name=Addition Correctness]
+Consider any well formed $G$ and $\tau$ where $\incomplete{\tau}$.
+There must exist some $G_{new}$ such that $\ptypGraphAdd{G}{\tau}{G \cup G_{new}}$ where  $G_{new}$ consists only of incomplete types not already in $G$ and where if it was not the case that $\isIn{\tau}{\dom(G)}$, then $\ptypGraphNode{\tau}{\ptsLead{\ptypSingle{P(\tau_1)}}} \in G_{new}$. Additionally, any graphs outputted by the judgement must be well formed.
+\end{lemma}
+
+\begin{proof}
+     Proceed by induction.
+     Assume $G$ is a well formed graph and $\incomplete{\tau}$. Let the predicate $I(G, \tau)$ be true if and only if there exists some $G_{new}$ such that $\ptypGraphAdd{G}{\tau}{G \cup G_{new}}$ where  $G_{new} = \{ \ptypGraphNode{\tau_{new}}{\ptsLead{\ptypSingle{\tau_{new}}}} ~|~ \isIn{\tau_{new}}{decompose(\tau)} \wedge \isNotIn{\tau}{dom(G)} \wedge \incomplete{\tau_{new}} \}$\\
+     
+     Base Case: $\tau$ does not equal $\TArrow{\tau_1}{\tau_2}$ for any $\tau_1$ and $\tau_2$. Proceed by cases
+     \begin{itemize}
+         \item $\isNotIn{\tau}{\dom(G)}$: By Update correctness, it must be the case that $\ptypGraphUpdate{G}{\tau}{u}{(G, \ptypGraphNode{\tau}{\ptsLead{u}})}$. By Add-I, it must be the case that $\ptypGraphAdd{G}{\tau}{(G, \ptypGraphNode{\tau}{\ptsLead{u}}}$.
+         Since $\tau$ has no children and is incomplete, $decompose(\tau) = \{ \tau \}$. Since $\isNotIn{\tau}{\dom(G)}$, it must be that $G_{new} = \{ \tau \}$. Therefore, $I(G, \tau)$ must be true.
+         \item $\isIn{\tau}{\dom(G)}$: Since $\tau$ has no children and is incomplete, $decompose(\tau) = \{ \tau \}$. However, since $\isIn{\tau}{\dom(G)}$, it must be that $G_{new} = \{ \}$. Therefore, $I(G, \tau)$ must be trivially true.
+     \end{itemize}
+
+    Let $\tau = \TArrow{\tau_1}{\tau_2}$ for some $\tau_1$ and $\tau_2$. Proceed by cases
+    
+    Inductive Hypothesis: $I(G_1, \tau_1)$ and $I(G_2, \tau_2)$
+    
+    Inductive Step: $\tau$ must be $\TArrow{\tau_1}{\tau_2}$ for any $\tau_1$ and $\tau_2$. $decompose(\tau) = \{ \tau, decompose(\tau_1), decompose(\tau_2) \}$. Proceed by cases.
+
+    \begin{itemize}
+        \item Only $\incomplete{\tau_1}$: 
+        \item Only $\incomplete{\tau_2}$: 
+        \item $\incomplete{\tau_1}$ and $\incomplete{\tau_2}$: 
+    \end{itemize}
+    
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+% \begin{lemma}[name=Addition of New Arrows]
+% If for some well formed $G$ where $\isNotIn{\TArrow{\tau_1}{\tau_2}}{G}$, $\ptypGraphAdd{G}{\TArrow{\tau_1}{\tau_2}}{G'}$, then it must be the case that $\isIn{\tau_1}{G'}$, $\isIn{\tau_2}{G'}$, and that $\isIn{\ptypGraphNode{\TArrow{\tau_1}{\tau_2}}{\ptsLead{\ptypSingle{\TArrow{\ptsRep{\tau_1}}{\ptsRep{\tau_2}}}}}}{G}$
+% \end{lemma}
+
+% \begin{proof}
+%     Since $\isNotIn{\TArrow{\tau_1}{\tau_2}}{G}$, we cannot utilize Add-Present and must use Add-Arr-I-I.
+% \end{proof}
+
+% \noindent\rule{\textwidth}{1pt}
+
+
+% \todo{merge this with the theorem below}
+% \begin{lemma}[name=Unified Graph Comprehensiveness] 
+% If $\unify{\cdot}{C}{G}$, then for all types $\tau$ in $C$ for which $\incomplete{\tau}$, there must exist some $\isIn{\ptypGraphNode{\tau}{S}}{G}$ where $\ptypSetSubset{G}{\ptypSingle{P(\tau)}}{s}$.
+% \end{lemma}
+
+% \noindent\rule{\textwidth}{1pt}
+
+\begin{theorem}[name=Unified Graph Correctness]
+For any constraint set $C$ and well formed graph $G$, must be the case that $\unify{G}{C}{G'}$ for some well formed $G'$ such that for all constraints $\constrain{\tau_1}{\tau_2}$ in $C$:
+    \begin{enumerate}
+        % \item If $\incomplete{\tau_1}$, then it must be that $\isIn{\ptypGraphNode{\tau_1}{s_1}}{G'}$ where if $\ptypSetSubset{G}{\ptypsUnion{\ptypSingle{P(\tau_1)}}{\ptypSingle{P(\tau_2)}}}{s_1}$. 
+        \item If $\incomplete{\tau_1}$, then it must be that $\isIn{\ptypGraphNode{\tau_1}{s_1}}{G'}$ where if $\ptsSnapshot{G}{s_1}{j_1}$, then $\snapElement{H(\tau_1)}{j_1}$. 
+        % \item If $\incomplete{\tau_2}$, then it must be that $\isIn{\ptypGraphNode{\tau_2}{s_2}}{G'}$ where $\ptypSetSubset{G}{\ptypsUnion{\ptypSingle{P(\tau_1)}}{\ptypSingle{P(\tau_2)}}}{s_2}$
+        \item If $\incomplete{\tau_2}$, then it must be that $\isIn{\ptypGraphNode{\tau_2}{s_2}}{G'}$ where if $\ptsSnapshot{G}{s_2}{j_2}$, then $\snapElement{H(\tau_2)}{j_2}$
+        \item If both $\incomplete{\tau_1}$ and $\incomplete{\tau_2}$, then in addition to the previous two conditions, it must be that $\leader{G'}{\tau_1}{\tau_l}{u}$ and $\leader{G'}{\tau_2}{\tau_l}{u}$.
+    \end{enumerate}
+where the outputted graph must always be well formed.
+\end{theorem}
+
+\begin{proof}
+\todo{come back to this after anand finalizes proof of union correctness and adjust usage accordingly and then polish it more}
+We proceed by induction. Let us define the predicate $I(C, G)$ where $I(C, G)$ is true if conditions 1-3 above hold for all constraints $C$ with graph $G$ and is false otherwise.\\
+Base Case:
+By U-Nil, it must be that $\unify{G}{\listNil}{G}$. Trivially, the premise holds for all constraints as there are none.\\
+For all other cases, let $C = \constraintCons{\constrain{\tau_1}{\tau_2}}{C_{tl}}$.\\
+Inductive Hypothesis: 
+For $C_{tl}$ and graph $G$, it must be the case that $\unify{G_1}{C_{tl}}{G_2}$ where $I(C_{tl}, G_2)$ is true where $G_2$ is well formed\\
+Inductive Step:
+We proceed by cases\\
+Before commencing unification, repeatedly decompose pairs of arrows constrained to each other into two new constraints linking the left and right hand sides (in accordance with the properties of the constraint relation). Consequently, it must be the case that for all constraints $\constrain{\tau_1}{\tau_2}$, at least one of $\tau_1$ and $\tau_2$ must not be an arrow type.
+For all cases below, we begin by applying the inductive hypothesis to determine that there exists some $G_2$ such that $\unify{G_1}{C_{tl}}{G_2}$ and $I(C_{tl}, G_2)$ holds. 
+\begin{itemize}
+    \item Suppose it is the case that only $\incomplete{\tau_1}$.
+    Proceed by cases:
+    \begin{itemize}
+        \item Suppose $\isIn{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_1}{G_2}$. Let $G_f \equiv (G, \ptypGraphNode{\tau_l}{\ptsLead{\ptypsUnion{u_l}{\ptypSingle{P(\tau_2)}}}})$. By Update Correctness, it must be the case that $\ptypGraphUpdate{G_2}{\tau_1}{\ptypSingle{P(\tau_2)}}{G_f}$. Therefore, by U-I-C, it must be that $\unify{G_1}{C}{G_f}$. By snapshot totality, there must exist some $j$ such that $\ptsSnapshot{G_f}{\ptsLead{\ptypsUnion{u_l}{\ptypSingle{P(\tau_2)}}}}{j}$. By Potential Types Union Correctness, it must be the case that condition 1 holds. Trivially, conditions 2-3 hold for the first constraint. Furthermore, since $G$ was retained in our final graph and no additions were made to elements of it other than $\tau_l$, for which conditions 1-3 are shown to hold, it must be the case that $I(C, G_f)$.
+        
+        \item Suppose $\isNotIn{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau}{G_2 \cup G_{new}}$ where $G_{new}$ consists only of elements not already in $G_2$, including $\ptypGraphNode{\tau_1}{\ptsLead{\ptypSingle{P(\tau_1)}}}$. 
+
+        Let $G_f \equiv G_2 \cup G_{new}, \ptypGraphNode{\tau_1}{\ptsLead{\ptypsUnion{\ptypSingle{P(\tau_1)}}{\ptypSingle{P(\tau_2)}}}}$.
+        By Update Correctness, it must be the case that $\ptypGraphUpdate{G_2 \cup G_{new}}{\tau_1}{\ptypSingle{P(\tau_2)}}{G_f}$. Therefore, by U-I-C, it must be that $\unify{G_1}{C}{G_f}$. By snapshot totality, there must exist some $j$ such that $\ptsSnapshot{G_f}{\ptsLead{\ptypsUnion{\ptypSingle{P(\tau_1)}}{\ptypSingle{P(\tau_2)}}}}{j}$. By Potential Types Union Correctness, it must be the case that condition 1 holds. Trivially, conditions 2-3 hold for the first constraint. Furthermore, since $G$ was retained in our final graph and no additions were made to elements of it other than $\tau_l$, for which conditions 1-3 are shown to hold, it must be the case that $I(C, G_f)$.
+        
+        % By Update Correctness, it must be the case that $\ptypGraphUpdate{G_2 \cup G_{new}}{\tau_1}{\ptypSingle{P(\tau_2)}}{(G_2, \ptypGraphNode{\tau_l}{(\ptypsUnion{u_l}{\ptypSingle{P(\tau_2)}})}, \ptypGraphNode{\tau_1}{\ptsRep{\tau_l}})}$.
+    \end{itemize}
+    \item Suppose it is the case that only $\incomplete{\tau_2}$. $I(C, G_f)$ can be determined using the same logic above, where all invocations of $\tau_1$ and $\tau_2$ are reversed and U-C-I is used to establish unification success instead of U-I-C.
+    
+    \item Suppose it is the case that both $\incomplete{\tau_1}$ and $\incomplete{\tau_2}$. By the inductive hypothesis, $\unify{G_1}{C_{tl}}{G_2}$. 
+
+    We begin by noting that for any arbitrary well formed $G_l$ where $G_l$ contains $\tau_1$ and $\tau_2$, we can establish the following derivation, which we will refer to below as Leader Success:
+    
+    By leader correctness, it must be that $\leader{G_l}{\tau_1}{\tau_{1l}}{u_{1l}}$ and $\leader{G_l}{\tau_2}{\tau_{2l}}{u_{2l}}$ for some $\tau_{1l}, \tau_{2l}, u_{1l},$ and $ u_{2l}$. Furthermore, by Potential Types Union Totality, there must be some $u_{12}$ such that $\ptypsUnion{u_{1l}}{u_{2l}} \equiv u_{12}$. Consequently, we may apply U-I-I in order to derive that $\unify{G_l}{\listCons{\constrain{\tau_1}{\tau_2}}{C_{tl}}}{G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}}, \ptypGraphNode{\tau_2l}{\ptsRep{\tau_1l}}}$. By Potential Types Union Correctness, the the contents of both of the original potential type sets must be within the union. \todo{need to add part to theorem requiring this; transitivity proof assumes its there, it should be as simple as moving statements around here}
+
+    Since $\tau_{1l}$ and $\tau_{2l}$ were the leaders of $\tau_1$ and $\tau_2$ respectively, and since $\tau_{2l}$ now is represented by $\tau_{1l}$, it must be the case that $\leader{G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}}, \ptypGraphNode{\tau_2l}{\ptsRep{\tau_1l}}}{\tau_1}{\tau_{1l}}{u_{1l}}$ via L-Rep while $\leader{G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}}, \ptypGraphNode{\tau_2l}{\ptsRep{\tau_1l}}}{\tau_2}{\tau_{1l}}{u_{1l}}$ due to no changes in its leader's potential type set in $G_l$.
+
+    With this in mind, proceed by cases
+    \begin{itemize}
+        \item Suppose $\isIn{\tau_1}{G_2}$ and $\isIn{\tau_2}{G_3}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_2}{G_2}$. 
+
+        
+        Since both $\tau_1$ and $\tau_2$ were both in the graph, they must have been in some constraint within $C_{tl}$. Consequently, it must be that conditions 1 and 2 both hold for each. Furthermore, we may invoke Leader Success we may invoke Leader Success with $G_l = G_2$. Consequently, condition 3 also holds and $I(C, G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}})$ must be true.
+        
+
+        \item Suppose $\isIn{\tau_1}{G_2}$ and $\isNotIn{\tau_2}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_2}{G_2 \cup G_{new}}$ where $G_{new}$ consists only of elements not already in $G_2$, including $\ptypGraphNode{\tau_2}{\ptsLead{\ptypSingle{P(\tau_2)}}}$. 
+
+        Since $\tau_1$ was already in the graph $G_2$, it must be that condition 1 holds. Since $\tau_2$ added, where by Addition correctness, the graph is only changed by the addition of new nodes, including $\ptypGraphNode{\tau_2}{\ptsLead{\ptypSingle{P(\tau_2)}}}$, It must be the case that condition 2 also holds. 
+
+        Since both $\tau_1$ and $\tau_2$ are both in the graph, we may invoke Leader Success we may invoke Leader Success with $G_l = G_2 \cup G_{new}$. Consequently, condition 3 also holds and $I(C, G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}})$ must be true.
+
+        \item Suppose $\isNotIn{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_1}{G_2 \cup G_{new}}$ where $G_{new}$ consists only of elements not already in $G_2$, including $\ptypGraphNode{\tau_1}{\ptsLead{\ptypSingle{P(\tau_1)}}}$. Suppose $\isIn{\tau_2}{G_2 \cup G_{new}}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2 \cup G_{new}}{\tau_2}{G_2 \cup G_{new}}$.
+
+        \todo{create subset lemma that lets you easily derive trivial subsets like tau is a subset of itself converted to a ptypset}
+        Since $\tau_1$ was added, where by Addition correctness, the graph is only changed by the addition of new nodes, including $\ptypGraphNode{\tau_1}{\ptsLead{\ptypSingle{P(\tau_1)}}}$, It must be the case that condition 1 holds by Potential Types Subset Correctness. Since $\tau_2$ is already in $G_2 \cup G_{new}$, it must be the case that either $\tau_2$ was already added after unification on $C_{tl}$, or that it was added at the same time as $\tau_1$. If the former, by the inductive hypothesis, condition 1 must hold. If the latter, Addition correctness guarantees the newly added node must have the form $\ptypGraphNode{\tau_2}{\ptsLead{\ptypSingle{P(\tau_2)}}}$. In both cases, it must be the case that condition 1 holds by Potential Types subset correctness.
+
+        Since both $\tau_1$ and $\tau_2$ are both in the graph, we may invoke Leader Success with $G_l = G_2 \cup G_{new}$. Consequently, condition 3 also holds and $I(C, G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}})$ must be true.
+
+        \item Suppose $\isNotIn{\tau_1}{G_2}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2}{\tau_1}{G_2 \cup G_{new}}$ where $G_{new}$ consists only of elements not already in $G_2$, including $\ptypGraphNode{\tau_1}{\ptsLead{\ptypSingle{P(\tau_1)}}}$. 
+        
+        Suppose $\isNotIn{\tau_2}{G_2 \cup G_{new}}$. By Add Correctness, it must be the case that $\ptypGraphAdd{G_2 \cup G_{new}}{\tau_2}{G_2 \cup G_{new} \cup G_{new'}}$ where $G_{new'}$ consists only of elements not already in $G_2 \cup G_{new}$, including $\ptypGraphNode{\tau_2}{\ptsLead{\ptypSingle{P(\tau_2)}}}$. 
+
+        Since $\tau_1$ was added, where by Addition correctness, the graph is only changed by the addition of new nodes, including $\ptypGraphNode{\tau_1}{\ptsLead{\ptypSingle{P(\tau_1)}}}$, It must be the case that condition 1 holds by Potential Types Subset Correctness. Since $\tau_2$ was added, where by Addition correctness, the graph is only changed by the addition of new nodes, including $\ptypGraphNode{\tau_2}{\ptsLead{\ptypSingle{P(\tau_2)}}}$, It must be the case that condition 2 holds by Potential Types Subset Correctness.
+
+        Since both $\tau_1$ and $\tau_2$ are both in the graph, we may invoke Leader Success where $G_l = G_2 \cup G_{new} \cup G_{new'}$. Consequently, condition 3 also holds and $I(C, G_l, \ptypGraphNode{\tau_1l}{\ptsLead{u_{1l}}})$ must be true.
+    \end{itemize}
+\end{itemize}
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+
+\begin{theorem}[name=Unified Graph Transitivity]
+Assume $\unify{\cdot}{C}{G}$. Let $C' \equiv \{ \isIn{\constrain{\tau_1}{\tau_2}}{C} ~|~ \constrain{\tau_2}{\tau_1} \}$. Let $C_{trans}$ be an arbitrary set of constraints related via transitivity in $C \cup C'$.
+There must exist some $\tau_l$ and $u_l$ such that for all $\isIn{\tau}{C_{trans}}$ where $\incomplete{\tau}$, it is the case that $\leader{G}{\tau}{\tau_l}{u_l}$
+\end{theorem}
+
+\begin{proof}
+    Proceed by Induction.
+    By Unified Graph Correctness, all incomplete types referenced in constraints must have potential type sets in $G$ that contain themselves and their constrained types. 
+    
+    Base Cases: By Unified Graph Correctness, it must be the case that a constraint set of form $\listCons{\constrain{\tau_1}{\tau_2}}{\listNil}$ has this property. Trivially, it must be the case that a constraint set of form $\listNil$ must also have this property, as it must contain no incomplete types.
+
+    $T = \listCons{\constrain{\tau_1}{\tau_2}}{T_{tl}}$
+
+    Inductive Hypothesis: The theorem holds for all types referenced in $C_{tl}$
+
+    Inductive Step: Since $T$ is a transitively constrained set, it must be the case that $T_{tl} = \listCons{\constrain{\tau_2}{\tau_3}}{T_{end}}$. By the inductive hypothesis, it must be the case that all the theorem holds for all such constraints, and they consequently all share a leader representing their solution. By Unified Graphg correctness, $\constrain{\tau_1}{\tau_2}$ must also share a leader as they are both incomplete. Since $\tau_2$ shares a potential type set leader with both $\tau_1$ and all members of $T_{tl}$, where $\tau_2$ only has one potential type set leader by as $G$ is well formed, it must be the case that the leader of $\tau_1$ is also that of all incomplete types in $T_{tl}$  
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+
+\todo{This is wrong. Fix this and the constraint relation definition}
+\begin{theorem}[name=Constraint Satisfaction and Synthesizability]
+    % Constraints relating to a given type hole represent all required consistencies needed for synthesis to succeed. If all constraints for are satisfied, the program must synthesize a type.
+    Assume $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$.\\
+    Let $C'$ be the set of all unique constraints that can generated from $C$ using the constraint relation inference rules.\\
+    Let $V = \{ \tau \in C \}$, and let $G = (V, C')$.\\
+    Consider the transitive closure of $G$, $G^* = (V, C'^*)$. Let $s$ be the neighborhood of $\tau$ in $G^*$ and let $\TMV'$ be any type consistent with all members of $s$. \\
+    Suppose we were to replace all annotations in $\ECMV$ containing $\TMV$ with $\TMV'$, thus yielding $\ECMV_{repl}$. There must exist some $\ctx_{sugg}$, $\TMV_{sugg}$, and $C_{sugg}$ such that  $\synConstraint{\ctx_{sugg}}{\ECMV_{repl}}{\TMV_{sugg}}{C_{sugg}}$ (without further marking of $\ECMV_{repl}$).
+\end{theorem}
+
+\noindent\rule{\textwidth}{1pt}
+\todo{If we have time, it'd be nice to also prove that the gamma', tau', and C' are all the same as the original values, only now the unknown type is replaced everywhere with the solved type}
+
+\begin{theorem}[name=Solution Correctness] Suppose that $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ where the type annotation $\TUnknown^p$ is in $\ECMV$. Furthermore, suppose that $\unify{\cdot}{C}{G}$,~ $\isIn{\ptypGraphNode{\TUnknown^p}{s}}{G}$,~ $\ptsSnapshot{G}{s}{j}$, and ~$\solution{j}{\tau}$. \\
+Let $\ECMV'$ be the result of replacing the annotation $\TUnknown^p$ in $\ECMV$ with $\tau$. \\
+There must exist some $\ctx'$, $\TMV'$, and $C'$ that $\synConstraint{\ctx'}{\ECMV'}{\TMV'}{C'}$.
+\end{theorem}
+
+\begin{proof}
+    By Constraint Satisfaction and Synthesizability, it must be the case that $C$ represents all consistencies necessary for synthesis of $\ECMV$ to succeed. By Unified Graph Correctness, it must be the case that there is some $\isIn{\ptypGraphNode{?^p}{s}}{G}$. By Incomplete Type Transitivity, it must be that this potential type set contains all types ever constrained to $?^p$. By snapshot totality, it must be the case that there exists some $j$ such that $\ptsSnapshot{G}{s}{j}$. By Solution Correctness, it must be the case that there exists some $\tau$ such that $\solution{j}{\tau}$ where $\tau$ is consistent with all types added in the snapshot representing all types constrained to $?^p$. Consequently, it must be that replacing $?^p$ in $\ECMV$ does not violate any constraints, as consistency succeeds for them all. Since the constraints represented all required checks for consistency, it must be that there exists some $\ctx'$, $\TMV'$, and $C'$ that $\synConstraint{\ctx'}{\ECMV'}{\TMV'}{C'}$.
+\end{proof}
+
+\noindent\rule{\textwidth}{1pt}
+
+\textit{\textbf{Related Work}}
+
+The contributions of this paper build directly on the Hazelnut type system \cite{HazelnutPOPL}, which is discussed extensively throughout. Non-empty holes in Hazelnut generalize to marks in this work. In brief, we contribute a total marking procedure and type hole inference procedure for a system based closely on Hazelnut, and use it to fix some expressiveness issues in Hazelnut's edit action calculus.
+
+Our focus is on localization and recovery but not type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
+
+\citet{GradualInfer} introduces a variation of unification specifically for gradually typed languages based on Huet's unification algorithm \cite{Huet}. Other common approaches to unification are generally based on Hindley-Milner type inference \cite{MilnerInfer}. While \citet{GradualInfer} provides an algorithm which infers the types for a correct program, it does not provide any method for error localization and recovery if the constraint set cannot be solved.
+
+\citet{garcia:2015} presents a static implicitly typed language, where users opt into dynamism by annotating an expression with the gradual type "?", and an associated type inference algorithm. By contrast, the Hazelnut type system assigns gradual types to programs that would ordinarily not type-check in a non-gradual system by wrapping them in expression holes. The type inference algorithm presented in \citet{garcia:2015} also does not specify what to do if the constraint set cannot be solved. If a single static type cannot be determined for an expression, its type is simply "undefined", whereas our Type Hole Inference algorithm provides a list of suggestions derived from any conflicting constraints if a single substitution cannot be determined.
+
+% Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 
+
+The generation of correcting sets is a common approach to error localization. The correcting set is assigned blame for failure in type inference \cite{sherrloc, typeinferDif, Pavlinovic2015}. Other approaches to assigning blame include statistically derived approaches that leverage machine learning to predict the best candidates for blame \cite{SeidelBlame}. Our focus in this paper was to avoid heuristics and data-driven approaches and instead focus on systematic semantic approaches. Data-driven approaches could perhaps be layered to improve suggestions.
+
+Explanations for type errors can be well illustrated by providing sample inputs (dynamic witnesses) that elicit runtime errors. With this approach, one can generate graphs for visualizing the execution of witnesses and heuristically identify the source of errors with around 70\% accuracy \cite{Seidel2016}.
