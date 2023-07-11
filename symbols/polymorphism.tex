@@ -1,0 +1,141 @@
+% !requires types, marked
+
+%
+% types
+%
+
+% syntax
+\newcommand{\TVarMV}{\ensuremath{\alpha}}
+\newcommand{\TForall}[2]{\ensuremath{\forall #1. ~#2}}
+
+% substitution
+\newcommand{\subst}[3]{\ensuremath{#1[#2 / #3]}}
+
+% marked
+\newcommand{\MTMName}{{\normalfont\textsf{MType}}}
+\newcommand{\MTMV}{\ensuremath{\check{\TMV}}}
+
+\newcommand{\MTJoin}[2]{\ensuremath{\TJoin{#1}{#2}}}
+
+\newcommand{\MTUnknown}{\ensuremath{\TUnknown}}
+\newcommand{\MTNum}{\ensuremath{\TNum}}
+\newcommand{\MTBool}{\ensuremath{\TBool}}
+\newcommand{\MTArrow}[2]{\ensuremath{\TArrow{#1}{#2}}}
+\newcommand{\MTProd}[2]{\ensuremath{\TProd{#1}{#2}}}
+\newcommand{\MTVarMV}{\ensuremath{\TVarMV}}
+\newcommand{\MTUnbound}[1]{\ensuremath{\MTMarkedUnbound{#1}}}
+\newcommand{\MTForall}[2]{\ensuremath{\TForall{#1}{#2}}}
+
+\newcommand{\MTMarked}[3]{\ensuremath{\textcolor{red}{\bm{\llparenthesis}#1\bm{\rrparenthesis}_{#2}^{#3}}}}
+\newcommand{\MTMarkedUnbound}[1]{\ensuremath{\MTMarked{#1}{\MRUnbound}{}}}
+
+%
+% expressions
+%
+
+% unmarked
+\newcommand{\ETypeLam}[2]{\ensuremath{\ECTypeLam{#1}{#2}}}
+\newcommand{\ETypeAp}[2]{\ensuremath{\ECTypeAp{#1}{#2}}}
+
+% marked
+\newcommand{\ECTypeLam}[2]{\ensuremath{\Lambda #1. ~#2}}
+\newcommand{\ECTypeAp}[2]{\ensuremath{#1 ~[#2]}}
+
+\newcommand{\MRSynNonMatchedForall}{\ensuremath{\mathsmaller{\notMatchedForallRel}}}
+\newcommand{\MRAnaNonMatchedForall}{\ensuremath{\mathsmaller{\notMatchedForallRel}}}
+
+\newcommand{\ECMarkedSynNonMatchedForall}[1]{\ensuremath{\ECMarked{#1}{\MRSynNonMatchedForall}{\MRSyn}}}
+\newcommand{\ECMarkedAnaNonMatchedForall}[1]{\ensuremath{\ECMarked{#1}{\MRAnaNonMatchedForall}{\MRAna}}}
+
+\newcommand{\ECSynNonMatchedForall}[1]{\ensuremath{\ECMarkedSynNonMatchedForall{#1}}}
+\newcommand{\ECAnaNonMatchedForall}[1]{\ensuremath{\ECMarkedAnaNonMatchedForall{#1}}}
+
+\newcommand{\ECTypeApSynNonMatchedForall}[2]{\ensuremath{\ECTypeAp{\ECSynNonMatchedForall{#1}}{#2}}}
+\newcommand{\ECTypeLamAnaNonMatchedForall}[2]{\ensuremath{\ECAnaNonMatchedForall{\ECTypeLam{#1}{#2}}}}
+
+%
+% contexts
+%
+\newcommand{\tvarCtx}{\ensuremath{\Sigma}}
+\newcommand{\extendTvarCtx}[2]{\ensuremath{#1, #2}}
+\newcommand{\inTvarCtx}[2]{\ensuremath{#2 \in #1}}
+\newcommand{\notInTvarCtx}[2]{\ensuremath{\goodcolor{\colorFailSideJudge}{#2 \not\in #1}}}
+\newcommand{\withTvarCtx}[2]{\ensuremath{#1 \vdash #2}}
+\newcommand{\withTvarCtxNot}[2]{\ensuremath{\goodcolor{\colorFailSideJudge}{#1 \centernot\vdash #2}}}
+\newcommand{\withTvarCtxU}[2]{\ensuremath{#1 \goodcolor{\colorUText}{\vdash_{\hspace{-4.25pt}\scaleto{U}{3.5pt}}} #2}}
+\newcommand{\withTvarCtxUNot}[2]{\ensuremath{\goodcolor{\colorFailSideJudge}{#1 \centernot\vdash_{\hspace{-4.25pt}\scaleto{U}{3.5pt}} #2}}}
+\newcommand{\withTvarCtxM}[2]{\ensuremath{#1 \goodcolor{\colorMText}{\vdash_{\hspace{-4.25pt}\scaleto{M}{3.5pt}}} #2}}
+\newcommand{\withTvarCtxMNot}[2]{\ensuremath{\goodcolor{\colorFailSideJudge}{#1 \centernot\vdash_{\hspace{-4.25pt}\scaleto{M}{3.5pt}} #2}}}
+\newcommand{\withTvarCtxMK}[2]{\ensuremath{#1 \goodcolor{\colorMKText}{\vdash} #2}}
+
+\newcommand{\withBothCtx}[3]{\ensuremath{#1; #2 \vdash #3}}
+\newcommand{\withBothCtxU}[3]{\ensuremath{#1; #2 \goodcolor{\colorUText}{\vdash_{\hspace{-4.25pt}\scaleto{U}{3.5pt}}} #3}}
+\newcommand{\withBothCtxM}[3]{\ensuremath{#1; #2 \goodcolor{\colorMText}{\vdash_{\hspace{-4.75pt}\scaleto{M}{3.5pt}}} #3}}
+\newcommand{\withBothCtxMK}[3]{\ensuremath{#1; #2 \goodcolor{\colorMKText}{\vdash} #3}}
+
+%
+% judgments
+%
+
+% consistency
+\newcommand{\tvarCtxConsistent}[3]{\ensuremath{\withTvarCtx{#1}{\consistent{#2}{#3}}}}
+\newcommand{\tvarCtxConsistentU}[3]{\ensuremath{\withTvarCtxU{#1}{\consistent{#2}{#3}}}}
+\newcommand{\tvarCtxConsistentM}[3]{\ensuremath{\withTvarCtxM{#1}{\consistent{#2}{#3}}}}
+
+% well-formedness
+\newcommand{\tvarCtxWF}[2]{\ensuremath{\withTvarCtx{#1}{#2}}}
+\newcommand{\tvarCtxWFU}[2]{
+  \begin{highlightbox}{\colorUBkgSyn}
+    \ensuremath{\withTvarCtxU{#1}{#2}}
+  \end{highlightbox}}
+\newcommand{\tvarCtxWFM}[2]{
+  \begin{highlightbox}{\colorMBkgSyn}
+    \ensuremath{\withTvarCtxM{#1}{#2}}
+  \end{highlightbox}}
+
+\newcommand{\tvarCtxNotWF}[2]{\ensuremath{\withTvarCtxNot{#1}{#2}}}
+\newcommand{\tvarCtxNotWFU}[2]{\ensuremath{\withTvarCtxUNot{#1}{#2}}}
+\newcommand{\tvarCtxNotWFM}[2]{\ensuremath{\withTvarCtxMNot{#1}{#2}}}
+
+% matched forall
+\newcommand{\matchedForallRel}{\ensuremath{\matchedRel{\forall}}}
+\newcommand{\notMatchedForallRel}{\ensuremath{\notMatchedRel{\forall}}}
+\newcommand{\matchedForall}[3]{\ensuremath{#1 \goodcolor{\colorOkSideJudge}{\matchedForallRel} \TForall{#2}{#3}}}
+\newcommand{\notMatchedForall}[1]{\ensuremath{\goodcolor{\colorFailSideJudge}{#1 \notMatchedForallRel}}}
+
+% type marking
+\newcommand{\typeMarkedInto}[2]{\ensuremath{#1 \goodcolor{\colorMKText}{\looparrowright} #2}}
+\newcommand{\tvarCtxTypeMarkedInto}[3]{
+  \begin{highlightbox}{\colorMKBkgSyn}
+    \ensuremath{{\withTvarCtxMK{#1}{\typeMarkedInto{#2}{#3}}}}
+  \end{highlightbox}}
+
+% unmarked typing
+\newcommand{\bothCtxSynTypeU}[4]{
+  \begin{highlightbox}{\colorUBkgSyn}
+    \ensuremath{\withBothCtxU{#1}{#2}{\synTypeU{#3}{#4}}}
+  \end{highlightbox}}
+\newcommand{\bothCtxAnaTypeU}[4]{
+  \begin{highlightbox}{\colorUBkgAna}
+    \ensuremath{\withBothCtxU{#1}{#2}{\anaTypeU{#3}{#4}}}
+  \end{highlightbox}}
+
+% marked typing
+\newcommand{\bothCtxSynTypeM}[4]{
+  \begin{highlightbox}{\colorMBkgSyn}
+    \ensuremath{\withBothCtxM{#1}{#2}{\synTypeM{#3}{#4}}}
+  \end{highlightbox}}
+\newcommand{\bothCtxAnaTypeM}[4]{
+  \begin{highlightbox}{\colorMBkgAna}
+    \ensuremath{\withBothCtxM{#1}{#2}{\anaTypeM{#3}{#4}}}
+  \end{highlightbox}}
+
+% marking
+\newcommand{\bothCtxSynFixedInto}[5]{
+  \begin{highlightbox}{\colorMKBkgSyn}
+    \ensuremath{{\withBothCtxMK{#1}{#2}{\synFixedInto{#3}{#4}{#5}}}}
+  \end{highlightbox}}
+\newcommand{\bothCtxAnaFixedInto}[5]{
+  \begin{highlightbox}{\colorMKBkgAna}
+    \ensuremath{\withBothCtxMK{#1}{#2}{\anaFixedInto{#3}{#4}{#5}}}
+  \end{highlightbox}}
