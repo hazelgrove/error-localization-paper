@@ -70,7 +70,7 @@ module core.lemmas where
     with refl ← ▸-×-unicity τ▸ τ▸′                          = refl
 
   -- an expression that synthesizes a type may be analyzed against a consistent type
-  -- note that this NOT true with a glb definition of type join
+  -- note that this NOT true with a lub (where the unknown type is the top of the imprecision partial order) definition
   ⇒-~-⇐ : ∀ {Γ : Ctx} {e : UExp} {τ τ′ : Typ} → Γ ⊢ e ⇒ τ → τ′ ~ τ → Γ ⊢ e ⇐ τ′
   ⇒-~-⇐ USHole τ′~τ = UASubsume USHole ~-unknown₂ USuHole
   ⇒-~-⇐ (USVar ∋x) τ′~τ = UASubsume (USVar ∋x) τ′~τ USuVar
@@ -179,5 +179,5 @@ module core.lemmas where
   ⊢⇒-⊢⇐ ě@(⊢π₁⸨ _ ⸩[ τ!▸ ]) = ⊢⇒-⊢⇐-subsume ě MSuProjL2
   ⊢⇒-⊢⇐ ě@(⊢π₂ _ [ τ▸ ]) = ⊢⇒-⊢⇐-subsume ě MSuProjR1
   ⊢⇒-⊢⇐ ě@(⊢π₂⸨ _ ⸩[ τ!▸ ]) = ⊢⇒-⊢⇐-subsume ě MSuProjR2
-  ⊢⇒-⊢⇐ ě@(⊢⟦ ∌y ⟧)                           = ⊢⇒-⊢⇐-subsume ě MSuUnbound
+  ⊢⇒-⊢⇐ ě@(⊢⟦ ∌y ⟧)                           = ⊢⇒-⊢⇐-subsume ě MSuFree
   ⊢⇒-⊢⇐ ě@(⊢⦉ ě₁ ∙ ě₂ ∙ ě₃ ⦊[ τ₁~̸τ₂ ])        = ⊢⇒-⊢⇐-subsume ě MSuInconsistentBranches
