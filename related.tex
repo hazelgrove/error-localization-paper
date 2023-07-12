@@ -1,9 +1,27 @@
 \section{Related Work}
 \label{sec:related}
 
-The contributions of this paper build directly on the Hazelnut type system \cite{HazelnutPOPL}, which is discussed extensively throughout. Non-empty holes in Hazelnut generalize to marks in this work. In brief, we contribute a total marking procedure and type hole inference procedure for a system based closely on Hazelnut, and use it to fix some expressiveness issues in Hazelnut's edit action calculus.
+The contributions of this paper build directly on the Hazelnut type system \cite{HazelnutPOPL}, which is discussed extensively throughout. Non-empty holes in Hazelnut generalize to marks in this work. In brief, we contribute a total marking procedure (Section~\ref{sec:calculus}) and type hole inference scheme (Section~\ref{sec:thi}) for a system based closely on Hazelnut, and use it to fix some expressiveness issues in Hazelnut's edit action calculus (Section~\ref{sec:calculus-structured-editing}). 
+
+Hazelnut is in turn rooted in gradual type theory \cite{Siek06a, siek2015refined}, and we make extensive use of (only) the static aspects of gradual typing, namely the universal consistency of the unknown type, to enable recovery from marked errors, which can leave missing type information.
+
+Our focus was exclusively on static typing in this paper, and the results are relevant to the design of language servers for any statically typed language, but it is worth noting that the results in this paper, taken together with Hazel's support for maintaining syntactic well-formedness using structure editing \cite{DBLP:conf/vl/Moon023,moon2022tylr} and for running programs with holes and marked errors \cite{HazelLive}, allow our implementation of Hazel to achieve \emph{total liveness}: every editor state is syntactically, statically, and dynamically meaningful, without gaps.
+
+Type error localization is a well-studied problem in practice. This paper is the first to formally support the intuition that, in the words of \cite{BidirTyping}, ``bidirectional typing improves error locality''. Although there has been considerable folklore around error localization 
+for systems with local type inference, the problem has received little formal attention. We hope that this paper, with its rigorous formulation
+of type error localization and recovery for bidirectionally typed languages, will provide more rigorous grounding to language server development,
+much as bidirectional typing has done for type checker development.
+
+For systems rooted in constraint solving, there has been considerable work in improving error localization because it is notoriously well-understood that such systems make error localization difficult, and programmers are often confused by localization decisions \cite{DBLP:conf/popl/Wand86} because they are rooted in \emph{ad hoc} traversal orders \cite{mcadam1998unification,DBLP:journals/toplas/LeeY98}. More recently, there has been a series of papers on finding the most likely location for an error based on either manual weights \cite{DBLP:conf/popl/ZhangM14,DBLP:conf/oopsla/PavlinovicKW14} or learned weights \cite{SeidelBlame}.
+While improving the situation somewhat, these remain fundamentally \emph{ad hoc} in their need to guess intent. However, data-driven approaches could perhaps be layered atop type hole inference to improve the ranking or filtering of suggestions.
+
+A more neutral alternative is to derive a set of terms that contribute to an error, an approach known as type error slicing \cite{DBLP:conf/esop/HaackW03,DBLP:journals/tosem/TipD01,DBLP:conf/sfp/Schilling11}. This creates a large amount of information for the programmer to consume. Our approach is to instead simply report the constraint inconsistencies on a hole in the program and allow for the programmer to interactively refine their intent, so only the local inference system is responsible for identifying particular erroneous expressions. We do not make particular usability claims about the interactive affordances related to type hole inference in this paper, but rather simply claim a novel neutral point in the overall design space that uniquely combines local and global approaches. 
+
+Recent work on gradual liquid type inference described an exploratory interface for filling holes in refinement types by selecting from partial solutions to conflicting refinement type constraints \cite{DBLP:journals/pacmpl/VazouTH18}. This is similar in spirit to type hole inference as described in this paper, albeit targeting program verification predicates. 
 
 Our focus is on localization and recovery but not type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
+
+The underlying unification algorithm is essentially standard. In particular, we base our approach on the system described by \cite{GradualInfer}
 
 \citet{garcia:2015} presents a static implicitly typed language, where users opt into dynamism by annotating an expression with the gradual type "?", and an associated type inference algorithm. By contrast, the Hazelnut type system assigns gradual types to programs that would ordinarily not type-check in a non-gradual system by wrapping them in expression holes. The type inference algorithm presented in \citet{garcia:2015} also does not specify what to do if the constraint set cannot be solved. If a single static type cannot be determined for an expression, its type is simply "undefined", whereas our Type Hole Inference algorithm provides a list of suggestions derived from any conflicting constraints if a single substitution cannot be determined.
 
@@ -11,6 +29,15 @@ Our focus is on localization and recovery but not type error repair, as has been
 
 % Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 
 
-The generation of correcting sets is a common approach to error localization. The correcting set is assigned blame for failure in type inference \cite{sherrloc, typeinferDif, Pavlinovic2015}. Other approaches to assigning blame include statistically derived approaches that leverage machine learning to predict the best candidates for blame \cite{SeidelBlame}. Our focus in this paper was to avoid heuristics and data-driven approaches and instead focus on systematic semantic approaches. Data-driven approaches could perhaps be layered to improve suggestions.
-
 Explanations for type errors can be well illustrated by providing sample inputs (dynamic witnesses) that elicit runtime errors. With this approach, one can generate graphs for visualizing the execution of witnesses and heuristically identify the source of errors with around 70\% accuracy \cite{Seidel2016}.
+
+- Local constraint solving in the style of HM(X) ("Type Inference with Constrained Types", Odersky et al), interleaves local reasoning and constraint solving.
+
+- Inferno ("Hindley-milner elaboration in applicative style: functional pearl", by Pottier) showcases how to elaborate and solve constraints at the same time, which would allow you to emit marked terms and build up constraints in one fell swoop.
+
+- Pottier & Remy's "The essence of ML type inference" (for instance, OutsideIn(X) for GHC Haskell
+
+- Garcia and Cimini's POPL 2015 paper on type inference for gradually-typed languages, which improves substantially on the prior work of Siek and Vachharajani
+
+- Lennon-Bertrand et al.'s TOPLAS 2022 paper on Gradual CIC includes an integration of bidirectional typing and gradual typing
+
