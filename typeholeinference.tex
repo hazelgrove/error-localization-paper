@@ -216,31 +216,25 @@ Up until now, we have ignored rules that consider marked errors. This leads us t
 
 The remaining rules directly follow the intuitions above and are left to the supplemental material.
 
-\subsection{Unification and PotentialTypeSets}
+\subsection{Unification and Potential Type Sets}
 \label{sec:unification}
 
-To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer} to accumulate constraint information in \textit{PotentialTypeSet}s.
+To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer}, which accumulates constraint information in \textsf{PotentialTypeSet}s.
 
-A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. A single \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of information, we continuously extend some \emph{PotentialTypeSet}.
+A \textsf{PotentialTypeSet} is a recursive data structure representing the potential solutions for an unknown type, inferred from type constraints. A single \textsf{PotentialTypeSet} describes \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously extend the \textsf{PotentialTypeSet}.
 
 \begin{figure}[hbt!]
 \centering
-$\arraycolsep=4pt\begin{array}{lll}
-PotentialTypeSet~~ s & ::= 
-single(t) ~\vert~ 
-cons(t, s)
-\\
-PotentialType~~ t & ::= 
-  \tnum ~\vert~
-  \tbool ~\vert~
-  \tehole^p ~\vert~
-  \tarr{s}{s}
-  \\
+$\arraycolsep=4pt\begin{array}{rrcl}
+\textsf{PotentialTypeSet} & s & \Coloneqq & \textsf{single}(t) \mid \textsf{cons}(t, s) \\
+\textsf{PotentialType}    & t & \Coloneqq & \tnum \mid \tbool \mid \tehole^p \mid \tarr{s}{s}
 \end{array}$
 \label{fig:syntax_possible_type_sets}
 \end{figure}
 
-This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textit{PotentialTypeSet}s. Each \textit{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}. 
+This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}. 
+
+Note again that the novel contribution of this section is not in the particular unification algorithm but rather the architectural decisions that allow us to neatly blend local and constraint-based type inference systems for orthogonal purposes within the same system, and our focus on how to handle inconsistent constraints. As such, we direct the reader to prior work for the algorithmic, formal, and metatheoretic details of unification \cite{GradualInfer}.
 
 % \subsubsection{Constraints}
 % Individual constraints are written $\tau_1 \approx \tau_2$\todo[inline]{might be nice to have a definition box defining this judgement and maybe listing properties}. 
@@ -608,7 +602,7 @@ This choice allows us to continue past failures and unify any constraints, yield
 % % \subsubsection{Other Binary Types}
 % % Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. We follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
 
-\subsection{Polymorphic Generalization}
+\subsection{Polymorphic Generalization with Holes}
 \label{sec:polymorphicGlobal}
 % In order to extend our definitions of \emph{PotentialTypeSet}s to allow parametric polymorphism, we simply include a new ground type: $\TVar$.
 % \begin{center}
@@ -618,20 +612,19 @@ This choice allows us to continue past failures and unify any constraints, yield
 % \end{array}$
 % \end{center}
 % By representing all type variables this way, we enforce that type variables are only consistent with type holes and each other. 
-For the sake of minimality, our discussion above did not formalize parametric polymorphism. Integration of parametric polymorphism into type inference is well-understood. Type hole inference 
-creates only one particularly interesting wrinkle, having to do with the common practice of implicitly generalizing unconstrained type inference variables, here type holes. With the inclusion of expression holes in our system, we need to be a bit more careful in when we generalize. Consider the following expression:
+In many type inference systems, unconstrained type inference variables (here, unknown types) are automatically polymorphically generalized, so that
+functions can be given the most general type. The same approach can be taken with type hole inference, but with one particularly interesting wrinkle. With the inclusion of expression holes in our system, we need to be a bit more careful in when we generalize. Consider the following expression:
 $$\ECLam{x}{\TUnknown^1}{\EEHole^2}$$
 We can see that $\TUnknown^1$ is not constrained. Suppose that we were to suggest the implicitly universally quantified type variable $'a$ as a type hole filling for $?^1$. It is unlikely that the user accepts this suggestion because it is unlikely that the user intends to write the identity function!
 The fact there are not yet any constraints does not imply that there will not be once the expression hole is filled.
 
-To address this, we need to reason as if there are any number of \emph{unknown constraints} coming from expression holes.  This status can be represented with a new type of constraint: the $\mathtt{etc}$ constraint, which we add to our syntax of \emph{PotentialTypes} below. 
+To address this, we need to reason as if there are any number of \emph{unknown constraints} coming from expression holes.  This can be represented with a new type of constraint: the $\mathtt{etc}$ constraint, which we add to our syntax of \textsf{PotentialType}s below. 
 \begin{center}
-$\arraycolsep=4pt\begin{array}{lll}
-PotentialType~~ t & ::= 
-  \dots \mid \mathtt{etc}
+$\arraycolsep=4pt\begin{array}{rrcl}
+  \textsf{PotentialType} & t & \Coloneqq & \dots \mid \mathtt{etc}
 \end{array}$
 \end{center}
-When an expression hole appears, all type holes in the typing context are constrained to $\mathtt{etc}$. If a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized to a type variable.
+When an expression hole appears, all unknown types in the typing context are constrained to $\mathtt{etc}$. This has no impact on unification, but if a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized. 
 
 % \subsubsection{User Interaction and Conflict Highlighting}
 % To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.

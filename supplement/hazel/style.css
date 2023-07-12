@@ -237,8 +237,6 @@ svg {
 /* PAGE */
 
 #page {
-  overflow-x: auto;
-  overflow-y: auto;
   height: 100vh;
   width: 100vw;
   position: fixed;
@@ -246,6 +244,8 @@ svg {
   left: 0%;
   background-color: var(--light-page-color);
   color: var(--light-text-color);
+  display: flex;
+  flex-direction: column;
 }
 
 #font-specimen {
@@ -283,8 +283,6 @@ body {
 /* TOP BAR */
 
 #top-bar {
-  z-index: var(--top-bar-z);
-  position: fixed;
   box-sizing: border-box;
   width: 100%;
   min-width: fit-content;
@@ -444,7 +442,7 @@ body {
 .editor {
   display: flex;
   justify-content: space-between;
-  padding-bottom: 3em;
+  padding-bottom: 1em;
 }
 
 .editor.column {
@@ -458,8 +456,7 @@ body {
 }
 
 .editor.single {
-  position: relative;
-  top: 5em;
+  padding-top: 2em;
   padding-left: 2em;
 }
 
@@ -574,17 +571,11 @@ body {
 }
 
 .unsolved-empty-hole-path {
-  /* fill: #f0d1d1;
-  stroke: var(--err-color);
-  stroke-width: 1.2px;
-  stroke-dasharray: 1, 1;
-  vector-effect: non-scaling-stroke; */
   fill: #d001;
-  stroke-dasharray: 1, 1;
   stroke: var(--err-color);
-  stroke-width: 1.2px;
+  stroke-dasharray: 1, 1;
+  stroke-width: 0.75px;
   vector-effect: non-scaling-stroke;
-  /* mix-blend-mode: color;*/
 }
 
 .selection {
@@ -1082,6 +1073,22 @@ svg.tile-selected {
   gap: 0.5em;
 }
 
+.typ-view-conflict {
+  color: var(--err-color);
+  user-select: none;
+  display: inline-block;
+  background-color: #edebdc;
+  border-radius: 2em;
+  cursor: pointer;
+  border: solid 1px #edebdc;
+  padding: 0em 0.1em 0em 0.1em;
+  box-shadow: inset 1px 1px 9px -3px rgb(4 4 4 / 8%), 1px 2px 6px -2px rgb(0 0 0 / 1%);
+}
+
+.typ-view-conflict:hover {
+  background-color: #ffffff;
+}
+
 .typ-view.atom {
   color: var(--typ-text-color);
   display: flex;
@@ -1228,10 +1235,8 @@ svg.tile-selected {
 
 .bottom-bar {
   z-index: var(--result-z);
-  position: fixed;
   /*max-height: 3.2em;
   overflow-y: auto;*/
-  bottom: 0;
   left: 0;
   width: 100%;
   display: flex;
@@ -1240,7 +1245,6 @@ svg.tile-selected {
   background-color: var(--top_bar_icon_fill);
   color: #fdf6e3;
   justify-content: space-between;
-  /* padding-left: 0.2em;*/
 }
 
 .bottom-bar .cursor-inspector .gamma {
@@ -1913,4 +1917,9 @@ svg.expandable path {
   height: 1em;
   top: -1em;
   left: -1em;
+}
+
+#main {
+  overflow: auto;
+  flex: 1;
 }

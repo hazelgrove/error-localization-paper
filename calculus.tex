@@ -934,7 +934,10 @@ readers interested in browsing the mechanization, as possible, all rule names ma
 \subsection{Hazel Implementation}
 \label{sec:calculus-hazel}
 
-We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel language server. In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above). Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser. The supplemental material contains a pre-built implementation.
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel. % TODO citation and explain what in the world Hazel is (reviewer A stated that the lack of this made this section pretty much impossible to understand)
+In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above).
+Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser.
+The supplemental material contains a pre-built implementation.
 
 The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter2020hazel}, semantic navigation, semantic code completion \cite{potter2020hazel,blinn2022integrative}, contextualized documentation \cite{potter2022contextualized}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelLive}, even semantic services that require run-time information, like testing.
 % 

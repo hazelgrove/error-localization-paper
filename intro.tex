@@ -72,11 +72,11 @@ A less \emph{ad hoc} approach, which Hazel takes above, is to localize the incon
 \end{center}
 
 This localization decision affects how the system recovers as it proceeds into the let body. 
-If localization had assumed that the \li{then} branch is correct, as for example in \li{merlin}, then 
+If localization had assumed that the \li{then} branch were correct, as for example in \li{merlin}, then 
 \li{x : Bool} and an error should be reported on only the second use of \li{x}. 
-If the \li{else} branch was chosen, then \li{x : Int} and an error would be reported on only the first use of \li{x}. 
+If the \li{else} branch were chosen, then \li{x : Int} and an error would be reported on only the first use of \li{x}. 
  In either case, this error might mislead the programmer if the earlier localization guess was incorrect.
-If the inconsistency is localized to the conditional expression as a whole, as in Hazel, then we again confront the problem of missing type information: 
+If the inconsistency were localized to the conditional expression as a whole, as in Hazel, then we again confront the problem of missing type information: 
 \li{x} does not have a known type,
 though it \emph{is} known to be bound. 
 There is no definitive type or binding error at either use of \li{x}, 
@@ -96,7 +96,7 @@ type annotations to expressions \cite{Localinf,BidirTyping}, (2) gradual typing,
 (3) non-empty holes, which function as syntactic membranes marking erroneous terms \cite{HazelnutPOPL}, operationalizing the ``red lines'' that an editor displays to the user.
 The marked lambda calculus achieves \emph{total error recovery}, meaning that \emph{every} syntactically well-formed program sketch (a program structure with, optionally, empty holes \cite{solar2013program}) can be marked, i.e. its errors can be simultaneously localized, such that the resulting program has a well-defined type and binding structure.
 We establish this and other properties as metatheorems that we mechanize in the Agda proof assistant. 
-As we define the calculus, we consider a number of situations where error localization decisions are subtle and conclude by defining some extensions of the intentionally minimal core calculus, e.g. with System-F-style polymorphism and pattern matching, 
+As we define the calculus, we consider a number of situations where error localization decisions are subtle and conclude by defining some extensions of the intentionally minimal core calculus, e.g. with destructuring patterns and System F-style polymorphism, 
 that serve as case studies of the more general approach that we hope will be adopted by language designers defining practical type systems.
 
 \cref{sec:calculus-hazel} describes our own effort in this direction, which is to scale up the marked lambda calculus as the new basis for Hazel, a typed functional programming environment that fully solves the semantic gap problem: Hazel's semantic services are available as long as the program sketch is syntactically well-formed. Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as in Agda \cite{norell:thesis}, GHC Haskell \cite{haskell-holes}, Idris \cite{DBLP:journals/jfp/Brady13}, and others), syntax error recovery \cite{medeiros20,sorkin11}, and structure editing \cite{HazelnutPOPL,teitelbaum_cornell_1981}. 
