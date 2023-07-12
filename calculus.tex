@@ -1,9 +1,9 @@
 \section{The Marked Lambda Calculus}
 \label{sec:calculus}
 
-Programmers often work with program states that are syntactically well-formed but not well-typed.
-\Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
-environment. 
+To begin to motivate the development of this section, consider \cref{fig:calculus-examples}, which
+shows common type errors as they appear in the Hazel programming environment. These programs are
+syntactically well-formed but ill-typed.
 % For example, a simple error that may occur is the use of an free variable (\cref{fig:calculus-examples-free}).
 % As in \cref{fig:calculus-examples-unbound}, the editor indicates that the usage of an free $y$ is
 % invalid by highlighting it in red.
@@ -23,7 +23,7 @@ environment.
 
 The key contribution of this section is the \emph{marked lambda calculus}, a calculus based on the
 gradually typed lambda calculus (GTLC) that formalizes the mechanism by which errors like these can
-be localized, and how to  recover, in all cases, from such errors. 
+be localized, and how to recover, in all cases, from such errors. 
 % In brief, the marked lambda calculus formalizes bidirectional type error localization with gradual
 % recovery. 
 \Cref{sec:calculus-calculus} introduces the syntax, judgemental structure, guiding metatheory, and

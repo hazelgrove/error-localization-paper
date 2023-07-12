@@ -113,8 +113,8 @@ The developments in Section~\ref{sec:calculus} support the intuition (remarked u
 
 For example, in the following Hazel expression (ignoring the error on the type hole for the moment), bidirectional error localization 
 does not mark any uses of \li{x} as erroneous because a type for \li{x} cannot locally be inferred (the let-bound expression is an empty hole, which has unknown type). However, by gathering constraints from the three uses of \li{x} and attempting to unify, we see that the type hole is unfillable. Rather than arbitrarily privileging one of these uses, as is the case in languages like OCaml (and which has led to the development of complex heuristics, e.g. using machine learning \cite{SeidelBlame}, to avoid misleading programmers), this error is localized, with a \li{!}, to the type hole itself, with the error message providing partially consistent solutions as shown.
+\\
 \begin{center}
-\vspace{-3px}
     % \includegraphics[scale=0.55]{images/intro-thi.png}
     % \includegraphics[scale=0.4]{images/example_CI.png}
     \includegraphics[scale=0.4]{images/figSugg.png}
