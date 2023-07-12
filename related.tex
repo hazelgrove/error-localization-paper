@@ -19,25 +19,17 @@ A more neutral alternative is to derive a set of terms that contribute to an err
 
 Recent work on gradual liquid type inference described an exploratory interface for filling holes in refinement types by selecting from partial solutions to conflicting refinement type constraints \cite{DBLP:journals/pacmpl/VazouTH18}. This is similar in spirit to type hole inference as described in this paper, albeit targeting program verification predicates. 
 
-Our focus is on localization and recovery but not type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
 
-The underlying unification algorithm is essentially standard. In particular, we base our approach on the system described by \cite{GradualInfer}
+The underlying unification algorithm is essentially standard--the novelty is in how the unification results are used and how failures are handled, rather than in the inference itself. In particular, we base our approach on the system described by \cite{GradualInfer}, because it also identifies type inference variables with the unknown type from gradual typing and the union find data structure is useful for computing possible type sets. \citet{garcia:2015} similarly present a static implicitly typed language, where users opt into dynamism by annotating an expression with the gradual type "?", and an associated type inference algorithm and accompanying metatheory. By contrast, the Hazelnut type system assigns gradual types to programs that would ordinarily not type-check in a non-gradual system by wrapping them in expression holes. The type inference algorithm presented in \citet{garcia:2015} also does not specify what to do if the constraint set cannot be solved. If a single static type cannot be determined for an expression, its type is simply undefined, whereas our approach provides a list of suggestions derived from any conflicting constraints if a single substitution cannot be determined. As our focus is on failure cases and partially consistent suggestions, the metatheory in this prior work is less relevant in guiding the design of the type hole inference system.
 
-\citet{garcia:2015} presents a static implicitly typed language, where users opt into dynamism by annotating an expression with the gradual type "?", and an associated type inference algorithm. By contrast, the Hazelnut type system assigns gradual types to programs that would ordinarily not type-check in a non-gradual system by wrapping them in expression holes. The type inference algorithm presented in \citet{garcia:2015} also does not specify what to do if the constraint set cannot be solved. If a single static type cannot be determined for an expression, its type is simply "undefined", whereas our Type Hole Inference algorithm provides a list of suggestions derived from any conflicting constraints if a single substitution cannot be determined.
+Of note, however, is that type inference approaches that eagerly solve and substitute for type inference variables \cite{DBLP:journals/tapos/OderskySW99,DBLP:conf/icfp/Pottier14,mcadam1998unification} are not well-suited to the type hole inference approach, as they lose information necessary for computing partially consistent suggestions. 
 
-\citet{GradualInfer} explore a version of unification for gradually typed languages based on Huet's unification algorithm \cite{Huet}. Other common approaches to unification are generally based on Hindley-Milner type inference \cite{MilnerInfer}. These algorithms are efficient, but can fail to solve constraints in the face of inconsistencies.
+% In addition to type error localization and recovery, type hole inference touches on the problem of type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
+
 
 % Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 
 
-Explanations for type errors can be well illustrated by providing sample inputs (dynamic witnesses) that elicit runtime errors. With this approach, one can generate graphs for visualizing the execution of witnesses and heuristically identify the source of errors with around 70\% accuracy \cite{Seidel2016}.
+Our focus in this paper has not been on the error messages displayed on screen, about which we make no specific claims. There has been considerable work on improving explanations for type errors, e.g. by providing sample inputs (dynamic witnesses) that elicit runtime errors. With this approach, one can generate graphs for visualizing the execution of witnesses and heuristically identify the source of errors with around 70\% accuracy \cite{Seidel2016}.
+These and a variety of other approaches to explaining errors are a fruitful avenue for future integration into the system.
 
-- Local constraint solving in the style of HM(X) ("Type Inference with Constrained Types", Odersky et al), interleaves local reasoning and constraint solving.
-
-- Inferno ("Hindley-milner elaboration in applicative style: functional pearl", by Pottier) showcases how to elaborate and solve constraints at the same time, which would allow you to emit marked terms and build up constraints in one fell swoop.
-
-- Pottier & Remy's "The essence of ML type inference" (for instance, OutsideIn(X) for GHC Haskell
-
-- Garcia and Cimini's POPL 2015 paper on type inference for gradually-typed languages, which improves substantially on the prior work of Siek and Vachharajani
-
-- Lennon-Bertrand et al.'s TOPLAS 2022 paper on Gradual CIC includes an integration of bidirectional typing and gradual typing
 

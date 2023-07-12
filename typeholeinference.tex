@@ -5,7 +5,7 @@ Local type inference, which has been our focus so far, reduces the number of nec
 constraint-based type inference as found in many ML-family languages allows programmers to omit most or all type annotations \cite{Pierce:2000:LTI:345099.345100}. The trade-off is that type error localization and recovery 
 become considerably more difficult, because inconsistencies can now arise between 
 constraints derived from many distant locations in a program. 
-Heuristic approaches, e.g. based on manually tuned weights\todo{cite}{} or machine learning methods \cite{SeidelBlame}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
+Heuristic approaches, e.g. based on manually tuned weights \cite{DBLP:conf/popl/ZhangM14,DBLP:conf/oopsla/PavlinovicKW14} or machine learning methods \cite{SeidelBlame}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
 
 This situation is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, where biasing one branch over the other requires guessing user intent, whereas the neutral approach is to localize the inconsistency to the conditional expression as a whole. However, there is no such parent expression in the case of inconsistent constraints gathered globally. However,
 this search for neutrality when there are downstream conflicts motivates the approach we introduce in this section, which \emph{gradually} and \emph{neutrally} harmonizes local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints on unknown types that arise during bidirectional marking process as described in Section~\ref{sec:calculus}. After this initial marking is complete, we unify these constraints (using a standard unification algorithm, which we do not detail here \cite{Huet}). When it is discovered that an unknown type is subject to inconsistent constraints, we localize the problem 
@@ -33,7 +33,7 @@ to a hole in the program connected to that unknown type -- either to a \emph{typ
 % localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
 % }
 
-Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program, no constraint solving is necessary: local inference determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1998unification}.\todo{cite odersky paper}
+Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program, no constraint solving is necessary: local inference determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1998unification,DBLP:journals/tapos/OderskySW99,DBLP:conf/icfp/Pottier14}.
 
 % let f = 2 in if ? then {f}(2) else ?
 % \begin{figure}
@@ -136,7 +136,7 @@ It is also worth considering the situation where no type annotation is present, 
 \end{figure}
 
 \subsection{Constraint Generation and Unknown Type Provenance}
-In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach \cite{TAPL0}\todo{cite other papers on gradual type inference}, where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
+In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach (cf. \cite{TAPL0}), where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
     $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
 Constraints, written $\constrain{\tau_1}{\tau_2}$, force two incomplete types to be consistent. Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing necessary type consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other:
