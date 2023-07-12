@@ -4,9 +4,8 @@
 Programmers often work with program states that are syntactically well-formed but not well-typed.
 \Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
 environment. 
-%For example, a simple error that may occur is the use of an Free variable (\cref{fig:calculus-examples-Free}).
-% As in
-% \cref{fig:calculus-examples-Free}, the editor indicates that the usage of an Free $y$ is
+% For example, a simple error that may occur is the use of an free variable (\cref{fig:calculus-examples-free}).
+% As in \cref{fig:calculus-examples-unbound}, the editor indicates that the usage of an free $y$ is
 % invalid by highlighting it in red.
 
 \input{figs/calculus-examples}
@@ -22,21 +21,33 @@ environment.
 % while other tools may choose one branch to be ``correct'' and ``blame'' the type mismatch error on
 % the other.
 
-The key contribution of this section is the \emph{marked lambda calculus}, a calculus based on the gradually typed lambda calculus (GTLC) that formalizes the mechanism by which errors like these can be localized, and how to  recover, in all cases, from such errors. 
-% In brief, the marked lambda calculus formalizes 
-% bidirectional type error localization with gradual recovery. 
-\Cref{sec:calculus-calculus} introduces the syntax, judgemental structure, guiding metatheory, and then goes through the rules, organized by syntactic form rather than judgement, to build intuition about how the various judgements relate to one another \cite{Siek06a}. All rules and theorems may be found organized by judgement form in the supplementary appendix for reference, 
-alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis} (discussed in
-\cref{sec:calculus-agda}). We intentionally keep the marked lambda calculus minimal, because it is intended to capture the essential idea and introduce a general pattern that language designers can employ to created mark variants of their own type systems. As an initial example, we consider product types (in \cref{sec:calculus-products}). We then consider a surprisingly subtle combination of features as a more substantial case study: the combination of
-destructing let expressions with granular type annotations, in \cref{sec:calculus-let}. Finally, \cref{sec:calculus-poly} briefly explores how
-the system might be extended to more complex judgemental structure, e.g. polymorphism.
+The key contribution of this section is the \emph{marked lambda calculus}, a calculus based on the
+gradually typed lambda calculus (GTLC) that formalizes the mechanism by which errors like these can
+be localized, and how to  recover, in all cases, from such errors. 
+% In brief, the marked lambda calculus formalizes bidirectional type error localization with gradual
+% recovery. 
+\Cref{sec:calculus-calculus} introduces the syntax, judgemental structure, guiding metatheory, and
+then goes through the rules, organized by syntactic form rather than judgement, to build intuition
+about how the various judgements relate to one another \cite{Siek06a}.
+All rules and theorems may be found organized by judgement form in the supplementary appendix for
+reference, alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis}
+(discussed in \cref{sec:calculus-agda}).
+We intentionally keep the marked lambda calculus minimal, because it is intended to capture the
+essential idea and introduce a general pattern that language designers can employ to created mark
+variants of their own type systems.
+As an initial example, we consider a surprisingly subtle combination of features as a more
+substantial case study: the combination of destructing let expressions with granular type
+annotations, in \cref{sec:calculus-let}.
+Finally, \cref{sec:calculus-polymorphism} briefly explores how the system might be extended to more
+complex judgemental structures, such as parametric polymorphism.
 
 \subsection{The Core Calculus}
 \label{sec:calculus-calculus}
 
 The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a} extended
-with numbers, booleans, pairs, and empty expression holes \cite{HazelnutSNAPL}. Given in
-\cref{fig:calculus-syntax}, the syntax consists of two expression languages:
+with numbers, booleans, pairs, and empty expression holes \cite{HazelnutSNAPL}.
+Given in \cref{fig:calculus-syntax}, the syntax consists of two expression languages:
+%
 \begin{itemize}
   \item The \textbf{unmarked language}, which is the original language. Expressions of this language
     are called \emph{unmarked expressions}, denoted by the metavariable $\EMV$.
@@ -352,9 +363,9 @@ rules:
   }{MSVar}
 \end{mathpar}
 
-However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-Free}, is \emph{not}
+However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-free}, is \emph{not}
 bound. Similar to above, \textsc{USVar} would not apply. A total marking procedure should, however, report the error and
-continue, motivating an \emph{Free variable mark} $\ECFree{x}$ and the accompanying rules:
+continue, motivating an \emph{free variable mark} $\ECFree{x}$ and the accompanying rules:
 %
 \begin{mathpar}
   \judgment{
@@ -370,9 +381,9 @@ continue, motivating an \emph{Free variable mark} $\ECFree{x}$ and the accompany
   }{MSFree}
 \end{mathpar}
 %
-An Free variable is marked as such, and since nothing may be said about their types, we
-synthesize the unknown type. As with the inconsistent type mark, this allows type checking to
-proceed, with usage of the Free variable permitted in any expression.
+A free variable is marked as such, and since nothing may be said about their types, we synthesize
+the unknown type. As with the inconsistent type mark, this allows type checking to proceed, with
+usage of the free variable permitted in any expression.
 
 \subsubsection{Lambda Abstractions}
 \label{sec:calculus-lambda-abstractions}
@@ -910,21 +921,25 @@ Finally, no less importantly, marking is deterministic. This is given by
   \end{enumerate}
 \end{theorem}
 %
-Together, totality and unicity give that marking may be implemented as a total
-function. Indeed, given the algorithmic nature of bidirectional typing, it is fairly direct to implement these rules.
+Together, totality and unicity give that marking may be implemented as a total function.
+Indeed, given the algorithmic nature of bidirectional typing, it is fairly direct to implement these
+rules.
 
 \subsection{Agda Mechanization}
 \label{sec:calculus-agda}
 
-The semantics and metatheory presented above, have
-been fully mechanized in the Agda proof assistant. The mechanization additionally includes the decoupled Hazelnut action semantics described in \cref{sec:calculus-hazelnut}. Though the mechanization's documentation contains
-more detailed discussion regarding technical decisions made therein, we highlight some important
-aspects here.
+The semantics and metatheory presented above have been fully mechanized in the Agda proof assistant.
+The mechanization additionally includes the decoupled Hazelnut action semantics described in
+\cref{sec:calculus-hazelnut}.
+Though the mechanization's documentation contains more detailed discussion regarding technical
+decisions made therein, we highlight some important aspects here.
 
 The standard approach of modeling judgments as inductive datatypes and rules as constructors for
-those datatypes is taken. By representing marked expressions with implicitly typed terms,
-we get part of \cref{thm:calculus-marking-well-formedness} for free from the definition of marking. For the convenience of
-readers interested in browsing the mechanization, as possible, all rule names match those presented here.
+those datatypes is taken.
+By representing marked expressions with implicitly typed terms, we get part of
+\cref{thm:calculus-marking-well-formedness} for free from the definition of marking.
+For the convenience of readers interested in browsing the mechanization, as possible, rule names
+match those presented here.
 
 \input{let}
 \input{polymorphism}
