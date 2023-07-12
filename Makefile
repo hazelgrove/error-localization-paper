@@ -19,3 +19,5 @@ supplement.zip : supplement.pdf
 clean :
 	rm -rf build
 	rm -f *.pdf
+	rm -f **/*.agdai
+	rm -f supplement.zip
