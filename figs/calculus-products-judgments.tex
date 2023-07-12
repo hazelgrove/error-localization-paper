@@ -28,12 +28,12 @@
     }{TMPProd} \\
   \end{mathpar}
 
-  \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+  \judgbox{\ensuremath{\TMeet{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
   %
-  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
+  \newcommand{\meetsTo}[3]{\ensuremath{\TMeet{#1}{#2} & = & #3}}
   \[\begin{array}{rcl}
     & \cdots & \\
-    \joinsTo{(\TProd{\TMV_1}{\TMV_2})}{(\TProd{\TMV_1'}{\TMV_2'})}{\TProd{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+    \meetsTo{(\TProd{\TMV_1}{\TMV_2})}{(\TProd{\TMV_1'}{\TMV_2'})}{\TProd{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}} \\
   \end{array}\]
   %
   \caption{Syntax and judgments for binary product types.}

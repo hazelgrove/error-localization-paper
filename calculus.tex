@@ -619,7 +619,7 @@ synthetic and analytic rules:
     \ctxSynTypeU{\ctx}{\EMV_2}{\TMV_1} \\
     \ctxSynTypeU{\ctx}{\EMV_3}{\TMV_2}
   }{
-    \ctxSynTypeU{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    \ctxSynTypeU{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\TMeet{\TMV_1}{\TMV_2}}
   }{USIf}
 
   \judgment{
@@ -631,26 +631,26 @@ synthetic and analytic rules:
   }{UAIf}
 \end{mathpar}
 %
-In synthetic position, conditionals synthesize the \emph{join} of the branch types $\TMV_1$ and
-$\TMV_2$, which we define inductively in \cref{fig:calculus-type-join}. We choose the ``more
+In synthetic position, conditionals synthesize the \emph{meet} of the branch types $\TMV_1$ and
+$\TMV_2$, which we define inductively in \cref{fig:calculus-type-meet}. We choose the ``more
 specific'' type of the two. In analytic position, since
 there is an expected type for both branches, we shift the blame for any errors to them.
 
-\newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
+\newcommand{\meetsTo}[3]{\ensuremath{\TMeet{#1}{#2} & = & #3}}
 \begin{figure}[htbp]
   \raggedright
-  \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+  \judgbox{\ensuremath{\TMeet{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
   %
   \[\begin{array}{rcl}
-    \joinsTo{\TUnknown}{\TMV}{\TMV} \\
-    \joinsTo{\TMV}{\TUnknown}{\TMV} \\
-    \joinsTo{\TNum}{\TNum}{\TNum} \\
-    \joinsTo{\TBool}{\TBool}{\TBool} \\
-    \joinsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}}
+    \meetsTo{\TUnknown}{\TMV}{\TMV} \\
+    \meetsTo{\TMV}{\TUnknown}{\TMV} \\
+    \meetsTo{\TNum}{\TNum}{\TNum} \\
+    \meetsTo{\TBool}{\TBool}{\TBool} \\
+    \meetsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}}
   \end{array}\]
   \vspace{-10px}
-  \caption{Type join.}
-  \label{fig:calculus-type-join}
+  \caption{Type meet.}
+  \label{fig:calculus-type-meet}
 \end{figure}
 
 Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking and typing rules.
@@ -663,7 +663,7 @@ Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking a
     \ctxSynFixedInto{\ctx}{\EMV_2}{\ECMV_2}{\TMV_1} \\
     \ctxSynFixedInto{\ctx}{\EMV_3}{\ECMV_3}{\TMV_2}
   }{
-    \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    \ctxSynFixedInto{\ctx}{\EIf{\EMV_1}{\EMV_2}{\EMV_3}}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}
   }{MKSIf}
 
   \judgment{
@@ -671,7 +671,7 @@ Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking a
     \ctxSynTypeM{\ctx}{\ECMV_2}{\TMV_1} \\
     \ctxSynTypeM{\ctx}{\ECMV_3}{\TMV_2}
   }{
-    \ctxSynTypeM{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}
+    \ctxSynTypeM{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}
   }{MSIf} \\
 
   \judgment{
@@ -691,7 +691,7 @@ Following \textsc{USIf} and \textsc{UAIf}, we may derive the following marking a
   }{MAIf}
 \end{mathpar}
 
-However, in synthetic position, it may be the case that the two branch types have no join. This
+However, in synthetic position, it may be the case that the two branch types have no meet. This
 occurs, in fact, when they are inconsistent, motivating the \emph{the inconsistent branches mark}
 $\ECInconBr{\ECMV}{\ECMV}{\ECMV}$. Then, adding the following rules ensures totality on
 conditionals:

@@ -35,17 +35,17 @@
     }{TMAArr} \\
   \end{mathpar}
 
-  \judgbox{\ensuremath{\TJoin{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+  \judgbox{\ensuremath{\TMeet{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
   %
-  \newcommand{\joinsTo}[3]{\ensuremath{\TJoin{#1}{#2} & = & #3}}
+  \newcommand{\meetsTo}[3]{\ensuremath{\TMeet{#1}{#2} & = & #3}}
   \[\begin{array}{rcl}
-    \joinsTo{\TUnknown}{\TMV}{\TMV} \\
-    \joinsTo{\TMV}{\TUnknown}{\TMV} \\
-    \joinsTo{\TNum}{\TNum}{\TNum} \\
-    \joinsTo{\TBool}{\TBool}{\TBool} \\
-    \joinsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TJoin{\TMV_1}{\TMV_1'})}{(\TJoin{\TMV_2}{\TMV_2'})}} \\
+    \meetsTo{\TUnknown}{\TMV}{\TMV} \\
+    \meetsTo{\TMV}{\TUnknown}{\TMV} \\
+    \meetsTo{\TNum}{\TNum}{\TNum} \\
+    \meetsTo{\TBool}{\TBool}{\TBool} \\
+    \meetsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}} \\
   \end{array}\]
   %
-  \caption{Type consistency, matched arrow types, and type join.}
+  \caption{Type consistency, matched arrow types, and type meet.}
   \label{fig:calculus-type-judgments}
 \end{figure}

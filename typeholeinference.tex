@@ -166,7 +166,7 @@ Consequently, our rules for constraint generation are quite simple. We augment o
     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
     \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
   }{
-    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
   }{MSIf-C}
 \end{mathpar}
 
@@ -286,14 +286,14 @@ This choice allows us to continue past failures and unify any constraints, yield
 % % Here, instead of expecting that the type of \ECMV~ be consistent with the type $\tau$, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
 
 % \subsubsection{If Expressions and Their Constraints}
-% Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that both branches have consistent types and assess this implicitly by attempting to compute their join. This leads to the following constraint generating rule for if expression synthesis where we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$:
+% Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that both branches have consistent types and assess this implicitly by attempting to compute their meet. This leads to the following constraint generating rule for if expression synthesis where we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$:
 % \begin{mathpar}
 %   \judgment{
 %     \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}  \\
 %     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
 %     \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
 %   }{
-%     \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+%     \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
 %   }{MSIf-C}
 % \end{mathpar} 
 
@@ -308,7 +308,7 @@ This choice allows us to continue past failures and unify any constraints, yield
 %     \synConstraint{\ctx}{\ECInconBrId{\ECMV_1}{\ECMV_2}{\ECMV_3}{u}}{\TUnknown^{exp(u)}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
 %   }{MSInconsistentBranches-C}
 % \end{mathpar}
-% % We assume that the definition of $\TJoin{\TMV_1}{\TMV_2}$ has been adjusted to accept type holes with provenances where we arbitrarily decide that $\TJoin{\TUnknown^{p1}}{\TUnknown^{p2}} = \TUnknown^{p1}$.
+% % We assume that the definition of $\TMeet{\TMV_1}{\TMV_2}$ has been adjusted to accept type holes with provenances where we arbitrarily decide that $\TMeet{\TUnknown^{p1}}{\TUnknown^{p2}} = \TUnknown^{p1}$.
 
 % \subsubsection{Matched Arrow Constraints}
 % When we generate a matched arrow form for a type hole, we expect that the original type hole be the same as the arrow type outputted by the judgement. Consequently, we find that matched arrow judgements must also accumulate constraints. Thus, we adjust our matched arrow judgement to be of the form $\matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C}$.
