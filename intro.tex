@@ -47,7 +47,7 @@ as students in an undergraduate course might write---%
 would simply report that this program is ill-typed. 
 A more practical approach, and one common even in production type checkers, 
 is to localize the first error that causes local type inference to fail and emit an explanatory error message before terminating.
-In this example, the system might report that the variable \li{f} located on Line 2 is unbound, then terminate.
+In this example, the system might report that the variable \li{f} located on Line 2 is free, then terminate.
 
 An implementation with support for type error recovery, like Elm's compiler or OCaml's \li{merlin} \cite{bour2018merlin}, would 
  be tasked with continuing past this first error.
@@ -55,7 +55,7 @@ An implementation with support for type error recovery, like Elm's compiler or O
  the bidirectional type system as specified 
  would appear to demand in order to proceed, here in order to determine which type the argument, \li{y}, is to be analyzed against. 
  Intuitively, however, it is clear that this knowledge is \emph{unnecessary} to make an error localization decision about \li{y}: 
-it is unbound, so a second error can be simultaneously localized despite the missing information about \li{f}. 
+it is free, so a second error can be simultaneously localized despite the missing information about \li{f}. 
 
 To recover further, we might choose to also ignore the bidirectional type system's demand that the conditional guard be confirmed to be a boolean expression 
 (because the type of \li{f(y)} is also not well-defined) 

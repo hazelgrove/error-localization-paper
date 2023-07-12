@@ -10,11 +10,11 @@
 
 % errors with id
 \newcommand{\ECMarkedId}[3]{\ensuremath{\textcolor{red}{\bm{\llparenthesis}}\textcolor{red}{#1}\textcolor{red}{\bm{\rrparenthesis}^{#3}_{#2}}}}
-\newcommand{\ECMarkedUnboundId}[2]{\ensuremath{\ECMarkedId{#1}{\MRUnbound}{#2}}}
+\newcommand{\ECMarkedFreeId}[2]{\ensuremath{\ECMarkedId{#1}{\MRFree}{#2}}}
 \newcommand{\ECMarkedInconTypeId}[2]{\ensuremath{\ECMarkedId{#1}{\MRInconAsc}{#2}}}
 \newcommand{\ECMarkedInconBrId}[2]{\ensuremath{\ECMarkedId{#1}{\MRInconBr}{#2}}}
 
-\newcommand{\ECUnboundId}[2]{\ensuremath{\ECMarkedUnboundId{#1}{#2}}}
+\newcommand{\ECFreeId}[2]{\ensuremath{\ECMarkedFreeId{#1}{#2}}}
 \newcommand{\ECInconTypeId}[2]{\ensuremath{\ECMarkedInconTypeId{#1}{#2}}}
 \newcommand{\ECInconBrId}[4]{\ensuremath{\ECMarkedInconBrId{\ECIf{#1}{#2}{#3}}{#4}}}
 \newcommand{\ECApNonMatchedId}[3]{\ensuremath{\ECAp{\ECInconTypeId{#1}{#2}}{#3}}}

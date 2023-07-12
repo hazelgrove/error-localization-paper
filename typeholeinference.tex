@@ -113,7 +113,7 @@ If, given this feedback, the user deletes the bound expression, \li{2}, then the
 % \[\begin{array}{rrcl}
 %     \Prov & \Provp & \Coloneqq & u \mid exp(u) \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp)\\
 %     \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
-%     \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \EEHole^u
+%     \ECMName & \ECMV & \Coloneqq & \dots \mid \ECFreeId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \EEHole^u
 % \end{array}\]
 
 % \begin{enumerate}
@@ -179,7 +179,7 @@ There are, however, two key points that we must be careful of. As discussed earl
 \[\begin{array}{rrcl}
     \Prov & \Provp & \Coloneqq & u \mid exp(u)\\
     \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
-    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \dots \mid \ECProjLSynNonMatchedProdId{\ECMV}{u} \mid \ECProjRSynNonMatchedProdId{\ECMV}{u} \mid \EEHole^u
+    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECFreeId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \dots \mid \ECProjLSynNonMatchedProdId{\ECMV}{u} \mid \ECProjRSynNonMatchedProdId{\ECMV}{u} \mid \EEHole^u
 \end{array}\]
 
 This change forces us to consider any rules that introduce new type holes carefully. Newly generated type holes should be assigned provenances describing their creation. Consequently, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances:
