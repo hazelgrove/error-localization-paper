@@ -134,12 +134,22 @@ It is also worth considering the situation where no type annotation is present, 
     \label{fig:expLocal}
 \end{figure}
 
-\subsection{Constraint Generation}
+\subsection{Constraint Generation and Unknown Type Provenance}
 In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach \cite{TAPL0}\todo{cite other papers on gradual type inference}, where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
     $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
-Constraints, written $\constrain{\tau_1}{\tau_2}$ force two incomplete types to be consistent. Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing necessary type consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other:
+Constraints, written $\constrain{\tau_1}{\tau_2}$, force two incomplete types to be consistent. Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing necessary type consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other:
+\begin{mathpar}
+    \judgment{
+    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}\\
+    \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
+    \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
+  }{
+    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+  }{MSIf-C}
+\end{mathpar}
 
+The remaining rules for standard constructs are similarly standard and given in the supplement.
 
 % For most rules, no new constraints are generated. This leads to straightforward rules like MSLam-C and MSAp1-C:
 
@@ -160,34 +170,20 @@ Constraints, written $\constrain{\tau_1}{\tau_2}$ force two incomplete types to 
 % \end{mathpar}
 
 
-\begin{mathpar}
-    \judgment{
-    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}\\
-    \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
-    \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
-  }{
-    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
-  }{MSIf-C}
-\end{mathpar}
 
-There are, however, two key points that we must be careful of. As discussed earlier, our goal is to generate suggestions for each type hole based on their globally accumulated constraints. Consequently, we must ensure we are able to distinguish between different type holes based on their associated locus in the program. To this end, we take two actions:
+Since unification will be solving for unknown types, we must ensure we are able to distinguish between different type holes based on their associated locus in the program. To this end, we make two modifications to the system from Section~\ref{sec:calculus}:
 
 \begin{enumerate}
-    \item We add a unique id u to all expression holes and type holes that appear directly in the program where we assume that id generation is handled by the editor.
-    \item We add provenances $p$ to type holes. Each provenance links a type hole to some concrete source in the program. For example, the provenance $exp(3)$ indicates that a type hole must have been synthesized from an expression hole with id $3$ in the program. 
+    \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program where we assume that id generation is handled by the editor.
+    \item We add provenances $p$ to unknown types. Each provenance links the unknown type to to some (syntactic) hole in the program, perhaps through some intermediate operations. For example, the provenance $exp(3)$ indicates that a type hole must have been synthesized from an expression hole with id $3$ in the program. 
 \end{enumerate}
 \[\begin{array}{rrcl}
-    \Prov & \Provp & \Coloneqq & u \mid exp(u)\\
+    \Prov & \Provp & \Coloneqq & u \mid exp(u) \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_L(\Provp) \mid \times_R(\Provp)\\
     \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
     \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \dots \mid \ECProjLSynNonMatchedProdId{\ECMV}{u} \mid \ECProjRSynNonMatchedProdId{\ECMV}{u} \mid \EEHole^u
 \end{array}\]
 
-This change forces us to consider any rules that introduce new type holes carefully. Newly generated type holes should be assigned provenances describing their creation. Consequently, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances:
-
-\[\begin{array}{rrcl}
-    \Prov & \Provp & \Coloneqq & \dots \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_L(\Provp) \mid \times_R(\Provp)\\
-\end{array}\]
-
+Provenance is determined whenever a new unknown type is constructed. For example, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances so that every time a matched arrow type is generated for the same hole, it involves the same constituent unknown types without needing to introduce explicit constraints:
 \begin{mathpar}
     \judgment{ }{
       \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
@@ -198,7 +194,7 @@ This change forces us to consider any rules that introduce new type holes carefu
     }{TMPHole-C}
 \end{mathpar}
 
-Up until now, we have ignored rules that consider marked errors. This leads us to our second point of contention: what do we do with expressions that have been marked with expression holes? Recall that our primary goal in using global type inference is to enhance user feedback and give quality suggestions for type holes. A marked expression has already been deemed erroneous. Therefore, when generating constraints, we do not constrain sub-expressions within a marked hole to any expressions outside the hole. This way, we avoid giving potentially misleading type hole suggestions based on erroneous parts of the program, while still informing the user they have something to fix by marking the expression. As a simple example of this, we present the following rule for subsumption in the absence of failure alongside that of subsumption upon the failure of a consistency check:
+Up until now, we have ignored rules that consider marked errors. This leads us to our second point of interest: what do we do with expressions that have been marked with expression holes? A marked expression has already been deemed erroneous. Therefore, when generating constraints, we do not constrain sub-expressions within a marked hole based on types flowing in from outside the hole. As a simple example of this, we present the standard rule for successful subsumption alongside the rule for subsumption upon the failure of the consistency check:
 
 \begin{mathpar}
     \judgment{
@@ -217,8 +213,6 @@ Up until now, we have ignored rules that consider marked errors. This leads us t
         \anaConstraint{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV}{C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}}
     }{MAInconsistentTypes-C}
 \end{mathpar}
-
-When analyzing an expression against a type that is consistent with the result of its synthesis, we constrain the two types together. In contrast, when analyzing against a type inconsistent with the result of synthesis, we simply constrain the type of the expression hole surrounding the expression against the analyzed type.
 
 The remaining rules directly follow the intuitions above and are left to the supplemental material.
 
