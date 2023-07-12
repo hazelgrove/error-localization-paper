@@ -1,0 +1,653 @@
+\documentclass[supplement.tex]{subfiles}
+
+\begin{document}
+
+\section{Extension: System F-style polymorphism}
+\label{sec:polymorphism}
+In this section, we describe an extension of the marked lambda calculus for System F-style
+parametric polymorphism.
+
+Chiefly, the introduction of type variables and the possibility of free ones requires the
+distinction between unmarked and marked types. These are each governed by well-formedness judgments
+(alongside extensions of the original consistency, etc. judgments) and linked by a marking
+operation.
+
+\subsection{Syntax}
+\label{sec:polymorphism-syntax}
+The syntax of unmarked types is exactly that of the original types alongside additional forms for
+forall types and type variables. In marked types, we additionally have free type variables.
+Within unmarked expressions, there may be type abstractions and type applications. In marked
+expressions, marks corresponding to those of ordinary lambda abstractions are present.
+
+\[\begin{array}{rrcl}
+  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TForall{\TVarMV}{\TMV} \mid \TVarMV \\
+  \MTMName & \MTMV & \Coloneqq & \cdots
+                     % \MTUnknown \mid \MTNum \mid \MTBool
+                     % \mid \MTArrow{\MTMV}{\MTMV} \mid \MTProd{\MTMV}{\MTMV}
+                     \mid \MTForall{\MTVarMV}{\MTMV} \mid \MTVarMV \mid \MTFree{\MTVarMV} \\
+  \EMName  & \EMV  & \Coloneqq & \cdots \mid \ETypeLam{\TVarMV}{\EMV} \mid \ETypeAp{\EMV}{\TMV} \\
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECTypeLam{\MTVarMV}{\ECMV} \mid \ECTypeAp{\ECMV}{\MTMV} \\
+           &       & \mid         & \ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV} \mid \ECTypeApSynNonMatchedForall{\ECMV}{\MTMV}
+\end{array}\]
+
+\subsection{Unmarked types}
+\label{sec:polymorphism-unmarked-types}
+Type consistency is now parametrized by the type variable context $\tvarCtx$. Here (and similarly
+the extension of other judgments), we omit the rules for the old syntactic constructs, which may be
+straightforwardly derived from the original rules. \\
+
+\judgbox{\ensuremath{\tvarCtxConsistentU{\tvarCtx}{\TMV_1}{\TMV_2}}} $\TMV_1$ and $\TMV_2$ are consistent
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[TCForall]{
+    \tvarCtxConsistentU{\extendTvarCtx{\tvarCtx}{\TVarMV}}{\TMV}{\TMV'}
+  }{
+    \tvarCtxConsistentU{\tvarCtx}{\TForall{\TVarMV}{\TMV}}{\TForall{\TVarMV}{\TMV'}}
+  }
+
+  \inferrule[TCVar]{
+    \inTvarCtx{\tvarCtx}{\TVarMV}
+  }{
+    \tvarCtxConsistentU{\tvarCtx}{\TVarMV}{\TVarMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\tvarCtxWFU{\tvarCtx}{\TMV}}} $\TMV$ is well-formed
+%
+\begin{mathpar}
+  \inferrule[TWFUnknown]{ }{
+    \tvarCtxWFU{\tvarCtx}{\MTUnknown}
+  }
+
+  \inferrule[TWFNum]{ }{
+    \tvarCtxWFU{\tvarCtx}{\MTNum}
+  }
+
+  \inferrule[TWFBool]{ }{
+    \tvarCtxWFU{\tvarCtx}{\MTBool}
+  }
+
+  \inferrule[TWFArr]{
+    \tvarCtxWFU{\tvarCtx}{\MTMV_1} \\
+    \tvarCtxWFU{\tvarCtx}{\MTMV_2}
+  }{
+    \tvarCtxWFU{\tvarCtx}{\TArrow{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[TWFProd]{
+    \tvarCtxWFU{\tvarCtx}{\MTMV_1} \\
+    \tvarCtxWFU{\tvarCtx}{\MTMV_2}
+  }{
+    \tvarCtxWFU{\tvarCtx}{\TProd{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[TWFForall]{
+    \tvarCtxWFU{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\MTMV}
+  }{
+    \tvarCtxWFU{\tvarCtx}{\MTForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[TWFVar]{
+    \inTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxWFU{\tvarCtx}{\MTVarMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedForall{\TMV}{\TVarMV}{\TMV'}}} $\TMV$ has matched forall type $\TForall{\TVarMV}{\TMV'}$
+%
+\begin{mathpar}
+  \inferrule[TMFUnknown]{ }{
+    \matchedForall{\TUnknown}{\TVarMV}{\TUnknown}
+  }
+
+  \inferrule[TMFForall]{ }{
+    \matchedForall{\TForall{\TVarMV}{\TMV}}{\TVarMV}{\TMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\TMeet{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+%
+\newcommand{\meetsToRow}[3]{\ensuremath{\TMeet{#1}{#2} & = & #3}}
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \meetsToRow{(\TForall{\TVarMV}{\TMV})}{(\TForall{\TVarMV}{\TMV'})}{\TForall{\TVarMV}{(\TMeet{\TMV}{\TMV'})}} \\
+  \meetsToRow{\TVarMV}{\TVarMV}{\TVarMV} \\
+\end{array}\]
+
+\judgbox{\ensuremath{\subst{\TMV_1}{\TMV_2}{\TVarMV}}} is a metafunction defined as follows:
+%
+\newcommand{\substToRow}[4]{\ensuremath{\subst{#1}{#2}{#3} & = & #4}}
+\[\begin{array}{rcll}
+  \substToRow{\TUnknown}{\TMV}{\TVarMV}{\TUnknown} \\
+  \substToRow{\TNum}{\TMV}{\TVarMV}{\TNum} \\
+  \substToRow{\TBool}{\TMV}{\TVarMV}{\TBool} \\
+  \substToRow{(\TArrow{\TMV_1}{\TMV_2})}{\TMV}{\TVarMV}{\TArrow{(\subst{\TMV_1}{\TMV}{\TVarMV})}{(\subst{\TMV_2}{\TMV}{\TVarMV})}} \\
+  \substToRow{(\TProd{\TMV_1}{\TMV_2})}{\TMV}{\TVarMV}{\TProd{(\subst{\TMV_1}{\TMV}{\TVarMV})}{(\subst{\TMV_2}{\TMV}{\TVarMV})}} \\
+  \substToRow{(\TForall{\TVarMV'}{\TMV'})}{\TMV}{\TVarMV}{\TForall{\TVarMV'}{\TMV'}} & \equal{\TVarMV}{\TVarMV'} \\
+  \substToRow{(\TForall{\TVarMV'}{\TMV'})}{\TMV}{\TVarMV}{\TForall{\TVarMV'}{(\subst{\TMV'}{\TMV}{\TVarMV})}} & \notEqual{\TVarMV}{\TVarMV'} \\
+  \substToRow{\TVarMV'}{\TMV}{\TVarMV}{\TMV} & \equal{\TVarMV}{\TVarMV'} \\
+  \substToRow{\TVarMV'}{\TMV}{\TVarMV}{\TVarMV'} & \notEqual{\TVarMV}{\TVarMV'}
+\end{array}\]
+
+\subsection{Type marking}
+\label{sec:polymorphism-type-marking}
+\judgbox{\ensuremath{\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}}} $\TMV$ is marked into $\MTMV$
+%
+\begin{mathpar}
+  \inferrule[MKTUnknown]{ }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TUnknown}{\MTUnknown}
+  }
+
+  \inferrule[MKTNum]{ }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TNum}{\MTNum}
+  }
+
+  \inferrule[MKTBool]{ }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TBool}{\MTBool}
+  }
+
+  \inferrule[MKTArr]{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_1}{\MTMV_1} \\
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_2}{\MTMV_2}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TArrow{\TMV_1}{\TMV_2}}{\MTArrow{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MKTProd]{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_1}{\MTMV_1} \\
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_2}{\MTMV_2}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TProd{\TMV_1}{\TMV_2}}{\MTProd{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MKTForall]{
+    \tvarCtxTypeMarkedInto{\extendTvarCtx{\tvarCtx}{\TVarMV}}{\TMV}{\MTMV}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TForall{\TVarMV}{\TMV}}{\MTForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[MKTVar]{
+    \inTvarCtx{\tvarCtx}{\TVarMV}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TVarMV}{\MTVarMV}
+  }
+
+  \inferrule[MKTFree]{
+    \notInTvarCtx{\tvarCtx}{\TVarMV}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TVarMV}{\MTFree{\MTVarMV}}
+  }
+\end{mathpar}
+
+\subsection{Marked types}
+\label{sec:polymorphism-marked-types}
+\judgbox{\ensuremath{\tvarCtxConsistentM{\tvarCtx}{\MTMV_1}{\MTMV_2}}} $\MTMV_1$ and $\MTMV_2$ are consistent
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MTCForall]{
+    \tvarCtxConsistentM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\MTMV}{\MTMV'}
+  }{
+    \tvarCtxConsistentM{\tvarCtx}{\TForall{\MTVarMV}{\MTMV}}{\TForall{\MTVarMV}{\MTMV'}}
+  }
+
+  \inferrule[MTCVar]{
+    \inTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxConsistentM{\tvarCtx}{\MTVarMV}{\MTVarMV}
+  }
+
+  \inferrule[MTCFree1]{
+    \notInTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxConsistentM{\tvarCtx}{\MTFree{\MTVarMV}}{\MTMV}
+  }
+
+  \inferrule[MTCFree2]{
+    \notInTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxConsistentM{\tvarCtx}{\MTMV}{\MTFree{\MTVarMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\tvarCtxWFM{\tvarCtx}{\MTMV}}} $\MTMV$ is well-formed
+%
+\begin{mathpar}
+  \inferrule[MTWFUnknown]{ }{
+    \tvarCtxWFM{\tvarCtx}{\TUnknown}
+  }
+
+  \inferrule[MTWFNum]{ }{
+    \tvarCtxWFM{\tvarCtx}{\TNum}
+  }
+
+  \inferrule[MTWFBool]{ }{
+    \tvarCtxWFM{\tvarCtx}{\TBool}
+  }
+
+  \inferrule[MTWFArr]{
+    \tvarCtxWFM{\tvarCtx}{\MTMV_1} \\
+    \tvarCtxWFM{\tvarCtx}{\MTMV_2}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\TArrow{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MTWFProd]{
+    \tvarCtxWFM{\tvarCtx}{\MTMV_1} \\
+    \tvarCtxWFM{\tvarCtx}{\MTMV_2}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\TProd{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MTWFForall]{
+    \tvarCtxWFM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\MTMV}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\TForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[MTWFVar]{
+    \inTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\MTVarMV}
+  }
+
+  \inferrule[MTWFFree]{
+    \notInTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\MTFree{\MTVarMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedForall{\MTMV}{\MTVarMV}{\MTMV'}}} $\MTMV$ has matched forall type $\MTForall{\MTVarMV}{\MTMV'}$
+%
+\begin{mathpar}
+  \inferrule[MTMFUnknown]{ }{
+    \matchedForall{\MTUnknown}{\MTVarMV}{\MTUnknown}
+  }
+
+  \inferrule[MTMFForall]{ }{
+    \matchedForall{\MTForall{\MTVarMV}{\MTMV}}{\MTVarMV}{\MTMV}
+  }
+
+  \inferrule[MTMFFree]{ }{
+    \matchedForall{\MTFree{\MTVarMV}}{\MTVarMV}{\MTUnknown}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\MTMeet{\MTMV_1}{\MTMV_2}}} is a \emph{partial} metafunction defined as follows:
+%
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \meetsToRow{(\MTForall{\MTVarMV}{\MTMV})}{(\MTForall{\MTVarMV}{\MTMV'})}{\MTForall{\MTVarMV}{(\MTMeet{\MTMV}{\MTMV'})}} \\
+  \meetsToRow{\MTVarMV}{\MTVarMV}{\MTVarMV} \\
+  \meetsToRow{\MTFree{\MTVarMV}}{\MTMV}{\MTMV} \\
+  \meetsToRow{\MTMV}{\MTFree{\MTVarMV}}{\MTMV} \\
+\end{array}\]
+
+\judgbox{\ensuremath{\subst{\MTMV_1}{\MTMV_2}{\MTVarMV}}} is a metafunction defined as follows:
+%
+\[\begin{array}{rcll}
+  \substToRow{\MTUnknown}{\MTMV}{\MTVarMV}{\MTUnknown} \\
+  \substToRow{\MTNum}{\MTMV}{\MTVarMV}{\MTNum} \\
+  \substToRow{\MTBool}{\MTMV}{\MTVarMV}{\MTBool} \\
+  \substToRow{(\MTArrow{\MTMV_1}{\MTMV_2})}{\MTMV}{\MTVarMV}{\MTArrow{(\subst{\MTMV_1}{\MTMV}{\MTVarMV})}{(\subst{\MTMV_2}{\MTMV}{\MTVarMV})}} \\
+  \substToRow{(\MTProd{\MTMV_1}{\MTMV_2})}{\MTMV}{\MTVarMV}{\MTProd{(\subst{\MTMV_1}{\MTMV}{\MTVarMV})}{(\subst{\MTMV_2}{\MTMV}{\MTVarMV})}} \\
+  \substToRow{(\MTForall{\MTVarMV'}{\MTMV'})}{\MTMV}{\MTVarMV}{\MTForall{\MTVarMV'}{\MTMV'}} & \equal{\MTVarMV}{\MTVarMV'} \\
+  \substToRow{(\MTForall{\MTVarMV'}{\MTMV'})}{\MTMV}{\MTVarMV}{\MTForall{\MTVarMV'}{(\subst{\MTMV'}{\MTMV}{\MTVarMV})}} & \notEqual{\MTVarMV}{\MTVarMV'} \\
+  \substToRow{\MTVarMV'}{\MTMV}{\MTVarMV}{\MTMV} & \equal{\MTVarMV}{\MTVarMV'} \\
+  \substToRow{\MTVarMV'}{\MTMV}{\MTVarMV}{\MTVarMV'} & \notEqual{\MTVarMV}{\MTVarMV'} \\
+  \substToRow{\MTFree{\MTVarMV'}}{\MTMV}{\MTVarMV}{\MTFree{\MTVarMV'}}
+\end{array}\]
+
+\judgbox{\ensuremath{\markless{\MTMV}}} $\MTMV$ has no marks
+%
+\begin{mathpar}
+  \inferrule[MLTUnknown]{ }{
+    \markless{\MTUnknown}
+  }
+
+  \inferrule[MLTNum]{ }{
+    \markless{\MTNum}
+  }
+
+  \inferrule[MLTBool]{ }{
+    \markless{\MTBool}
+  }
+
+  \inferrule[MLTArr]{
+    \markless{\MTMV_1} \\
+    \markless{\MTMV_2}
+  }{
+    \markless{\MTArrow{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MLTProd]{
+    \markless{\MTMV_1} \\
+    \markless{\MTMV_2}
+  }{
+    \markless{\MTProd{\MTMV_1}{\MTMV_2}}
+  }
+
+  \inferrule[MLTForall]{
+    \markless{\MTMV} \\
+  }{
+    \markless{\MTForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[MLTVar]{ }{
+    \markless{\MTVarMV}
+  }
+\end{mathpar}
+
+\subsection{Type mark erasure}
+\label{sec:polymorphism-type-mark-erasure}
+\judgbox{\ensuremath{\erase{\MTMV}}} is a metafunction defined as follows:
+%
+\newcommand{\erasesToRow}[2]{\erase{#1} & = & #2}
+\[\begin{array}{rcl}
+  \erasesToRow{\MTUnknown}{\TUnknown} \\
+  \erasesToRow{\MTNum}{\TNum} \\
+  \erasesToRow{\MTBool}{\TBool} \\
+  \erasesToRow{(\MTArrow{\MTMV_1}{\MTMV_2})}{\MTArrow{(\erase{\MTMV_1})}{(\erase{\MTMV_2})}} \\
+  \erasesToRow{(\MTProd{\MTMV_1}{\MTMV_2})}{\MTProd{(\erase{\MTMV_1})}{(\erase{\MTMV_2})}} \\
+  \erasesToRow{(\MTForall{\MTVarMV}{\MTMV})}{\TForall{\TVarMV}{(\erase{\MTMV})}} \\
+  \erasesToRow{\MTVarMV}{\TVarMV} \\
+  \erasesToRow{\MTFree{\MTVarMV}}{\TVarMV}
+\end{array}\]
+
+\subsection{Unmarked expressions}
+\label{sec:polymorphism-unmarked-expressions}
+\judgbox{\ensuremath{\bothCtxSynTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}}} $\EMV$ synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[USTypeLam]{
+    \bothCtxSynTypeU{\extendTvarCtx{\tvarCtx}{\TVarMV}}{\ctx}{\EMV}{\TMV}
+  }{
+    \bothCtxSynTypeU{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\TForall{\TVarMV}{\TMV}}
+  }
+
+  \inferrule[USTypeAp]{
+    \bothCtxSynTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV} \\
+    \tvarCtxWFU{\tvarCtx}{\TMV_2} \\
+    \matchedForall{\TMV}{\TVarMV}{\TMV_1}
+  }{
+    \bothCtxSynTypeU{\tvarCtx}{\ctx}{\ETypeAp{\EMV}{\TMV_2}}{\subst{\TMV_1}{\TMV_2}{\TVarMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\bothCtxAnaTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}}} $\EMV$ analyzes against type $\TMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[UATypeLam]{
+    \matchedForall{\TMV}{\TVarMV}{\TMV'} \\
+    \bothCtxAnaTypeU{\extendTvarCtx{\tvarCtx}{\TVarMV}}{\ctx}{\EMV}{\TMV'}
+  }{
+    \bothCtxAnaTypeU{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\TMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\subsumable{\EMV}}} $\EMV$ is subsumable
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[USuTypeAp]{ }{
+    \subsumable{\ETypeAp{\EMV}{\TMV}}
+  }
+\end{mathpar}
+
+\subsection{Marking}
+\label{sec:polymorphism-marking}
+\judgbox{\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}} $\EMV$ is marked into $\ECMV$ and synthesizes type $\MTMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MKSTypeLam]{
+    \bothCtxSynFixedInto{\extendTvarCtx{\tvarCtx}{\TVarMV}}{\ctx}{\EMV}{\ECMV}{\MTMV}
+  }{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\ECTypeLam{\MTVarMV}{\ECMV}}{\MTForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[MKSTypeAp1]{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV} \\
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_2}{\MTMV_2} \\
+    \matchedForall{\MTMV}{\MTVarMV}{\MTMV_1}
+  }{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\ETypeAp{\EMV}{\TMV_2}}{\ECTypeAp{\ECMV}{\MTMV_2}}{\subst{\MTMV_1}{\MTMV_2}{\MTVarMV}}
+  }
+
+  \inferrule[MKSTypeAp2]{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV} \\
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_2}{\MTMV_2} \\
+    \notMatchedForall{\MTMV}
+  }{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\ETypeAp{\EMV}{\TMV_2}}{\ECTypeAp{\ECMV}{\MTMV_2}}{\MTUnknown}
+  }
+\end{mathpar}
+
+\judgbox{\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}} $\EMV$ is marked into $\ECMV$ and analyzes against type $\MTMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MKATypeLam1]{
+    \matchedForall{\MTMV}{\MTVarMV}{\MTMV'} \\
+    \bothCtxAnaFixedInto{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\EMV}{\ECMV}{\MTMV'}
+  }{
+    \bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\ECTypeLam{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+
+  \inferrule[MKATypeLam2]{
+    \notMatchedForall{\MTMV} \\
+    \bothCtxAnaFixedInto{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\EMV}{\ECMV}{\MTUnknown}
+  }{
+    \bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+\end{mathpar}
+
+\subsection{Marked expressions}
+\label{sec:polymorphism-marked-expressions}
+\judgbox{\ensuremath{\bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV}}} $\ECMV$ synthesizes type $\MTMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MSTypeLam]{
+    \bothCtxSynTypeM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\ECMV}{\MTMV}
+  }{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECTypeLam{\MTVarMV}{\ECMV}}{\MTForall{\MTVarMV}{\MTMV}}
+  }
+
+  \inferrule[MSTypeAp1]{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV} \\
+    \tvarCtxWFM{\tvarCtx}{\MTMV_2} \\
+    \matchedForall{\MTMV}{\MTVarMV}{\MTMV_1}
+  }{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECTypeAp{\ECMV}{\MTMV_2}}{\subst{\MTMV_1}{\MTMV_2}{\MTVarMV}}
+  }
+
+  \inferrule[MSTypeAp2]{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV} \\
+    \tvarCtxWFM{\tvarCtx}{\MTMV_2} \\
+    \notMatchedForall{\MTMV}
+  }{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECTypeApSynNonMatchedForall{\ECMV}{\MTMV_2}}{\MTUnknown}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\bothCtxAnaTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV}}} $\ECMV$ analyzes against type $\MTMV$
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MATypeLam1]{
+    \matchedForall{\MTMV}{\MTVarMV}{\MTMV'} \\
+    \bothCtxAnaTypeM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\ECMV}{\MTMV'}
+  }{
+    \bothCtxAnaTypeM{\tvarCtx}{\ctx}{\ECTypeLam{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+
+  \inferrule[MATypeLam2]{
+    \notMatchedForall{\MTMV} \\
+    \bothCtxAnaTypeM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\ECMV}{\MTUnknown}
+  }{
+    \bothCtxAnaTypeM{\tvarCtx}{\ctx}{\ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\subsumable{\ECMV}}} $\ECMV$ is subsumable
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MSuTypeAp1]{ }{
+    \subsumable{\ECTypeAp{\ECMV}{\MTMV}}
+  }
+
+  \inferrule[MSuTypeAp2]{ }{
+    \subsumable{\ECTypeApSynNonMatchedForall{\ECMV}{\MTMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\markless{\ECMV}}} $\ECMV$ has no marks
+%
+\begin{mathpar}
+  \cdots
+
+  \inferrule[MLTypeLam]{
+    \markless{\ECMV}
+  }{
+    \markless{\ECTypeLam{\MTVarMV}{\ECMV}}
+  }
+
+  \inferrule[MLTypeAp]{
+    \markless{\ECMV} \\
+    \markless{\MTMV} \\
+  }{
+    \markless{\ECTypeAp{\ECMV}{\MTMV}}
+  }
+\end{mathpar}
+
+\subsection{Mark erasure}
+\label{sec:polymorphism-mark-erasure}
+\judgbox{\ensuremath{\erase{\ECMV}}} is a metafunction defined as follows:
+%
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \erasesToRow{(\ECTypeLam{\MTVarMV}{\ECMV})}{\ETypeLam{\MTVarMV}{(\erase{\ECMV})}} \\
+  \erasesToRow{\ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV}}{\ETypeLam{\MTVarMV}{(\erase{\ECMV})}} \\
+  \erasesToRow{(\ECTypeAp{\ECMV}{\MTMV})}{\ETypeAp{\erase{\ECMV}}{\erase{\MTMV}}} \\
+  \erasesToRow{(\ECTypeApSynNonMatchedForall{\ECMV}{\MTMV})}{\ETypeAp{\erase{\ECMV}}{\erase{\MTMV}}} \\
+\end{array}\]
+
+\subsection{Metatheorems}
+\label{sec:polymorphism-metatheorems}
+With polymorphism, we have the following modified metatheorems which additionally account for type
+well-formedness and marking.
+
+\begin{lemma*}[name=Unmarked Synthesis]
+  If $\bothCtxSynTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}$, then $\tvarCtxWFU{\tvarCtx}{\TMV}$.
+\end{lemma*}
+
+\begin{lemma*}[name=Marked Synthesis]
+  If $\bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV}$, then $\tvarCtxWFM{\tvarCtx}{\MTMV}$.
+\end{lemma*}
+
+\begin{theorem}[name=Marking Totality] \
+  \begin{enumerate}
+    \item For all $\tvarCtx$ and $\TMV$,
+      there exists $\MTMV$ such that $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$.
+
+    \item For all $\tvarCtx$, $\ctx$, and $\EMV$,
+      there exist $\ECMV$ and $\MTMV$ such that $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$.
+
+    \item For all $\tvarCtx$, $\ctx$, $\EMV$, and $\MTMV$
+        such that $\tvarCtxWFM{\tvarCtx}{\MTMV}$,
+      there exists $\ECMV$
+        such that $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Marking Well-Formedness] \
+  \begin{enumerate}
+    \item If $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$,
+      then $\tvarCtxWFM{\tvarCtx}{\MTMV}$
+        and $\erasesTo{\MTMV}{\TMV}$.
+
+    \item If $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$,
+      then $\tvarCtxWFM{\tvarCtx}{\MTMV}$
+        and $\bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV}$
+        and $\erasesTo{\ECMV}{\EMV}$. 
+
+    \item If $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$
+        and $\tvarCtxWFM{\tvarCtx}{\MTMV}$,
+      then $\bothCtxAnaTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV}$
+        and $\erasesTo{\ECMV}{\EMV}$. 
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \
+  \begin{enumerate}
+    \item \begin{enumerate}
+        \item If $\tvarCtxWFU{\tvarCtx}{\TMV}$
+            and $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$,
+          then $\markless{\MTMV}$.
+
+        \item If $\bothCtxSynTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}$
+            and $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$,
+          then $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$
+            and $\markless{\ECMV}$.
+
+        \item If $\bothCtxAnaTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}$
+            and $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$
+            and $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$,
+          then $\markless{\ECMV}$.
+      \end{enumerate}
+
+    \item \begin{enumerate}
+        \item If it is not the case that $\tvarCtxWFU{\tvarCtx}{\TMV}$,
+          then for all $\MTMV$
+            such that $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$,
+            it is not the case that $\markless{\MTMV}$.
+
+        \item If there does not exist $\TMV$
+            such that $\bothCtxSynTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}$,
+          then for all $\ECMV$ and $\MTMV$
+            such that $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$,
+            it is not the case that $\markless{\ECMV}$.
+
+        \item If there does not exist $\TMV$
+            such that $\bothCtxAnaTypeU{\tvarCtx}{\ctx}{\EMV}{\TMV}$,
+          then for all $\ECMV$ and $\MTMV$
+            such that $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV}$,
+            it is not the case that $\markless{\ECMV}$.
+      \end{enumerate}
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Marking Unicity] \
+  \begin{enumerate}
+    \item If $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV_1}$,
+        and $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV_2}$,
+      then $\equal{\MTMV_1}{\MTMV_2}$.
+
+    \item If $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV_1}{\MTMV_1}$
+        and $\bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV_2}{\MTMV_2}$,
+      then $\equal{\ECMV_1}{\ECMV_2}$ and $\equal{\MTMV_1}{\MTMV_2}$.
+
+    \item If $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV_1}{\MTMV}$
+        and $\bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV_2}{\MTMV}$,
+      then $\equal{\ECMV_1}{\ECMV_2}$.
+  \end{enumerate}
+\end{theorem}
+
+\end{document}

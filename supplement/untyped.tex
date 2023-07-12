@@ -1,0 +1,713 @@
+\documentclass[supplement.tex]{subfiles}
+
+\begin{document}
+
+\section{Untyped hazelnut}
+\label{sec:untyped}
+
+\subsection{Syntax}
+\label{sec:untyped-syntax}
+\[\begin{array}{rrcl}
+  \ZTMName & \ZTMV & \Coloneqq & \ZTCursor{\TMV} \mid \ZTArrowL{\ZTMV}{\TMV} \mid \ZTArrowR{\TMV}{\ZTMV} \mid \ZTProdL{\ZTMV}{\TMV} \mid \ZTProdR{\TMV}{\ZTMV} \\
+  \ZMName  & \ZMV  & \Coloneqq & \ZCursor{\EMV} \mid \ZLamT{x}{\ZTMV}{\EMV} \mid \ZLamE{x}{\TMV}{\ZMV} \mid \ZApL{\ZMV}{\EMV} \mid \ZApR{\EMV}{\ZMV} \\
+           &       & \mid         & \ZLetL{x}{\ZMV}{\EMV} \mid \ZLetR{x}{\EMV}{\ZMV} \\
+           &       & \mid         & \ZPlusL{\ZMV}{\EMV} \mid \ZPlusR{\EMV}{\ZMV} \\
+           &       & \mid         & \ZIfC{\ZMV}{\EMV}{\EMV} \mid \ZIfL{\EMV}{\ZMV}{\EMV} \mid \ZIfR{\EMV}{\EMV}{\ZMV} \\
+           &       & \mid         & \ZPairL{\ZMV}{\EMV} \mid \ZPairR{\EMV}{\ZMV} \mid \ZProjL{\ZMV} \mid \ZProjR{\ZMV} \\
+\end{array}\]
+
+\subsection{Cursor erasure}
+\label{sec:untyped-cursor-erasure}
+
+\subsubsection{Type cursor erasure}
+\label{sec:untyped-type-cursor-erasure}
+\judgbox{\ensuremath{\cursorErase{\ZTMV}}} is a metafunction defined as follows:
+%
+\newcommand{\cursorErasesToRow}[2]{\ensuremath{\cursorErase{#1} & = & #2}}
+\[\begin{array}{rcl}
+  \cursorErasesToRow{\ZTCursor{\TMV}}{\TMV} \\
+  \cursorErasesToRow{(\ZTArrowL{\ZTMV}{\TMV})}{\TArrow{\cursorErase{\ZTMV}}{\TMV}} \\
+  \cursorErasesToRow{(\ZTArrowR{\TMV}{\ZTMV})}{\TArrow{\TMV}{\cursorErase{\ZTMV}}} \\
+  \cursorErasesToRow{(\ZTProdL{\ZTMV}{\TMV})}{\TProd{\cursorErase{\ZTMV}}{\TMV}} \\
+  \cursorErasesToRow{(\ZTProdR{\TMV}{\ZTMV})}{\TProd{\TMV}{\cursorErase{\ZTMV}}} \\
+\end{array}\]
+
+\subsubsection{Expression cursor erasure}
+\label{sec:untyped-expression-cursor-erasure}
+\judgbox{\ensuremath{\cursorErase{\ZMV}}} is a metafunction defined as follows:
+%
+\[\begin{array}{rcl}
+  \cursorErasesToRow{\ZCursor{\EMV}}{\EMV} \\
+  \cursorErasesToRow{(\ZLamT{x}{\ZTMV}{\EMV})}{\ELam{x}{\cursorErase{\ZTMV}}{\EMV}} \\
+  \cursorErasesToRow{(\ZLamE{x}{\TMV}{\ZMV})}{\ELam{x}{\TMV}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZApL{\ZMV}{\EMV})}{\EAp{\cursorErase{\ZMV}}{\EMV}} \\
+  \cursorErasesToRow{(\ZApR{\EMV}{\ZMV})}{\EAp{\EMV}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZLetL{x}{\ZMV}{\EMV})}{\ELet{x}{\cursorErase{\ZMV}}{\EMV}} \\
+  \cursorErasesToRow{(\ZLetR{x}{\EMV}{\ZMV})}{\ELet{x}{\EMV}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZPlusL{\ZMV}{\EMV})}{\EPlus{\cursorErase{\ZMV}}{\EMV}} \\
+  \cursorErasesToRow{(\ZPlusR{\EMV}{\ZMV})}{\EPlus{\EMV}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZIfC{\ZMV}{\EMV_1}{\EMV_2})}{\EIf{\cursorErase{\ZMV}}{\EMV_1}{\EMV_2}} \\
+  \cursorErasesToRow{(\ZIfL{\EMV_1}{\ZMV}{\EMV_2})}{\EIf{\EMV_1}{\cursorErase{\ZMV}}{\EMV_2}} \\
+  \cursorErasesToRow{(\ZIfL{\EMV_1}{\EMV_2}{\ZMV})}{\EIf{\EMV_1}{\EMV_2}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZPairL{\ZMV}{\EMV})}{\EPair{\cursorErase{\ZMV}}{\EMV}} \\
+  \cursorErasesToRow{(\ZPairR{\EMV}{\ZMV})}{\EPair{\EMV}{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZProjL{\ZMV})}{\EProjL{\cursorErase{\ZMV}}} \\
+  \cursorErasesToRow{(\ZProjR{\ZMV})}{\EProjR{\cursorErase{\ZMV}}} \\
+\end{array}\]
+
+\subsection{Action model}
+\label{sec:untyped-action-model}
+\[\begin{array}{rrcl}
+  \AMName  & \AMV  & \Coloneqq & \AMove{\MMV} \mid \ACon{\SMV} \mid \ADel \\
+  \AIMName & \AIMV & \Coloneqq & \AINil \mid \AICons{\AMV}{\AIMV} \\
+  \MMName  & \MMV  & \Coloneqq & \MChild{\MChildNMV} \mid \MParent \\
+  \SMName  & \SMV  & \Coloneqq & \STArrowL \mid \STArrowR \mid \STProdL \mid \STProdR \mid \STNum \mid \STBool \\
+           &       & \mid         & \SVar{x} \mid \SLam{x} \mid \SApL \mid \SApR \\
+           &       & \mid         & \SLetL{x} \mid \SLetR{x} \\
+           &       & \mid         & \SLit{n} \mid \SPlusL \mid \SPlusR \\
+           &       & \mid         & \STrue \mid \SFalse \mid \SIfC \mid \SIfL \mid \SIfR \\
+           &       & \mid         & \SPairL \mid \SPairR \mid \SProjL \mid \SProjR
+\end{array}\]
+
+\subsubsection{Shape sort}
+\label{sec:untyped-shape-sort}
+\judgbox{\ensuremath{\tshape{\SMV}}} $\SMV$ is a shape on types
+%
+\begin{mathpar}
+  \inferrule[ASortArrow1]{ }{
+    \tshape{\STArrowL}
+  }
+
+  \inferrule[ASortArrow2]{ }{
+    \tshape{\STArrowR}
+  }
+
+  \inferrule[ASortProd1]{ }{
+    \tshape{\STProdL}
+  }
+
+  \inferrule[ASortProd2]{ }{
+    \tshape{\STProdR}
+  }
+
+  \inferrule[ASortNum]{ }{
+    \tshape{\STNum}
+  }
+
+  \inferrule[ASortBool]{ }{
+    \tshape{\STBool}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\eshape{\SMV}}} $\SMV$ is a shape on expressions
+%
+\begin{mathpar}
+  \inferrule[ASortVar]{ }{
+    \eshape{\SVar{x}}
+  }
+
+  \inferrule[ASortLam]{ }{
+    \eshape{\SLam{x}}
+  }
+
+  \inferrule[ASortAp1]{ }{
+    \eshape{\SApL}
+  }
+
+  \inferrule[ASortAp2]{ }{
+    \eshape{\SApR}
+  }
+
+  \inferrule[ASortLet1]{ }{
+    \eshape{\SLetL{x}}
+  }
+
+  \inferrule[ASortLet2]{ }{
+    \eshape{\SLetR{x}}
+  }
+
+  \inferrule[ASortLit]{ }{
+    \eshape{\SLit{n}}
+  }
+
+  \inferrule[ASortPlus1]{ }{
+    \eshape{\SPlusL}
+  }
+
+  \inferrule[ASortPlus2]{ }{
+    \eshape{\SPlusR}
+  }
+
+  \inferrule[ASortTrue]{ }{
+    \eshape{\STrue}
+  }
+
+  \inferrule[ASortFalse]{ }{
+    \eshape{\SFalse}
+  }
+
+  \inferrule[ASortIf1]{ }{
+    \eshape{\SIfC}
+  }
+
+  \inferrule[ASortIf2]{ }{
+    \eshape{\SIfL}
+  }
+
+  \inferrule[ASortIf3]{ }{
+    \eshape{\SIfR}
+  }
+
+  \inferrule[ASortPairL]{ }{
+    \eshape{\SPairL}
+  }
+
+  \inferrule[ASortPairR]{ }{
+    \eshape{\SPairR}
+  }
+
+  \inferrule[ASortProjL]{ }{
+    \eshape{\SProjL}
+  }
+
+  \inferrule[ASortProjR]{ }{
+    \eshape{\SProjR}
+  }
+\end{mathpar}
+
+\subsubsection{Type actions}
+\label{sec:untyped-type-actions}
+\judgbox{\ensuremath{\AUTAction{\ZTMV}{\ZTMV'}{\AMV}}}
+
+\paragraph{Movement}
+\begin{mathpar}
+  \inferrule[ATMArrChild1]{ }{
+    \AUTMArrowChildL{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMArrChild2]{ }{
+    \AUTMArrowChildR{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMArrParent1]{ }{
+    \AUTMArrowParentL{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMArrParent2]{ }{
+    \AUTMArrowParentR{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMProdChild1]{ }{
+    \AUTMProdChildL{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMProdChild2]{ }{
+    \AUTMProdChildR{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMProdParent1]{ }{
+    \AUTMProdParentL{\TMV_1}{\TMV_2}
+  }
+
+  \inferrule[ATMProdParent2]{ }{
+    \AUTMProdParentR{\TMV_1}{\TMV_2}
+  }
+\end{mathpar}
+
+\paragraph{Deletion}
+\begin{mathpar}
+  \inferrule[ATDel]{ }{
+    \AUTDel{\TMV}
+  }
+\end{mathpar}
+
+\paragraph{Construction}
+\begin{mathpar}
+  \inferrule[ATConArrow1]{ }{
+    \AUTConArrowL{\TMV}
+  }
+
+  \inferrule[ATConArrow2]{ }{
+    \AUTConArrowR{\TMV}
+  }
+
+  \inferrule[ATConProd1]{ }{
+    \AUTConProdL{\TMV}
+  }
+
+  \inferrule[ATConProd2]{ }{
+    \AUTConProdR{\TMV}
+  }
+
+  \inferrule[ATConNum]{ }{
+    \AUTConNum
+  }
+
+  \inferrule[ATConBool]{ }{
+    \AUTConBool
+  }
+\end{mathpar}
+
+\paragraph{Zipper Cases}
+\begin{mathpar}
+  \inferrule[ATZipArr1]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV}
+  }{
+    \AUTAction{\ZTArrowL{\ZTMV}{\TMV}}{\ZTArrowL{\ZTMV'}{\TMV}}{\AMV}
+  }
+
+  \inferrule[ATZipArr2]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV}
+  }{
+    \AUTAction{\ZTArrowR{\TMV}{\ZTMV}}{\ZTArrowR{\TMV}{\ZTMV'}}{\AMV}
+  }
+
+  \inferrule[ATZipProd1]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV}
+  }{
+    \AUTAction{\ZTProdL{\ZTMV}{\TMV}}{\ZTProdL{\ZTMV'}{\TMV}}{\AMV}
+  }
+
+  \inferrule[ATZipProd2]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV}
+  }{
+    \AUTAction{\ZTProdR{\TMV}{\ZTMV}}{\ZTProdR{\TMV}{\ZTMV'}}{\AMV}
+  }
+\end{mathpar}
+
+\subsubsection{Expression movement}
+\label{sec:untyped-expression-movement}
+\judgbox{\ensuremath{\AUEMove{\ZMV}{\ZMV'}{\MMV}}}
+%
+\begin{mathpar}
+  \inferrule[AEMLamChild1]{ }{
+    \AUEMLamChildT{x}{\TMV}{\EMV}
+  }
+
+  \inferrule[AEMLamChild2]{ }{
+    \AUEMLamChildE{x}{\TMV}{\EMV}
+  } \\
+
+  \inferrule[AEMLamParent1]{ }{
+    \AUEMLamParentT{x}{\TMV}{\EMV}
+  }
+
+  \inferrule[AEMLamParent2]{ }{
+    \AUEMLamParentE{x}{\TMV}{\EMV}
+  } \\
+
+  \inferrule[AEMApChild1]{ }{
+    \AUEMApChildL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMApChild2]{ }{
+    \AUEMApChildR{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMApParent1]{ }{
+    \AUEMApParentL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMApParent2]{ }{
+    \AUEMApParentR{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMLetChild1]{ }{
+    \AUEMLetChildL{x}{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMLetChild2]{ }{
+    \AUEMLetChildR{x}{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMLetParent1]{ }{
+    \AUEMLetParentL{x}{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMLetParent2]{ }{
+    \AUEMLetParentR{x}{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMPlusChild1]{ }{
+    \AUEMPlusChildL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMPlusChild2]{ }{
+    \AUEMPlusChildR{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMPlusParent1]{ }{
+    \AUEMPlusParentL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMPlusParent2]{ }{
+    \AUEMPlusParentR{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMIfChild1]{ }{
+    \AUEMIfChildC{\EMV_1}{\EMV_2}{\EMV_3}
+  }
+
+  \inferrule[AEMIfChild2]{ }{
+    \AUEMIfChildL{\EMV_1}{\EMV_2}{\EMV_3}
+  }
+
+  \inferrule[AEMIfChild3]{ }{
+    \AUEMIfChildR{\EMV_1}{\EMV_2}{\EMV_3}
+  }
+
+  \inferrule[AEMIfParent1]{ }{
+    \AUEMIfParentC{\EMV_1}{\EMV_2}{\EMV_3}
+  }
+
+  \inferrule[AEMIfParent2]{ }{
+    \AUEMIfParentL{\EMV_1}{\EMV_2}{\EMV_3}
+  }
+
+  \inferrule[AEMIfParent3]{ }{
+    \AUEMIfParentR{\EMV_1}{\EMV_2}{\EMV_3}
+  } \\
+
+  \inferrule[AEMPairChild1]{ }{
+    \AUEMPairChildL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMPairChild2]{ }{
+    \AUEMPairChildR{\EMV_1}{\EMV_2}
+  } \\
+
+  \inferrule[AEMPairParent1]{ }{
+    \AUEMPairParentL{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMPairParent2]{ }{
+    \AUEMPairParentR{\EMV_1}{\EMV_2}
+  }
+
+  \inferrule[AEMProjLChild]{ }{
+    \AUEMProjLChild{\EMV_1}
+  }
+
+  \inferrule[AEMProjLParent]{ }{
+    \AUEMProjLParent{\EMV_1}
+  }
+
+  \inferrule[AEMProjRChild]{ }{
+    \AUEMProjRChild{\EMV_1}
+  }
+
+  \inferrule[AEMProjRParent]{ }{
+    \AUEMProjRParent{\EMV_1}
+  }
+\end{mathpar}
+
+\subsubsection{Expression actions}
+\label{sec:untyped-expression-actions}
+\judgbox{\ensuremath{\AUEAction{\ZMV}{\ZMV'}{\AMV}}}
+
+\paragraph{Movement}
+\begin{mathpar}
+  \inferrule[AEMove]{
+    \AUEMove{\ZMV}{\ZMV'}{\MMV}
+  }{
+    \AUEMove{\ZMV}{\ZMV'}{\MMV}
+  }
+\end{mathpar}
+
+\paragraph{Deletion}
+\begin{mathpar}
+  \inferrule[AEDel]{ }{
+    \AUEDel{\EMV}
+  }
+\end{mathpar}
+
+\paragraph{Construction}
+\begin{mathpar}
+  \inferrule[AEConVar]{ }{
+    \AUEConVar{x}
+  } \\
+
+  \inferrule[AEConLam]{ }{
+    \AUEConLam{x}{\EMV}
+  } \\
+
+  \inferrule[AEConAp1]{ }{
+    \AUEConApL{\EMV}
+  }
+
+  \inferrule[AEConAp2]{ }{
+    \AUEConApR{\EMV}
+  } \\
+
+  \inferrule[AEConLet1]{ }{
+    \AUEConLetL{x}{\EMV}
+  }
+
+  \inferrule[AEConLet2]{ }{
+    \AUEConLetR{x}{\EMV}
+  } \\
+
+  \inferrule[AEConNum]{ }{
+    \AUEConNum{\ENumMV}
+  }
+
+  \inferrule[AEConPlus1]{ }{
+    \AUEConPlusL{\EMV}
+  }
+
+  \inferrule[AEConPlus2]{ }{
+    \AUEConPlusR{\EMV}
+  } \\
+
+  \inferrule[AEConTrue]{ }{
+    \AUEConTrue
+  }
+
+  \inferrule[AEConFalse]{ }{
+    \AUEConFalse
+  } \\
+  
+  \inferrule[AEConIf1]{ }{
+    \AUEConIfC{\EMV}
+  }
+  
+  \inferrule[AEConIf2]{ }{
+    \AUEConIfL{\EMV}
+  }
+  
+  \inferrule[AEConIf3]{ }{
+    \AUEConIfR{\EMV}
+  } \\
+
+  \inferrule[AEConPair1]{ }{
+    \AUEConPairL{\EMV}
+  }
+
+  \inferrule[AEConPair2]{ }{
+    \AUEConPairR{\EMV}
+  } \\
+
+  \inferrule[AEConProjL]{ }{
+    \AUEConProjL{\EMV}
+  }
+
+  \inferrule[AEConProjR]{ }{
+    \AUEConProjR{\EMV}
+  }
+\end{mathpar}
+
+\paragraph{Zipper Cases}
+\begin{mathpar}
+  \inferrule[AEZipLam1]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV}
+  }{
+    \AUEAction{\ZLamT{x}{\ZTMV}{\EMV}}{\ZLamT{x}{\ZTMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipLam2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZLamE{x}{\TMV}{\ZMV}}{\ZLamE{x}{\TMV}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipAp1]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZApL{\ZMV}{\EMV}}{\ZApL{\ZMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipAp2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZApR{\EMV}{\ZMV}}{\ZApR{\EMV}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipLet1]{
+    \AUTAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZLetL{x}{\ZMV}{\EMV}}{\ZLetL{x}{\ZMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipLet2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZLetR{x}{\EMV}{\ZMV}}{\ZLetR{x}{\EMV}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipPlus1]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZPlusL{\ZMV}{\EMV}}{\ZPlusL{\ZMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipPlus2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZPlusR{\EMV}{\ZMV}}{\ZPlusR{\EMV}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipIf1]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZIfC{\ZMV}{\EMV_1}{\EMV_2}}{\ZIfC{\ZMV'}{\EMV_1}{\EMV_2}}{\AMV}
+  }
+
+  \inferrule[AEZipIf2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZIfL{\EMV_1}{\ZMV}{\EMV_2}}{\ZIfL{\EMV_1}{\ZMV'}{\EMV_2}}{\AMV}
+  }
+
+  \inferrule[AEZipIf3]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZIfR{\EMV_1}{\EMV_2}{\ZMV}}{\ZIfR{\EMV_1}{\EMV_2}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipPair1]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZPairL{\ZMV}{\EMV}}{\ZPairL{\ZMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipPair2]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZPairR{\EMV}{\ZMV}}{\ZPairR{\EMV}{\ZMV'}}{\AMV}
+  } \\
+
+  \inferrule[AEZipProjL]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZProjL{\ZMV}{\EMV}}{\ZProjL{\ZMV'}{\EMV}}{\AMV}
+  }
+
+  \inferrule[AEZipProjR]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV}
+  }{
+    \AUEAction{\ZProjR{\EMV}{\ZMV}}{\ZProjR{\EMV}{\ZMV'}}{\AMV}
+  }
+\end{mathpar}
+
+\subsubsection{Iterated actions}
+\label{sec:untyped-iterated-actions}
+\judgbox{\ensuremath{\AUTActionIter{\ZTMV}{\ZTMV'}{\AIMV}}}
+%
+\begin{mathpar}
+  \inferrule[ATIRefl]{ }{
+    \AUTActionIter{\ZTMV}{\ZTMV}{\AINil}
+  }
+
+  \inferrule[ATITyp]{
+    \AUTAction{\ZTMV}{\ZTMV'}{\AMV} \\
+    \AUTActionIter{\ZTMV'}{\ZTMV''}{\AIMV}
+  }{
+    \AUTActionIter{\ZTMV}{\ZTMV''}{\AICons{\AMV}{\AIMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\AUEActionIter{\ZMV}{\ZMV'}{\AIMV}}}
+%
+\begin{mathpar}
+  \inferrule[AEIRefl]{ }{
+    \AUEActionIter{\ZMV}{\ZMV}{\AINil}
+  }
+
+  \inferrule[AEIExp]{
+    \AUEAction{\ZMV}{\ZMV'}{\AMV} \\
+    \AUEActionIter{\ZMV'}{\ZMV''}{\AIMV}
+  }{
+    \AUEActionIter{\ZMV}{\ZMV''}{\AICons{\AMV}{\AIMV}}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\movements{\AIMV}}}
+%
+\begin{mathpar}
+  \inferrule[AMINil]{ }{
+    \movements{\AINil}
+  }
+
+  \inferrule[AMICons]{
+    \movements{\AIMV}
+  }{
+    \movements{\AICons{\AMove{\MMV}}{\AIMV}}
+  }
+\end{mathpar}
+
+\subsection{Metatheorems}
+\label{sec:untyped-metatheorems}
+\begin{theorem}[name=Sensibility]
+\end{theorem}
+
+\begin{theorem}[name=Movement Erasure Invariance] \
+  \begin{enumerate}
+    \item If $\AUTAction{\ZTMV}{\ZTMV'}{\AMove{\MMV}}$, then $\cursorErase{\ZTMV} =
+      \cursorErase{\ZTMV'}$.
+
+    \item If $\AUEAction{\ZMV}{\ZMV'}{\AMove{\MMV}}$, then $\cursorErase{\ZMV} =
+      \cursorErase{\ZMV'}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Reachability] \
+  \begin{enumerate}
+    \item If $\cursorErase{\ZTMV} = \cursorErase{\ZTMV'}$, then there exists $\AIMV$ such that
+      $\movements{\AIMV}$ and $\AUTActionIter{\ZTMV}{\ZTMV'}{\AIMV}$.
+
+    \item If $\cursorErase{\ZMV} = \cursorErase{\ZMV'}$, then there exists $\AIMV$ such that
+      $\movements{\AIMV}$ and $\AUEActionIter{\ZMV}{\ZMV'}{\AIMV}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{lemma}[name=Reach Up] \
+  \begin{enumerate}
+    \item If $\cursorErase{\ZTMV} = \TMV$, then there exists $\AIMV$ such that $\movements{\AIMV}$
+      and $\AUTActionIter{\ZTMV}{\ZTCursor{\TMV}}{\AIMV}$.
+
+    \item If $\cursorErase{\ZMV} = \EMV$, then there exists $\AIMV$ such that $\movements{\AIMV}$
+      and $\AUEActionIter{\ZMV}{\ZTCursor{\EMV}}{\AIMV}$.
+  \end{enumerate}
+\end{lemma}
+
+\begin{lemma}[name=Reach Down] \
+  \begin{enumerate}
+    \item If $\cursorErase{\ZTMV} = \TMV$, then there exists $\AIMV$ such that $\movements{\AIMV}$
+      and $\AUTActionIter{\ZTCursor{\TMV}}{\ZTMV}{\AIMV}$.
+
+    \item If $\cursorErase{\ZMV} = \EMV$, then there exists $\AIMV$ such that $\movements{\AIMV}$
+      and $\AUEActionIter{\ZTCursor{\EMV}}{\ZMV}{\AIMV}$.
+  \end{enumerate}
+\end{lemma}
+
+\begin{theorem}[name=Constructability] \
+  \begin{enumerate}
+    \item For every $\TMV$, there exists $\AIMV$ such that
+      $\AUTActionIter{\ZTCursor{\TUnknown}}{\ZTCursor{\TMV}}{\AIMV}$.
+
+    \item For every $\EMV$, there exists $\AIMV$ such that
+      $\AUEActionIter{\ZCursor{\EEHole}}{\ZCursor{\EMV}}{\AIMV}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Determinism] \
+  \begin{enumerate}
+    \item If $\AUTActionIter{\ZTMV}{\ZTMV'}{\AMV}$ and $\AUTActionIter{\ZTMV}{\ZTMV''}{\AMV}$, then
+      $\ZTMV' = \ZTMV''$.
+
+    \item If $\AUEActionIter{\ZMV}{\ZMV'}{\AMV}$ and $\AUEActionIter{\ZMV}{\ZMV''}{\AMV}$, then
+      $\ZMV' = \ZMV''$.
+  \end{enumerate}
+\end{theorem}
+
+% \begin{theorem}[name=Actionability] \
+  % \begin{enumerate}
+    % \item For every $\TMV$ and $\AMV$, there exists $\ZTMV$ such that
+      % $\AUTAction{\ZTCursor{\TMV}}{\ZTMV}{\AMV}$.
+
+    % \item For every $\EMV$ and $\AMV$, there exists $\ZMV$ such that
+      % $\AUEAction{\ZCursor{\EMV}}{\ZMV}{\AMV}$.
+  % \end{enumerate}
+% \end{theorem}
+
+\end{document}

@@ -1,0 +1,500 @@
+\documentclass[supplement.tex]{subfiles}
+
+\begin{document}
+
+\section{Extension: patterned let expressions}
+\label{sec:patterned}
+
+\subsection{Syntax}
+\label{sec:patterned-syntax}
+\[\begin{array}{rrcl}
+  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TUnknownSwitch \\
+  \EMName  & \EMV  & \Coloneqq & \cdots \mid \ELet{\PMV}{\EMV}{\EMV} \\
+  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECLet{\PMV}{\ECMV}{\ECMV} \\
+  \PMName  & \PMV  & \Coloneqq & \PWild \mid \PVar{x} \mid \PPair{\PMV}{\PMV} \mid \PAsc{\PMV}{\TMV} \\
+  \PCMName & \PCMV & \Coloneqq & \PCWild \mid \PCVar{x} \mid \PCPair{\PCMV}{\PCMV} \mid \PCAsc{\PCMV}{\TMV} \\
+           &       & \mid         & \PCInconType{\PCMV} \mid \PCPairAnaNonMatchedProd{\PCMV}{\PCMV}
+\end{array}\]
+
+\subsection{Types}
+\label{sec:patterned-types}
+\judgbox{\ensuremath{\consistent{\TMV_1}{\TMV_2}}} $\TMV_1$ is consistent with $\TMV_2$
+%
+\begin{mathpar}
+  \inferrule[TCUnknownSwitch1]{ }{
+    \consistent{\TUnknownSwitch}{\TMV}
+  }
+
+  \inferrule[TCUnknownSwitch2]{ }{
+    \consistent{\TMV}{\TUnknownSwitch}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedArrow{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched arrow type $\TArrow{\TMV_1}{\TMV_2}$
+%
+\begin{mathpar}
+  \inferrule[TMAUnknownSwitch]{ }{
+    \matchedArrow{\TUnknownSwitch}{\TUnknownSwitch}{\TUnknownSwitch}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedProd{\TMV}{\TMV_1}{\TMV_2}}} $\TMV$ has matched binary product type $\TProd{\TMV_1}{\TMV_2}$
+%
+\begin{mathpar}
+  \inferrule[TMPUnknownSwitch]{ }{
+    \matchedProd{\TUnknownSwitch}{\TUnknownSwitch}{\TUnknownSwitch}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\TMeet{\TMV_1}{\TMV_2}}} is a \emph{partial} metafunction defined as follows:
+%
+\newcommand{\meetsToRow}[3]{\ensuremath{\TMeet{#1}{#2} & = & #3}}
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \meetsToRow{\TUnknownSwitch}{\TMV}{\TUnknownSwitch} \\
+  \meetsToRow{\TMV}{\TUnknownSwitch}{\TUnknownSwitch}
+\end{array}\]
+
+\subsection{Unmarked patterns}
+\label{sec:patterned-unmarked-patterns}
+\judgbox{\ensuremath{\ctxSynPatU{\ctx}{\PMV}{\TMV}}} $\PMV$ synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[USPWild]{ }{
+    \ctxSynPatU{\ctx}{\PWild}{\TUnknownSwitch}
+  }
+ 
+  \inferrule[USPVar]{ }{
+    \ctxSynPatU{\ctx}{\PVar{x}}{\TUnknownSwitch}
+  }
+
+  \inferrule[USPPair]{
+    \ctxSynPatU{\ctx}{\PMV_1}{\TMV_1} \\
+    \ctxSynPatU{\ctx}{\PMV_2}{\TMV_2}
+  }{
+    \ctxSynPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
+ 
+  \inferrule[USPAnn]{
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}
+  }{
+    \ctxSynPatU{\ctx}{\PAsc{\PMV}{\TMV}}{\TMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\ctxAnaPatU{\ctx_1}{\PMV}{\TMV}{\ctx_2}}} $\PMV$ analyzes against type $\TMV$ producing context $\ctx_2$
+%
+\begin{mathpar}
+  \inferrule[UAPWild]{ }{
+    \ctxAnaPatU{\ctx}{\PWild}{\TMV}{\ctx}
+  }
+ 
+  \inferrule[UAPVar]{ }{
+    \ctxAnaPatU{\ctx}{\PVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
+  }
+
+  \inferrule[UAPPair]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaPatU{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
+    \ctxAnaPatU{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
+  }{
+    \ctxAnaPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
+  }
+ 
+  \inferrule[UAPAnn]{
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV'}{\ctx'} \\
+    \consistent{\TMV}{\TMV'}
+  }{
+    \ctxAnaPatU{\ctx}{\PAsc{\PMV}{\TMV'}}{\TMV}{\ctx'}
+  }
+\end{mathpar}
+
+\subsection{Pattern marking}
+\label{sec:patterned-pattern-marking}
+\judgbox{\ensuremath{\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}}} $\PMV$ is marked into $\PCMV$ and synthesizes $\TMV$
+ %
+\begin{mathpar}
+  \inferrule[ISPWild]{ }{
+    \ctxSynFixedIntoPat{\ctx}{\PWild}{\PCWild}{\TUnknownSwitch}
+  }
+   
+  \inferrule[ISPVar]{ }{
+    \ctxSynFixedIntoPat{\ctx}{\PVar{x}}{\PCVar{x}}{\TUnknownSwitch}
+  }
+
+  \inferrule[ISPPair]{
+    \ctxSynFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1} \\\\
+    \ctxSynFixedIntoPat{\ctx}{\PMV_2}{\PCMV_2}{\TMV_2}
+  }{
+     \ctxSynFixedIntoPat{\ctx}{\EPair{\PMV_1}{\PMV_2}}{\ECPair{\PCMV_1}{\PCMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
+
+  \inferrule[ISPAnn1]{
+    \ctxAnaPatU{\ctx}{\PMV{}}{\TMV}{\ctx'} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\ctx''}
+  }{
+    \ctxSynFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV}}{\PCAsc{\PCMV}{\TMV}}{\tau}
+  }
+
+  \inferrule[ISPAnn2]{
+    \ctxNotAnaPatU{\ctx}{\PMV{}}{\TMV}{\ctx'} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TUnknown}{\ctx''}
+  }{
+    \ctxSynFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV}}{\PCAsc{\PCInconType{\PCMV}}{\TMV}}{\TMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\ctxAnaFixedIntoPat{\ctx_1}{\PMV}{\PCMV}{\TMV}{\ctx_2}}} $\PMV$ is marked into $\PCMV$ and analyzes against $\TMV$ producing $\ctx_2$
+%
+\begin{mathpar}
+  \inferrule[IAPWild]{ }{
+    \ctxAnaFixedIntoPat{\ctx}{\PWild}{\PCWild}{\TMV}{\ctx}
+  }
+   
+  \inferrule[IAPVar]{ }{
+    \ctxAnaFixedIntoPat{\ctx}{\PVar{x}}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
+  }
+
+  \inferrule[IAPPair1]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
+    \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TMV_2}{\ctx_2}
+  }{
+    \ctxAnaFixedIntoPat{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\PCPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+  }
+
+  \inferrule[IAPPair2]{
+    \notMatchedProd{\TMV} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV_1}{\PCMV_1}{\TUnknown}{\ctx_1} \\\\
+    \ctxAnaFixedIntoPat{\ctx_1}{\PMV_2}{\PCMV_2}{\TUnknown}{\ctx_2}
+  }{
+    \ctxAnaFixedIntoPat{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\PCPairAnaNonMatchedProd{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+  }
+
+  \inferrule[IAPAnn1]{
+    \consistent{\TMV}{\TMV'} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}{\ctx'}
+  }{
+    \ctxAnaFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV'}}{\PCAsc{\PCMV}{\TMV'}}{\TMV}{\ctx'}
+  }
+
+  \inferrule[IAPAnn2]{
+    \inconsistent{\TMV}{\TMV'} \\
+    \ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}{\ctx'}
+  }{
+    \ctxAnaFixedIntoPat{\ctx}{\PAsc{\PMV}{\TMV'}}{\PCInconType{\PCAsc{\PCMV}{\TMV'}}}{\TMV}{\ctx'}
+  }
+\end{mathpar}
+
+\subsection{Marked patterns}
+\label{sec:patterned-marked-patterns}
+\judgbox{\ensuremath{\ctxSynPatM{\ctx}{\PCMV}{\TMV}}} $\PCMV$ synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[MSPWild]{ }{
+    \ctxSynPatM{\ctx}{\PCWild}{\TUnknownSwitch}
+  }
+
+  \inferrule[MSPVar]{ }{
+    \ctxSynPatM{\ctx}{\PCVar{x}}{\TUnknownSwitch}
+  }
+
+  \inferrule[MSPPair]{
+    \ctxSynPatM{\ctx}{\PCMV_1}{\TMV_1} \\
+    \ctxSynPatM{\ctx}{\PCMV_2}{\TMV_2}
+  }{
+    \ctxSynPatM{\ctx}{\PCPair{\PCMV_1}{\PCMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
+
+  \inferrule[MSPAnn]{
+    \ctxAnaPatM{\ctx}{\PCMV}{\TMV}{\ctx'}
+  }{
+    \ctxSynPatM{\ctx}{\PCAsc{\PCMV}{\TMV}}{\TMV}
+  }
+\end{mathpar}
+
+\judgbox{\ensuremath{\ctxAnaPatM{\ctx_1}{\PCMV}{\TMV}{\ctx_2}}} $\PCMV$ analyzes against type $\TMV$ producing context $\ctx_2$
+%
+\begin{mathpar}
+  \inferrule[MAPWild]{ }{
+    \ctxAnaPatM{\ctx}{\PCWild}{\TMV}{\ctx}
+  }
+   
+  \inferrule[MAPVar]{ }{
+    \ctxAnaPatM{\ctx}{\PCVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
+  }
+
+  \inferrule[MAPPair1]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaPatM{\ctx}{\PCMV_1}{\TMV_1}{\ctx_1} \\\\
+    \ctxAnaPatM{\ctx_1}{\PCMV_2}{\TMV_2}{\ctx_2}
+  }{
+    \ctxAnaPatM{\ctx}{\PCPair{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+  }
+
+  \inferrule[MAPPair2]{
+    \notMatchedProd{\TMV} \\
+    \ctxAnaPatM{\ctx}{\PCMV_1}{\TUnknown}{\ctx_1} \\\\
+    \ctxAnaPatM{\ctx_1}{\PCMV_2}{\TUnknown}{\ctx_2}
+  }{
+    \ctxAnaPatM{\ctx}{\PCPairAnaNonMatchedProd{\PCMV_1}{\PCMV_2}}{\TMV}{\ctx_2}
+  }
+
+  \inferrule[MAPAnn1]{
+    \consistent{\TMV}{\TMV'} \\
+    \ctxAnaPatM{\ctx}{\PCMV}{\TMV'}{\ctx'}
+  }{
+    \ctxAnaPatM{\ctx}{\PCAsc{\PCMV}{\TMV'}}{\TMV}{\ctx'}
+  }
+
+  \inferrule[MAPAnn2]{
+    \inconsistent{\TMV}{\TMV'} \\
+    \ctxAnaPatM{\ctx}{\PCMV}{\TMV'}{\ctx'}
+  }{
+    \ctxAnaPatM{\ctx}{\PCInconType{\PCAsc{\PCMV}{\TMV'}}}{\TMV}{\ctx'}
+  }
+\end{mathpar}
+
+\judgbox{\markless{\PCMV}} $\PCMV$ has no marks
+%
+\begin{mathpar}
+  \inferrule[MLPWild]{ }{
+    \markless{\PCWild}
+  }
+
+  \inferrule[MLPVar]{ }{
+    \markless{\PCVar{x}}
+  }
+
+  \inferrule[MLPPair]{
+    \markless{\PCMV_1} \\
+    \markless{\PCMV_2}
+  }{
+    \markless{\PCPair{\PCMV_1}{\PCMV_2}}
+  }
+
+  \inferrule[MLPAnn]{
+    \markless{\PCMV}
+  }{
+    \markless{\PCAsc{\PCMV}{\TMV}}
+  }
+\end{mathpar}
+
+\subsection{Pattern mark erasure}
+\label{sec:patterned-pattern-mark-erasure}
+$\judgbox{\erase{\PCMV}}$ is a metafunction defined as follows:
+%
+\newcommand{\erasesToRow}[2]{\erase{#1} & = & #2}
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \erasesToRow{\PCWild}{\PWild} \\
+  \erasesToRow{\PCVar{x}}{\PVar{x}} \\
+  \erasesToRow{\PCPair{\PCMV_1}{\PCMV_2}}{\PPair{\erase{\PCMV_1}}{\erase{\PCMV_2}}} \\
+  \erasesToRow{\PCPairAnaNonMatchedProd{\PCMV_1}{\PCMV_2}}{\PPair{\erase{\PCMV_1}}{\erase{\PCMV_2}}} \\
+  \erasesToRow{(\PCAsc{\PCMV}{\TMV})}{\PAsc{(\erase{\PCMV})}{\TMV}} \\
+  \erasesToRow{\PCInconType{\PCAsc{\PCMV}{\TMV}}}{\PAsc{(\erase{\PCMV})}{\TMV}}
+\end{array}\]
+
+\subsection{Unmarked expressions}
+\label{sec:patterned-unmarked-expressions}
+\judgbox{\ctxSynTypeU{\ctx}{\EMV}{\TMV}} $\EMV$ synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[USLetPat]{
+    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
+    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
+  }{
+    \ctxSynTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
+  }
+\end{mathpar}
+
+\judgbox{\ctxAnaTypeU{\ctx}{\EMV}{\TMV}} $\EMV$ analyzes against type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[UASynSwitch]{
+    \ctxSynTypeU{\ctx}{\EMV}{\TMV}
+  }{
+    \ctxAnaTypeU{\ctx}{\EMV}{\TUnknownSwitch}
+  }
+
+  \inferrule[UALetPat]{
+    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
+    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxAnaTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
+  }{
+    \ctxAnaTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
+  }
+\end{mathpar}
+
+\judgbox{\subsumable{\EMV}} $\EMV$ is subsumable
+%
+\begin{mathpar}
+  \inferrule[USuLetPat]{ }{
+    \subsumable{\ELet{\PMV}{\EMV_1}{\EMV_2}}
+  }
+\end{mathpar}
+
+\subsection{Marking}
+\label{sec:patterned-marking}
+\judgbox{\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}} $\EMV$ is marked into $\ECMV$ and synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[ISLetPat]{
+    \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_{1}}{\ECMV_{1}}{\TMV_{p}} \\\\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxSynFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
+  }{
+    \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
+  }
+\end{mathpar} \\
+
+\judgbox{\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}} $\EMV$ is marked into $\ECMV$ and analyzes against type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[IALetPat]{
+    \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
+    \ctxAnaFixedInto{\ctx}{\EMV_{1}}{\ECMV_{1}}{\TMV_{p}} \\\\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
+    \ctxAnaFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
+  }{
+    \ctxAnaFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
+  }
+\end{mathpar}
+
+\subsection{Marked expressions}
+\label{sec:patterned-marked-expressions}
+\judgbox{\ctxSynTypeM{\ctx}{\ECMV}{\TMV}} $\ECMV$ synthesizes type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[MSLetPat]{
+    \ctxSynPatM{\ctx}{\PCMV}{\TMV_p} \\
+    \ctxAnaTypeM{\ctx}{\ECMV_{1}}{\TMV_p} \\
+    \ctxSynTypeM{\ctx}{\ECMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatM{\ctx}{\PCMV}{\TMV_{1}}{\ctx'} \\
+    \ctxSynTypeM{\ctx'}{\ECMV_{2}}{\TMV_2}
+  }{
+    \ctxSynTypeM{\ctx}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
+  }
+\end{mathpar}
+
+\judgbox{\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}} $\ECMV$ analyzes against type $\TMV$
+%
+\begin{mathpar}
+  \inferrule[MALetPat]{
+    \ctxSynPatM{\ctx}{\PCMV}{\TMV_p} \\
+    \ctxAnaTypeM{\ctx}{\ECMV_{1}}{\TMV_p} \\
+    \ctxSynTypeM{\ctx}{\ECMV_{1}}{\TMV_{1}} \\\\
+    \ctxAnaPatM{\ctx}{\PCMV}{\TMV_{1}}{\ctx'} \\
+    \ctxAnaTypeM{\ctx'}{\ECMV_{2}}{\TMV_2}
+  }{
+    \ctxAnaTypeM{\ctx}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
+  }
+\end{mathpar}
+
+\judgbox{\subsumable{\ECMV}} $\ECMV$ is subsumable
+%
+\begin{mathpar}
+  \inferrule[MSuLetPat]{ }{
+    \subsumable{\ECLet{\PMV}{\ECMV_1}{\ECMV_2}}
+  }
+\end{mathpar}
+
+\judgbox{\markless{\ECMV}} $\ECMV$ has no marks
+%
+\begin{mathpar}
+  \inferrule[MLLetPat]{
+    \markless{\PCMV} \\
+    \markless{\ECMV_1} \\
+    \markless{\ECMV_2}
+  }{
+    \markless{\ECLet{\PCMV}{\ECMV_1}{\ECMV_2}}
+  }
+\end{mathpar}
+
+\subsection{Mark erasure}
+\label{sec:patterned-mark-erasure}
+$\judgbox{\erase{\ECMV}}$ is a metafunction defined as follows:
+%
+\[\begin{array}{rcl}
+  & \vdots & \\
+  \erasesToRow{(\ECLet{\PCMV}{\ECMV_1}{\ECMV_2})}{\ELet{(\erase{\PCMV})}{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}}
+\end{array}\]
+
+\subsection{Metatheorems}
+\label{sec:patterned-metatheorems}
+In addition to the original metatheorems above (see \cref{sec:marked-metatheorems}), the following
+ones governing patterns additionally hold.
+
+\begin{theorem}[name=Pattern Marking Totality] \
+  \begin{enumerate}
+    \item For all $\ctx$ and $\PMV$,
+      there exist $\PCMV$ and $\TMV$
+        such that $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}$.
+
+    \item For all $\ctx$, $\PMV$, and $\TMV$,
+      there exists $\PCMV$ and $\ctx'$
+        such that $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\ctx'}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Pattern Marking Well-Formedness] \
+  \begin{enumerate}
+    \item If $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}$,
+      then $\ctxSynPatM{\ctx}{\PCMV}{\TMV}$
+        and $\erasesTo{\PCMV}{\PMV}$.
+
+    \item If $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\ctx'}$,
+      then $\ctxAnaPatM{\ctx}{\PCMV}{\TMV}{\ctx'}$
+        and $\erasesTo{\PCMV}{\PMV}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Pattern Marking of Well-Typed/Ill-Typed Patterns] \
+  \begin{enumerate}
+    \item \begin{enumerate}
+        \item If $\ctxSynPatU{\ctx}{\PMV}{\TMV}$
+            and $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}$,
+          then $\markless{\PCMV}$.
+
+        \item If $\ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}$
+            and $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV}{\ctx'}$,
+          then $\markless{\PCMV}$.
+      \end{enumerate}
+
+    \item \begin{enumerate}
+        \item If there does not exist $\TMV$
+            such that $\ctxSynPatU{\ctx}{\PMV}{\TMV}$,
+          then for all $\PCMV$ and $\TMV'$
+            such that $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}$,
+            it is not the case that $\markless{\PCMV}$.
+
+        \item If there does not exist $\TMV$ and $\ctx'$ such that $\ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}$,
+          then for all $\PCMV$, $\TMV'$, and $\ctx'$
+            such that $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV}{\TMV'}{\ctx'}$,
+            it is not the case that $\markless{\PCMV}$.
+      \end{enumerate}
+  \end{enumerate}
+\end{theorem}
+
+\begin{theorem}[name=Pattern Marking Unicity] \
+  \begin{enumerate}
+    \item If $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV_1}{\TMV_1}$
+        and $\ctxSynFixedIntoPat{\ctx}{\PMV}{\PCMV_2}{\TMV_2}$,
+      then $\PCMV_1 = \PCMV_2$
+        and $\TMV_1 = \TMV_2$.
+
+    \item If $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV_1}{\TMV}{\ctx_1}$
+        and $\ctxAnaFixedIntoPat{\ctx}{\PMV}{\PCMV_2}{\TMV}{\ctx_2}$,
+      then $\PCMV_1 = \PCMV_2$ and $\ctx_1 = \ctx_2$.
+  \end{enumerate}
+\end{theorem}
+
+\end{document}
