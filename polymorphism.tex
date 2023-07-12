@@ -91,11 +91,13 @@ The case studies above demonstrate that the framework of the marked lambda calcu
 We hope that this spurs language designers to design marked variants of other calculi, following the
 recipe we have demonstrated: starting with a gradual, bidirectional type system, by considering each
 possible failure case, one may systematically derive the necessary error marks and marking rules.
+The metatheorems, particularly totality, ensure that no rules or premises have been missed.
 
 We leave as future work the task of defining marked versions of even more elaborate bidirectional
 type systems, e.g. \citet{dunfield2013complete}'s rather substantial formulation of implicit type
 application in a bidirectional setting (which would have to handle, for example, the situation where
-no implicit argument can be resolved).
+no implicit argument can be resolved) or \citet{DBLP:phd/hal/LennonBertrand22}'s gradual bidirectional
+variant of the dependently typed calculus of constructions. 
 
 % TODO cite gradual dependent types papers, etc.
 % DBLP:phd/hal/LennonBertrand22
