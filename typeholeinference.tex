@@ -135,10 +135,11 @@ It is also worth considering the situation where no type annotation is present, 
 \end{figure}
 
 \subsection{Constraint Generation}
-In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach \cite{TAPL0}, where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
+In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach \cite{TAPL0}\todo{cite other papers on gradual type inference}, where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
     $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
-Intuitively, constraints should force two incomplete types to have the same set of suggestions in the editor. Any suggestion must satisfy all constraints, thereby ensuring its acceptance does not necessitate further marking.
+Constraints, written $\constrain{\tau_1}{\tau_2}$ force two incomplete types to be consistent. Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing necessary type consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other:
+
 
 % For most rules, no new constraints are generated. This leads to straightforward rules like MSLam-C and MSAp1-C:
 
@@ -158,7 +159,6 @@ Intuitively, constraints should force two incomplete types to have the same set 
 %     }{MSAp1-C}
 % \end{mathpar}
 
-Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing the consistencies necessary for success. Each constraint is written $\constrain{\tau_1}{\tau_2}$. New constraints are generated based on expected consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other. Using these intuitions, we define MSIf-C:
 
 \begin{mathpar}
     \judgment{
