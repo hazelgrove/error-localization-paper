@@ -13,6 +13,20 @@ to a hole in the program connected to that unknown type -- either to a \emph{typ
 
 % We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type fillings and (2) reporting the most informative fillings to the user. If all possible fillings are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
 
+- Local constraint solving in the style of HM(X) ("Type Inference with Constrained Types", Odersky et al), interleaves local reasoning and constraint solving.
+
+- Inferno ("Hindley-milner elaboration in applicative style: functional pearl", by Pottier) showcases how to elaborate and solve constraints at the same time, which would allow you to emit marked terms and build up constraints in one fell swoop.
+
+- Pottier & Remy's "The essence of ML type inference" (for instance, OutsideIn(X) for GHC Haskell
+
+- Garcia and Cimini's POPL 2015 paper on type inference for gradually-typed languages, which improves substantially on the prior work of Siek and Vachharajani
+
+- Vazoy et al's OOPSLA 2018 paper on gradual liquid type inference, which features a similar treatment of holes and interactive exploration of possible solutions (in that case, for unknown refinements, but the underlying concepts are very close). 
+
+- Lennon-Bertrand et al.'s TOPLAS 2022 paper on Gradual CIC includes an integration of bidirectional typing and gradual typing
+
+
+
 \subsection{Type Hole Inference in Hazel}
 % Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
 

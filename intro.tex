@@ -80,7 +80,7 @@ If the inconsistency were localized to the conditional expression as a whole, as
 \li{x} does not have a known type,
 though it \emph{is} known to be bound. 
 There is no definitive type or binding error at either use of \li{x}, 
-so we do not report an error in Hazel. More specifically, we treat \li{x}'s type as the unknown a.k.a. dynamic type from gradual typing.
+so we do not report an error in Hazel. More specifically, we treat \li{x}'s type as the unknown a.k.a. dynamic type from gradual typing \cite{Siek06a}.
 In any of these cases, we would like to be able to recover and 
 localize the type inconsistency on the string addend because the \li{+} operator is integer addition in Hazel.
 Recovering from this error, we can assume that both branch types in the second conditional will have \li{Int} type, so no 
@@ -90,16 +90,16 @@ This informal exercise demonstrates that (1) localization choices can vary, part
 (2) when combined with error recovery, one localization decision can influence downstream localization decisions; and 
 (3) error recovery necessitates reasoning without complete knowledge about types and binding. We argue that such semantic subtleties call for a rigorous theoretical treatment of these topics.
 
-Section~\ref{sec:calculus} of this paper develops the first comprehensive {type-theoretic formulation} of type error localization and recovery, called the \emph{marked lambda calculus}.
+\Cref{sec:calculus} of this paper develops the first comprehensive {type-theoretic formulation} of type error localization and recovery, called the \emph{marked lambda calculus}.
 We bring together three individually well-studied ideas: (1) bidirectional typing, which specifies how type and binding information flows from 
 type annotations to expressions \cite{Localinf,BidirTyping}, (2) gradual typing, which offers a principled approach for recovering from missing type information \cite{Siek06a,siek2015refined}, and 
-(3) non-empty holes, which function as syntactic membranes marking erroneous terms \cite{HazelnutPOPL}, operationalizing the ``red lines'' that an editor displays to the user.
+(3) non-empty holes, which function as syntactic membranes marking erroneous terms \cite{HazelnutPOPL}, operationalizing the ``red lines'' that an editor displays.
 The marked lambda calculus achieves \emph{total error recovery}, meaning that \emph{every} syntactically well-formed program sketch (a program structure with, optionally, empty holes \cite{solar2013program}) can be marked, i.e. its errors can be simultaneously localized, such that the resulting program has a well-defined type and binding structure.
 We establish this and other properties as metatheorems that we mechanize in the Agda proof assistant. 
 As we define the calculus, we consider a number of situations where error localization decisions are subtle and conclude by defining some extensions of the intentionally minimal core calculus, e.g. with destructuring patterns and System F-style polymorphism, 
-that serve as case studies of the more general approach that we hope will be adopted by language designers defining practical type systems.
+that serve as case studies of the general approach that we hope this paper will be adopted by language designers defining practical type systems.
 
-\cref{sec:calculus-hazel} describes our own effort in this direction, which is to scale up the marked lambda calculus as the new basis for Hazel, a typed functional programming environment that fully solves the semantic gap problem: Hazel's semantic services are available as long as the program sketch is syntactically well-formed. Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as in Agda \cite{norell:thesis}, GHC Haskell \cite{haskell-holes}, Idris \cite{DBLP:journals/jfp/Brady13}, and others), syntax error recovery \cite{medeiros20,sorkin11}, and structure editing \cite{HazelnutPOPL,teitelbaum_cornell_1981}. 
+\Cref{sec:calculus-hazel} describes our own effort in this direction, which is to scale up the marked lambda calculus as the new basis for Hazel, a typed functional programming environment that fully solves the semantic gap problem: Hazel's semantic services are available as long as the program sketch is syntactically well-formed. Prior work has separately considered mechanisms for maintaining syntactically well-formed program sketches during development: manual hole insertion (as in Agda \cite{norell:thesis}, GHC Haskell \cite{haskell-holes}, Idris \cite{DBLP:journals/jfp/Brady13}, and others), syntax error recovery \cite{medeiros20,sorkin11}, and structure editing \cite{HazelnutPOPL,teitelbaum_cornell_1981}. 
 Hazel has both a textual syntax and a structure editor \cite{HazelnutPOPL,DBLP:conf/vl/Moon023}. 
 %offering (1) a textual syntax, which allows the programmer to manually insert empty holes as necessary, (2) a text-like structure editor that offers partial syntax error recovery (inserting holes to maintain well-formedness as long as all matching delimiters have been placed) \cite{tylr}, and (3) a term-based structure editor with total syntax error recovery, i.e. a guarantee that every edit maintains syntactic well-formedness \cite{HazelnutPOPL}\todo{popl17}. 
 As a secondary contribution, 
