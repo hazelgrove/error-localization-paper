@@ -12,7 +12,7 @@
     % \erasesToRow{\ECTrue}{\ETrue} \\
     % \erasesToRow{\ECFalse}{\EFalse} \\
     % \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
-    \erasesToRow{\ECUnbound{x}}{x} \\
+    \erasesToRow{\ECFree{x}}{x} \\
     \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
     \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
     % \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\

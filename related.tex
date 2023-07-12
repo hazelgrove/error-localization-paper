@@ -5,6 +5,8 @@ The contributions of this paper build directly on the Hazelnut type system \cite
 
 Our focus is on localization and recovery but not type error repair, as has been considered by other work \cite{lerner07}. We hope that our work will drive future work on rigorous repairs.
 
+\citet{garcia:2015} presents a static implicitly typed language, where users opt into dynamism by annotating an expression with the gradual type "?", and an associated type inference algorithm. By contrast, the Hazelnut type system assigns gradual types to programs that would ordinarily not type-check in a non-gradual system by wrapping them in expression holes. The type inference algorithm presented in \citet{garcia:2015} also does not specify what to do if the constraint set cannot be solved. If a single static type cannot be determined for an expression, its type is simply "undefined", whereas our Type Hole Inference algorithm provides a list of suggestions derived from any conflicting constraints if a single substitution cannot be determined.
+
 \citet{GradualInfer} explore a version of unification for gradually typed languages based on Huet's unification algorithm \cite{Huet}. Other common approaches to unification are generally based on Hindley-Milner type inference \cite{MilnerInfer}. These algorithms are efficient, but can fail to solve constraints in the face of inconsistencies.
 
 % Complex techniques, e.g. based on machine learning or manual weighting, have been proposed to heuristically localize these errors to expressions. 

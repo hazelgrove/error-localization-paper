@@ -17,8 +17,8 @@
     \judgment{
       \notInCtx{\ctx}{x}
     }{
-      \ctxSynFixedInto{\ctx}{x}{\ECUnbound{x}}{\TUnknown}
-    }{ISUnbound}
+      \ctxSynFixedInto{\ctx}{x}{\ECFree{x}}{\TUnknown}
+    }{ISFree}
   
     \judgment{
       \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\ECMV}{\TMV_2}

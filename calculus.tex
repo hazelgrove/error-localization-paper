@@ -4,9 +4,9 @@
 Programmers often work with program states that are syntactically well-formed but not well-typed.
 \Cref{fig:calculus-examples} shows common type errors as they appear in the Hazel programming
 environment. 
-%For example, a simple error that may occur is the use of an unbound variable (\cref{fig:calculus-examples-unbound}).
+%For example, a simple error that may occur is the use of an Free variable (\cref{fig:calculus-examples-Free}).
 % As in
-% \cref{fig:calculus-examples-unbound}, the editor indicates that the usage of an unbound $y$ is
+% \cref{fig:calculus-examples-Free}, the editor indicates that the usage of an Free $y$ is
 % invalid by highlighting it in red.
 
 \input{figs/calculus-examples}
@@ -71,7 +71,7 @@ used to represent syntactically incomplete portions of the program à la Hazelnu
            &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
                      \mid           \ECPair{\ECMV}{\ECMV} \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
                      \mid           \ECEHole \\
-           &       & \mid         & \ECUnbound{x} \mid \ECInconType{\ECMV} \\
+           &       & \mid         & \ECFree{x} \mid \ECInconType{\ECMV} \\
            &       & \mid         & \ECLamInconAsc{x}{\TMV}{\ECMV} \mid \ECLamAnaNonMatchedArrow{x}{\TMV}{\ECMV} \mid \ECApSynNonMatchedArrow{\ECMV}{\ECMV} \\
            &       & \mid         & \ECInconBr{\ECMV}{\ECMV}{\ECMV} \\
            &       & \mid         & \ECPairAnaNonMatchedProd{\ECMV}{\ECMV} \mid \ECProjLSynNonMatchedProd{\ECMV} \mid \ECProjRSynNonMatchedProd{\ECMV}
@@ -352,27 +352,27 @@ rules:
   }{MSVar}
 \end{mathpar}
 
-However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-unbound}, is \emph{not}
+However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-Free}, is \emph{not}
 bound. Similar to above, \textsc{USVar} would not apply. A total marking procedure should, however, report the error and
-continue, motivating an \emph{unbound variable mark} $\ECUnbound{x}$ and the accompanying rules:
+continue, motivating an \emph{Free variable mark} $\ECFree{x}$ and the accompanying rules:
 %
 \begin{mathpar}
   \judgment{
     \notInCtx{\ctx}{x}
   }{
-    \ctxSynFixedInto{\ctx}{x}{\ECUnbound{x}}{\TUnknown}
-  }{MKSUnbound}
+    \ctxSynFixedInto{\ctx}{x}{\ECFree{x}}{\TUnknown}
+  }{MKSFree}
 
   \judgment{
     \notInCtx{\ctx}{x}
   }{
-    \ctxSynTypeM{\ctx}{\ECUnbound{x}}{\TUnknown}
-  }{MSUnbound}
+    \ctxSynTypeM{\ctx}{\ECFree{x}}{\TUnknown}
+  }{MSFree}
 \end{mathpar}
 %
-An unbound variable is marked as such, and since nothing may be said about their types, we
+An Free variable is marked as such, and since nothing may be said about their types, we
 synthesize the unknown type. As with the inconsistent type mark, this allows type checking to
-proceed, with usage of the unbound variable permitted in any expression.
+proceed, with usage of the Free variable permitted in any expression.
 
 \subsubsection{Lambda Abstractions}
 \label{sec:calculus-lambda-abstractions}
@@ -852,7 +852,7 @@ In the case that the subject of the projection does not synthesize a matched pro
 
 \subsubsection{Holes}
 For completeness, we finish the development of the marked lambda calculus on the extended GTLC with
-the marking of empty holes, which are never marked.
+the marking of empty holes, which are never marked (see Sec.~\ref{sec:thi} for marking unfillable holes using constraint solving).
 %
 \begin{mathpar}
   \judgment{ }{
@@ -929,15 +929,6 @@ readers interested in browsing the mechanization, as possible, all rule names ma
 \input{let}
 \input{polymorphism}
 
-\subsection{Polymorphism and Richer Judgemental Structures}
-\label{sec:calculus-poly}
-
-The case studies above demonstrate that the judgemental structure of the marked lambda calculus is suitable to support a variety of extensions. We hope that this spurs language designers to designed mark variants of other calculi, following the recipe discussed above.
-
-In calculi with richer judgemental structure---for example, System F, which introduces type validity and type variables \cite{reynolds1988introduction}---the general approach is again to define marks for any new kind of error that might arise, e.g. the appearance of a type with free type variables, and marking judgements corresponding to each judgement in the original language, e.g. here defining marking for types. One small subtlety in doing so is that a marked free variable might end up on the right side of the typing arrows. However, it is straightforward to treat a marked free variable simply as another form of unknown type for the purposes of type consistency and other operations. Type functions and type application operate much like standard functions and function application after this additional judgemental structure is accounted for.
-We leave as future work the task of defining a marked version of even more elaborate bidirectional type systems, e.g. \citet{dunfield2013complete}'s rather substantial formulation of implicit type application in a bidirectional setting (which would have to handle, for example, the situation where no implicit argument can be resolved).
-
-
 \section{Integrating Marking with Editing}
 \label{sec:calculus-structured-editing}
 \subsection{Hazel Implementation}
@@ -950,7 +941,7 @@ The result of this effort is the first full-scale typed functional language equi
 
 Hazel offers both a textual syntax, with explicit empty holes, and more interestingly,
 a structure editor that is able to additionally offer partial syntactic error recovery.
-In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automatically insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{moon2022tylr}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
+In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automatically insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{moon2022tylr,DBLP:conf/vl/Moon023}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
 
 
 \subsection{Fixing Holes in Hazelnut}
@@ -976,13 +967,13 @@ constructions are permitted.
 
 Alternatively, instead of a wholly untyped action calculus, one may directly integrate re-marking logic into the typed Hazelnut
 calculus, making use of the type and scoping information being propagated to re-mark only in scopes where it might be necessary. For example, we can wrap $\ECMV$ into
-$\ECLam{x}{\TUnknown}{\ECMV}$ by re-mark the body under the context with $x$ binding
+$\ECLam{x}{\TUnknown}{\ECMV}$ by re-marking the body under the context with $x$ binding
 the unknown type:
 \[%
   \judgment{
     \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TUnknown}}{\erase{\ECMV}}{\ECMV'}{\TMV'}
   }{
-    \ASEConLam{\ctx}{\ECMV}{\TMV}{\ECMV'}{\TMV'}{x}
+    \ASCon{\ctx}{\ZCursor{\ECMV}}{\TMV}{\ZLamT{x}{\ZTCursor{\TUnknown}}{\ECMV'}}{\TArrow{\TUnknown}{\TMV'}}{\SLam{x}}
   }{ASEConLam}
 \]%
 The
@@ -991,4 +982,5 @@ action semantics and related metatheory are mechanized in Agda. Because of the s
 untyped version, and because marking is defined separately, this Agda mechanization can serve
 universally as a baseline for correctness of approaches, like our initial design that aim to make
 use of type and scope information, and perhaps other analyses, to minimize re-marking. We leave a
-complete assessment of this and other re-marking optimization approaches to future work.
+complete assessment of this and other re-marking optimization approaches to future work, particularly
+because Hazel is now moving toward the decoupled approach for future development.

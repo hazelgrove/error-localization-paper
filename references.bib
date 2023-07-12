@@ -646,6 +646,24 @@ keywords = {static semantics, program slicing, type-checking, semantics-based to
   series = {POPL '16},
 }
 
+@article{outsideIn,
+  author       = {Dimitrios Vytiniotis and
+                  Simon L. Peyton Jones and
+                  Tom Schrijvers and
+                  Martin Sulzmann},
+  title        = {OutsideIn(X) Modular type inference with local assumptions},
+  journal      = {J. Funct. Program.},
+  volume       = {21},
+  number       = {4-5},
+  pages        = {333--412},
+  year         = {2011},
+  url          = {https://doi.org/10.1017/S0956796811000098},
+  doi          = {10.1017/S0956796811000098},
+  timestamp    = {Fri, 30 Nov 2018 13:26:43 +0100},
+  biburl       = {https://dblp.org/rec/journals/jfp/VytiniotisJSS11.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
 @inproceedings{siek2015refined,
   title={Refined criteria for gradual typing},
   author={Siek, Jeremy G and Vitousek, Michael M and Cimini, Matteo and Boyland, John Tang},
@@ -1152,7 +1170,7 @@ series = {PLDI '07}
 }
 
 @article{steady-typing,
-  author    = {Yair Chuchem, Eyal Lotem},
+  author    = {Chuchem, Yair and Lotem, Eyal},
   title     = {Steady Typing},
   journal   = {LIVE 2019},
   year={2019}
@@ -1253,6 +1271,15 @@ series = {PLDI '07}
                {VL/HCC} 2014},
   year      = {2014},
 }
+
+@inproceedings{DBLP:conf/vl/Moon023,
+  author    = {Moon, David and Blinn, Andrew and Omar, Cyrus},
+  title     = {Gradual Structure Editing with Obligations},
+  booktitle = {To appear, {IEEE} Symposium on Visual Languages and Human-Centric Computing,
+               {VL/HCC} 2023},
+  year      = {2023},
+}
+
 
 @inproceedings{van2012engineering,
   title={Engineering proof by reflection in Agda},
@@ -2326,13 +2353,6 @@ _doi={10.1109/VLHCC.2014.6883030},
 _ISSN={1943-6092}, 
 _month={July}}
 
-@inproceedings{moon2022tylr,
-  title={tylr: a tiny tile-based structure editor},
-  author={Moon, David and Blinn, Andrew and Omar, Cyrus},
-  booktitle={Proceedings of the 7th ACM SIGPLAN International Workshop on Type-Driven Development},
-  pages={28--37},
-  year={2022}
-}
 
 @article{DBLP:journals/jacm/DaviesP01,
   author    = {Rowan Davies and
@@ -2480,16 +2500,7 @@ _month={July}}
   Year = {2000}
 }
 
-@InProceedings{Siek06a,
-  author =  "Jeremy G. Siek and Walid Taha",
-  booktitle = "Scheme and Functional Programming
-     Workshop",
-  _pages =  "81--92",
-  _publisher =  "University of Chicago TR-2006-06",
-  title = "Gradual Typing for Functional Languages",
-  URL =   "http://scheme2006.cs.uchicago.edu/13-siek.pdf",
-  year =  "2006",
-}
+
 
 @Article{JFP::Huet1997,
   title = "The {Zipper}",
@@ -2504,15 +2515,6 @@ _month={July}}
 }
 
 
-@phdthesis{norell:thesis,
-  author  = {Ulf Norell},
-  title   = {Towards a practical programming language based on dependent type
-       theory},
-  school  = {Department of Computer Science and Engineering, Chalmers University of Technology},
-  year    = 2007,
-  month   = {September},
-  address = {SE-412 96 G\"{o}teborg, Sweden}
-}
 
 
 @inproceedings{buckland_open_2015,
@@ -2866,14 +2868,6 @@ _month={July}}
   author={GHC Developers},
 	howpublished = {https://ghc.haskell.org/trac/ghc/},
 }
-
-@inproceedings{HazelLIVE,
-   author = {{Omar}, Cyrus and {Voysey}, Ian and {Hammer}, Matthew A.},
-    title = {Toward a Live Stepper for Typed Expressions with Holes},
- booktitle = {Live Programming Workshop},
-     year = {2017},
-}
-
 @phdthesis{Taha:1999,
  author = {Taha, Walid Mohamed},
  title = {Multistage Programming: Its Theory and Applications},

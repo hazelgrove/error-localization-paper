@@ -1,41 +1,86 @@
 \section{Type Hole Inference}
 \label{sec:thi}
 
-While local type inference reduces the number of necessary annotations, 
-constraint-based type inference as found in languages like ML and Haskell allows programmers to omit most or all type annotations \cite{Pierce:2000:LTI:345099.345100}. The trade-off is that type error localization and recovery 
+Local type inference, which has been our focus so far, reduces the number of necessary annotations and induces a local flow of information particularly well-suited to systematic error localization decisions \cite{BidirTyping,Pierce:2000:LTI:345099.345100}. In contrast, 
+constraint-based type inference as found in many ML-family languages allows programmers to omit most or all type annotations \cite{Pierce:2000:LTI:345099.345100}. The trade-off is that type error localization and recovery 
 become considerably more difficult, because inconsistencies can now arise between 
 constraints derived from many distant locations in a program. 
-Heuristic approaches, e.g. based on manually tuned weights or machine learning methods \cite{Seidel2016}, are necessary to intelligently guess which uses of a variable are what is  intended.
+Heuristic approaches, e.g. based on manually tuned weights\todo{cite}{} or machine learning methods \cite{Seidel2016}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
 
-This is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, but there is no parent expression where we can localize the inconsistency. However,
-this gives us a hint at the approach we introduce in this section: we \emph{gradually} harmonize local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints after the bidirectional process as described in the previous sections finishes. We then unify, recovering from inconsistent constraints by localizing the problem 
-to \emph{type holes} that cannot be solved by constraint unification and computing a graph of partial solutions. The user can interactively investigate various partial solutions to clarify their intent, which might allow local type inference to localize the error to the relevant expressions.
+This situation is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, where biasing one branch over the other requires guessing user intent, whereas the neutral approach is to localize the inconsistency to the conditional expression as a whole. However, there is no such parent expression in the case of inconsistent constraints gathered globally. However,
+this search for neutrality when there are downstream conflicts motivates the approach we introduce in this section, which \emph{gradually} and \emph{neutrally} harmonizes local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints on unknown types that arise during bidirectional marking process as described in Section~\ref{sec:calculus}. After this initial marking is complete, we unify these constraints (using a standard unification algorithm, which we do not detail here \cite{Huet}). When it is discovered that an unknown type is subject to inconsistent constraints, we localize the problem 
+to a hole in the program connected to that unknown type -- either to a \emph{type hole} directly, or to an empty or non-empty expression hole from which that unknown type traces its provenance. The key result is that this approach is neutral by construction: it does not attempt to guess at which relevant locations were consistent with the user intent. In Hazel, the user can instead interactively investigate various partially consistent suggestions to clarify their intent, which returns control to the local type inference system.
 
 % We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type fillings and (2) reporting the most informative fillings to the user. If all possible fillings are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
 
 \subsection{Type Hole Inference in Hazel}
 % Taking advantage of the interactive nature of live programming, rather than inferring sources of blame, we simply ask the user. \emph{Type hole inference} displays all possible sources of inconsistency and allows the user to identify which to blame. Once a user attempts to fix the program, the editor can display new errors as they arise. In this manner, the program can be iteratively and interactively repaired.
 
-In \cref{fig:editor_holes}, the user has written an incomplete program where the function $f$ is annotated with a type hole. Using type hole inference, the editor displays the inferred type for $f$ in gray. The return type is not constrained, so it is left unknown here (see below on polymorphic generalization).
-\begin{figure}[H]
-\includegraphics[width=9cm]{images/example_holes.png}
-\includegraphics[width=9cm]{images/example_holes_CI.png}
-\caption{Incomplete program with partial hole filling suggestion}
-\todo[inline]{ideally figs should have consistent spacing after type annotation; prob also get rid of black lower-left corner on screenshots as it is visually distracting}
-\label{fig:editor_holes}
-\end{figure}
-\todo[inline]{
-idea. try to situate the beginning of this section by introducing a 'gradual typing workflow': unbias error attribution by inserting a blank type annotation for the relevant variable: look at all the uses and tell me what the constraints are instead of the local bidirectional flow.
+% TODO: Discuss the following points to illustrate the advantages of this architecture
+% The system doesn't heuristically assign blame- we defer to the user's judgement by suggesting and picking desired type annotations.
+% The system is not stricly bidirectional, nor is it strictly global; this allows us to maintain the benefits of bidirectional typing, namely specific and descriptive error messages, alongside those of global type inference, which include the consideration of distant information
+% After the user identifies an annotation they want to consider, it is tentatively accepted, allowing the bidirectional system to identify potential issues with that selection.
 
-localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
-}
-\Cref{fig:editor_conflict} demonstrates visual feedback shown when a type hole is \textit{unsolvable}. The type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor could temporarily fill the type hole when the user hovers over a constraint, deferring to bidirectional error localization from there. (This interaction has not yet been implemented, but there is no barrier to doing so. For our experiments, copy/paste was used to simulate\todo{phrasing}.)
+
+% While Hazel's type system is bidirectional, feedback related to type errors is globally informed, similar to Hindley Milner unification. Hazel provides suggestions for empty type annotations by collecting and solving constraints. Allowing the user to pick from the set of suggestions lets the editor defer control to the user rather than relying on heuristics for localizing the source of an error. After the user has selected a type hole filling, the bidirectional type system will update in response.
+
+% The core of type hole inference is its interactive flow with the user. Upon encountering inconsistencies, rather than heuristically guessing a single annotation, we present all potential options for filling a given type hole based on its many usages in the program. Moreover, inconsistencies from globally accumulated constraints do not lead to meaningless edit states. Unlike systems where global inference is used independently, the marked lambda calculus will ensure the program's successful evaluation. Any inferred solutions or errors can then be presented without disrupting the program. After the user has selected a type hole filling, the bidirectional type system will update in response, showing the implications of each choice.
+
+% \todo[inline]{
+% idea. try to situate the beginning of this section by introducing a 'gradual typing workflow': unbias error attribution by inserting a blank type annotation for the relevant variable: look at all the uses and tell me what the constraints are instead of the local bidirectional flow.
+
+% localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
+% }
+
+Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types \cite{outsideIn}. For example, in the following Hazel program, no constraint solving is necessary: local inference determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first.\todo{cite odersky paper}
+
+% let f = 2 in if ? then {f}(2) else ?
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=9cm]{images/local.png}
+%   \includegraphics[width=9cm]{images/localExCI.png}
+% \end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{images/localExCombined.png}
+  \label{fig:hazelLocalEx}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.9\linewidth]{images/ocamlEx.png}
+  \label{fig:ocamlEx}
+\end{subfigure}
+\caption{Error localization of this program in Hazel and OCaml is similar, but for different reasons.}
+\label{fig:localComparison}
+\end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=9cm]{images/localEx.png}
+%     \includegraphics[width=9cm]{images/localExCI.png}
+%     \caption{A program alongside a localized bidirectional typing error message}
+%     \label{fig:enter-label}
+% \end{figure}
+
+% We compare the process of user interaction here to that of popular languages like OCaml in \cref{fig:ocaml}. Here, we see that based on the type of the let binding's body, the compiler infers that $f$ has type \verb|int|. Consequently, the error is localized the $f$'s application on 2. In contrast to this, type hole inference allows the user to identify desired annotations while displaying the impact of those choices through subsequent feedback via its bidirectional typing system. This flow is enabled through type hole inference's support of type holes, a mechanism not replicable in OCaml. 
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[scale=0.8]{images/ocamlEx.png}
+%     \caption{The example program written in OCaml}
+%     \label{fig:ocaml}
+% \end{figure}
+
+The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}, the bidirectional system treats this as an unknown type and operates gradually, taking this as a signal that the user has not yet determined the intended type of \li{f}. To help the user fill this type hole, the system generates and attempts to unify the relevant constraints (see \cref{sec:unification} below). In this case, the constraints are inconsistent, i.e. there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
-\includegraphics[width=9cm]{images/example_conflict_CI.png}
+\includegraphics[width=9cm]{images/example-conflict-newnew.png}
 \includegraphics[width=9cm]{images/example_conflict_hover.png}
-\includegraphics[width=9cm]{images/example_conflict_hover_CI.png}
-\caption{User types '2' and error is localized to type hole. Error is localized to '2' when hovering over a selection, which transiently fills the hole [interaction mocked up for presentation]}
+\includegraphics[width=9cm]{images/example-conflict-hover-final.png}
+\caption{The error is localized to the conflicted type hole in Hazel. When hovering over the indicated suggestion, the hole is transiently filled, causing the error to be localized to the bound expression, \li{2}.}
 \label{fig:editor_conflict}
 \end{figure}
 % \begin{figure}[H]
@@ -44,14 +89,16 @@ localize errors to expression holes: for fig 7 except without type annotation, a
 % \caption{user hovers over conflicting constraint to show origin [mock-up]}
 % \label{fig:editor_conflict_hover}
 % \end{figure}
-\Cref{fig:editor_ghost} illustrates a program which has a full solution for $f$'s type annotation. The user can then press the Tab key to accept the suggested filling for the type hole.
+
+If, given this feedback, the user deletes the bound expression, \li{2}, then there are no longer conflicting constraints on the type hole and the system displays the inferred type in gray, to indicate that it has been inferred rather than entered as ``ground truth'' by the user. The user can press the \li{Enter} key to accept the suggestion (turning the text black). At this point the hole has been filled and localization decisions again become local. Note that there are no constraints on the return type of \li{f}, so the suggested filling itself contains a type hole (see \cref{sec:polymorphicGlobal} below on polymorphic generalization).
 \begin{figure}[H]
-\includegraphics[width=9cm]{images/example_ghost.png}
-\includegraphics[width=9cm]{images/example_complete_CI.png}
-\includegraphics[width=9cm]{images/example_complete.png}
-\caption{User removes '2' and types 'true' in the else branch before accepting the new suggestion}
+\includegraphics[width=9cm]{images/example_holes_filled.png}
+\includegraphics[width=9cm]{images/example_holes_CI.png}
+\includegraphics[width=9cm]{images/example_holes.png}
+\caption{User removes '2' and accepts the new suggestion}
 \label{fig:editor_ghost}
 \end{figure}
+
 % \begin{figure}[H]
 % \includegraphics[width=9cm]{images/example_complete.png}
 % % \includegraphics[width=9cm]{images/example_complete_CI.png}
@@ -59,345 +106,131 @@ localize errors to expression holes: for fig 7 except without type annotation, a
 % \label{fig:editor_complete}
 % \end{figure}
 
-\subsection{Type Hole Provenance}
+% \subsection{Type Hole Provenance}
 
-\label{sec:typinf}
-We must be able to uniquely identify type holes when constraint solving because we will treat type holes as type inference variables. Thus, we make two small changes to the marked lambda calculus's syntax:
-\[\begin{array}{rrcl}
-    \Prov & \Provp & \Coloneqq & u \mid exp(u) \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp)\\
-    \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
-    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \EEHole^u
-\end{array}\]
+% \label{sec:typinf}
+% We must be able to uniquely identify type holes when constraint solving because we will treat type holes as type inference variables. Thus, we make two small changes to the marked lambda calculus's syntax:
+% \[\begin{array}{rrcl}
+%     \Prov & \Provp & \Coloneqq & u \mid exp(u) \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp)\\
+%     \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
+%     \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \ECInconBrId{\ECMV}{\ECMV}{\ECMV}{u} \mid \EEHole^u
+% \end{array}\]
 
-\begin{enumerate}
-    \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. We assume that id generation is handled by the editor.
-    \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenances}, $p$. These serve two useful but non-critical purposes:
-\begin{enumerate}
-    \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3 \todo[inline]{this feels somewhat unclear to me; presumably this is the prospective synthesized type of what ends up filling the hole rather than the type of an expression hole (unknown)?}. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.\todo[inline]{this is unclear to me. does it mean e.g. jump-to-exp-hole from clicking on a constraint in the CI?}
-    \item Provenances allow increased efficiency when compared to generating fresh type hole ids (which spawns larger constraint graphs during constraint generation.) 
-\end{enumerate}
-\end{enumerate}
-% These changes are depicted in Figure ~\ref{fig:adjusted-calculus-syntax}.
-% \begin{figure}[htbp]
-%   % \[\begin{array}{rrcl}
-%   %   \Prov & \Provp & \Coloneqq & u \mid exp(u) \\
-%   %   \TMName  & \TMV  & \Coloneqq & \TUnknown^{p} \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \\
-%   %   \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV}
-%   %                      \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV}
-%   %                      \mid           \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV} \\
-%   %            &       & \mid         & \ECUnbound{x}^u \mid \ECInconType{\ECMV}^u \mid \ECInconBr{\ECMV}{\ECMV}{\ECMV}^u \mid \EEHole^u
-%   % \end{array}\]
-  
-%   \caption{Adjusted syntax of the marked lambda calculus}
-%   \label{fig:adjusted-calculus-syntax}
-% \end{figure}
+% \begin{enumerate}
+%     \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. We assume that id generation is handled by the editor.
+%     \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenances}, $p$. These serve two useful but non-critical purposes:
+% \begin{enumerate}
+%     \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3 \todo[inline]{this feels somewhat unclear to me; presumably this is the prospective synthesized type of what ends up filling the hole rather than the type of an expression hole (unknown)?}. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.\todo[inline]{this is unclear to me. does it mean e.g. jump-to-exp-hole from clicking on a constraint in the CI?}
+%     \item Provenances allow increased efficiency when compared to generating fresh type hole ids (which spawns larger constraint graphs during constraint generation.) 
+% \end{enumerate}
+% \end{enumerate}
+
+It is also worth considering the situation where no type annotation is present, but the bound expression is an empty expression hole, because this is also a situation where the type of \li{f} is unknown according to the bidirectional system from Section~\ref{sec:calculus}. Type hole inference solves for this unknown type as well, while tracking its provenance as the type of this expression hole. As such, errors due to conflicting constraints can be localized to expression holes in much the same way as described above. When the user hovers over a suggested type, there must be some way of constraining the type of the expression hole, e.g. by finding a suitable variable to annotate with a type or by adding direct ascription syntax to the language (we have not implemented this particular user interface affordance in Hazel as of yet, but there are no fundamental barriers to doing so.) The lightly mocked up process is illustrated in \cref{fig:expLocal}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{images/expHoleSugg.png}
+    \caption{Localization of errors to expression holes.}
+    \label{fig:expLocal}
+\end{figure}
 
 \subsection{Constraint Generation}
-The first step is constraint generation. Our approach closely follows the usual approach \cite{TAPL0}, by augmenting the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
+In order to generate global inference results, we begin with constraint generation. Our approach closely follows the usual approach \cite{TAPL0}, where we augment the bidirectional type system for the marked lambda calculus with generated constraint sets, $C$. The new judgement forms are 
     $\synConstraint{\ctx}{\ECMV}{\TMV}{C}$ and $\anaConstraint{\ctx}{\ECMV}{\TMV}{C}$. 
 
-\subsubsection{Constraints}
-Individual constraints are written $\tau_1 \approx \tau_2$\todo[inline]{might be nice to have a definition box defining this judgement and maybe listing properties}. 
-The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ must have the same solution \todo[inline]{not obvious to me at this point what a 'solution of a type' (vs constraint) refers to} once the constituent type holes are filled. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types, following \citet{HazelnutPOPL}.
+Intuitively, constraints should force two incomplete types to have the same set of suggestions in the editor. Any suggestion must satisfy all constraints, thereby ensuring its acceptance does not necessitate further marking.
 
-% Before detailing this relationship, consider an approach where constraints were transitive across complete types. In such a world, we may end up with the incorrect error localization below:
-% \begin{center}
-% \includegraphics[width=4cm]{images/constraint_gen_bad_example.png}
-% \end{center}
-% This program can be associated with the constraints $C = \{ \tehole^{x} \approx \tnum, \tehole^{y} \approx \tnum, \tehole^{y} \approx \mathtt{string} \}$ based on the usage of the $+$ operator and binding of $"hello"$ to $y$. Since the editor treats constraints as transitive across complete types, it finds that $\tehole^{x} \approx \tehole^{y}$ given $\tehole^{x} \approx \tnum$ and $\tehole^{y} \approx \tnum$. Consequently, the two type holes have conflicting type hole fillings of $\tnum$ and $\mathtt{string}$. This behavior is undersirable, as $\tehole^x$ was not directly associated with the string $"hello"$ and should be solved as $\tnum$.
+% For most rules, no new constraints are generated. This leads to straightforward rules like MSLam-C and MSAp1-C:
 
-As an example of the constraint generation process, let us consider the program illustrated in \cref{fig:editor_ghost}. We define an equivalent marked expression $\ECMV_{ex}$ below where the let expression has been replaced with an annotated lambda applied to the let body:
-$$\ECMV_{ex} = \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}})}{~~\EEHole^0}$$
-What constraints might we expect this expression to generate? In this expression, we expect that the annotation of the lambda is consistent with the type of its argument, $\TUnknown^{exp(0)}$. This notion might generate the constraint $\{ \TUnknown^1 \approx \TUnknown^{exp(0)}\}$. We might further notice that we expect both branches of the if expressions to synthesize consistent types. But what is the type of $\ECAp{f}{\underline{2}}$? Previously, we might have argued that it would simply be $\TUnknown$; however, now we must ask exactly \emph{which} type hole this application synthesizes and determine its provenance. In order to further understand these questions, let us more formally explore constraint generation before revisiting this example.
+% \begin{mathpar}
+%     \judgment{
+%         \synConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}{C}
+%     }{
+%         \synConstraint{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}{C}
+%     }{MSLam-C}
 
-\subsubsection{Subsumption Constraints}
-% As discussed earlier, constraints constitute a series of expectations for what different types should be. One key mechanism by which we facilitate our accumulation of these expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this, consider subsumption. 
+%     \judgment{
+%         \synConstraint{\ctx}{\ECMV_1}{\TMV}{C_1} \\
+%         \matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C_2} \\
+%         \anaConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_3}
+%       }{
+%         \synConstraint{\ctx}{\ECAp{\ECMV_1}{\ECMV_2}}{\TMV_2}{C_1 \cup C_2 \cup C_3}
+%     }{MSAp1-C}
+% \end{mathpar}
 
-Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. We extend the rule MASubsume as follows so that it generates the corresponding constraint $\tau \approx \tau'$:
+Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing the consistencies necessary for success. Each constraint is written $\constrain{\tau_1}{\tau_2}$. New constraints are generated based on expected consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other. Using these intuitions, we define MSIf-C:
+
 \begin{mathpar}
-  \judgment{
-    \synConstraint{\ctx}{\ECMV}{\TMV'}{C} \\
-    \consistent{\TMV}{\TMV'} \\
-    \subsumable{\ECMV}
-  }{
-    \anaConstraint{\ctx}{\ECMV}{\TMV}{C \cup \{ \TMV \approx \TMV'\}}
-  }{MASubsume-C}
-\end{mathpar}
-% Notice that we also accumulate constraints generated in each premise in our conclusion.
-
-One key question is how one should manage constraints whenever marked expressions are marked with errors. Should an expected type pass through the mark, which would necessarily create an unsolvable constraint? We assert that the answer is no: marks  act as quarantines. We can, however, take advantage of the interpretation of marks as non-empty holes to infer a type for the marked expression, i.e. the type that mark repair needs to target.
-
-With this guiding principle in hand, let us approach constraint generation for subsumption when \inconsistent{\TMV}{\TMV'} by extending MAInconsistentTypes:
-\begin{mathpar}
-  \judgment{
-    \synConstraint{\ctx}{\ECMV}{\TMV'}{C}  \\
-    \inconsistent{\TMV}{\TMV'} \\
-    \subsumable{\ECMV}
-  }{
-    \anaConstraint{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV}{C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}}
-  }{MAInconsistentTypes-C}
-\end{mathpar}
-% Here, instead of expecting that the type of \ECMV~ be consistent with the type $\tau$, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
-
-\subsubsection{If Expressions and Their Constraints}
-Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that both branches have consistent types and assess this implicitly by attempting to compute their join. This leads to the following constraint generating rule for if expression synthesis where we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$:
-\begin{mathpar}
-  \judgment{
-    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}  \\
+    \judgment{
+    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}\\
     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
     \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
   }{
     \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
   }{MSIf-C}
-\end{mathpar} 
-
-Our logic is somewhat trickier when the branches of an if expression have no lower bound, causing it to be wrapped in a marked hole. Inconsistency among branches should be considered an error that lies \emph{within} the hole membrane surrounding our marked expression. Consequently, we constrain $\TMV_1 \approx \TMV_2$ as before and do not consider the type of our hole membrane, $\TUnknown^{exp(u)}$, in the constraints:
-\begin{mathpar}
-  \judgment{
-    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1} \\
-    \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
-    \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3} \\
-    \inconsistent{\TMV_1}{\TMV_2}
-  }{
-    \synConstraint{\ctx}{\ECInconBrId{\ECMV_1}{\ECMV_2}{\ECMV_3}{u}}{\TUnknown^{exp(u)}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
-  }{MSInconsistentBranches-C}
-\end{mathpar}
-% We assume that the definition of $\TJoin{\TMV_1}{\TMV_2}$ has been adjusted to accept type holes with provenances where we arbitrarily decide that $\TJoin{\TUnknown^{p1}}{\TUnknown^{p2}} = \TUnknown^{p1}$.
-
-\subsubsection{Matched Arrow Constraints}
-When we generate a matched arrow form for a type hole, we expect that the original type hole be the same as the arrow type outputted by the judgement. Consequently, we find that matched arrow judgements must also accumulate constraints. Thus, we adjust our matched arrow judgement to be of the form $\matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C}$.
-
-However, one key question that remains is which provenance to assign the holes outputted by the matched arrow judgement. If we were to simply generate fresh holes ids, they would have no concrete link to the program. To resolve this, we introduce matched arrow provenances, which gives information on why a type hole was created while detailing which type hole it spawned from. 
-Using this, the constraint generating form of TMAHole can constrain the original hole to its matched counterpart while assigning matched arrow provenances to each newly created type hole:
-\begin{mathpar}
-\judgment{ }{
-  \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
-}{TMAHole-C}
 \end{mathpar}
 
-\subsubsection{Lambda Expressions and Their Constraints}
-Our rule for analysis of annotated lambdas when no local errors are present asserts that the annotation \TMV~ be consistent with the input type of the argument to analysis:
+There are, however, two key points that we must be careful of. As discussed earlier, our goal is to generate suggestions for each type hole based on their globally accumulated constraints. Consequently, we must ensure we are able to distinguish between different type holes based on their associated locus in the program. To this end, we take two actions:
+
+\begin{enumerate}
+    \item We add a unique id u to all expression holes and type holes that appear directly in the program where we assume that id generation is handled by the editor.
+    \item We add provenances $p$ to type holes. Each provenance links a type hole to some concrete source in the program. For example, the provenance $exp(3)$ indicates that a type hole must have been synthesized from an expression hole with id $3$ in the program. 
+\end{enumerate}
+\[\begin{array}{rrcl}
+    \Prov & \Provp & \Coloneqq & u \mid exp(u)\\
+    \TMName  & \TMV  & \Coloneqq & \dots \mid \TUnknown^{p}\\
+    \ECMName & \ECMV & \Coloneqq & \dots \mid \ECUnboundId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \dots \mid \ECProjLSynNonMatchedProdId{\ECMV}{u} \mid \ECProjRSynNonMatchedProdId{\ECMV}{u} \mid \EEHole^u
+\end{array}\]
+
+This change forces us to consider any rules that introduce new type holes carefully. Newly generated type holes should be assigned provenances describing their creation. Consequently, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances:
+
+\[\begin{array}{rrcl}
+    \Prov & \Provp & \Coloneqq & \dots \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_L(\Provp) \mid \times_R(\Provp)\\
+\end{array}\]
+
 \begin{mathpar}
-  \judgment{
-    \matchedArrowConstraint{\TMV_3}{\TMV_1}{\TMV_2}{C_1}\\
-    \consistent{\TMV}{\TMV_1} \\
-    \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}{C_2}
-  }{
-    \anaConstraint{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}{C_1 \cup C_2 \cup \{ \TMV \approx \TMV_1 \}}
-  }{MALam1-C}
+    \judgment{ }{
+      \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
+    }{TMAHole-C}
+
+    \judgment{ }{
+      \matchedProdConstraint{\TUnknown^p}{\TUnknown}{\TUnknown}{\{ \TUnknown^p \approx \TProd{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}}
+    }{TMPHole-C}
 \end{mathpar}
 
-Our rules for the remaining two lambda analysis cases where the lambda expression is wrapped in a marked hole are trickier. Let us begin by assessing the case where the analyzed type has no matched arrow form. In such cases, we previously analyzed the body of the lambda against the unknown type to ensure its validity. However, which unknown type are we analyzing the body against? As discussed earlier, performing analysis imparts the expectation that the type of the expression is consistent with the argument of analysis. If we were to simply analyze against the type of the hole membrane we use to surround the marked lambda, we'd impart the expectation that the lambda's body is consistent with the hole membrane itself. This would subvert our goal of separating the program outside the hole with that inside!\todo[inline]{i don't totally follow why this reasoning doesnt apply to MALam3-C as well} In fact, any hole we choose would impart some invalid expectation with respect to the goals we've outlined. Consequently, we introduce the anonymous provenance: this will have its constraints ignored by the constraint solver when we later describe unification.
-\begin{center}
-    $\arraycolsep=4pt\begin{array}{lll}
-    \Prov~~ p & ::= & 
-        ... ~\vert~ 
-        anon
-        \\
-    \end{array}$
-\end{center}
-We can analyze the lambda's body against an anonymous unknown type:
-\begin{mathpar}
-  \judgment{
-    \notMatchedArrow{\TMV_3} \\
-    \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown^{anon}}{C}
-  }{
-    \anaConstraint{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} {C \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}}
-  }{MALam2-C}
+Up until now, we have ignored rules that consider marked errors. This leads us to our second point of contention: what do we do with expressions that have been marked with expression holes? Recall that our primary goal in using global type inference is to enhance user feedback and give quality suggestions for type holes. A marked expression has already been deemed erroneous. Therefore, when generating constraints, we do not constrain sub-expressions within a marked hole to any expressions outside the hole. This way, we avoid giving potentially misleading type hole suggestions based on erroneous parts of the program, while still informing the user they have something to fix by marking the expression. As a simple example of this, we present the following rule for subsumption in the absence of failure alongside that of subsumption upon the failure of a consistency check:
 
-  \judgment{
-    \matchedArrowConstraint{\TMV_3}{\TMV_1}{\TMV_2}{C_1}\\
-    \inconsistent{\TMV}{\TMV_1} \\\\
-    \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}{C_2}
-  }{
-    \anaConstraint{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} {C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}}
-  }{MALam3-C}
-\end{mathpar}
-% Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the expression hole's type, $?^{exp(u)}$.
-
-\subsubsection{Applications and Their Constraints}
-This brings us at last to the application of lambdas. When the function position expression $\ECMV_1$ lacks a matched arrow form, we proceed as if we had called\todo{phrasing} matched arrow on the marked expression hole surrounding it. To this end, the function argument $\ECMV_2$ must be analyzed against $\TUnknown^{\rightarrow_L{u}}$ and we must return $\TUnknown^{\rightarrow_R{u}}$ as the result of synthesis. 
 \begin{mathpar}
-  \judgment{
-    \synConstraint{\ctx}{\ECMV_1}{\TMV}{C_1} \\
-    \notMatchedArrow{\TMV} \\
-    \anaConstraint{\ctx}{\ECMV_2}{\TUnknown^{\rightarrow_{L}(exp(u))}}{C_2}
+    \judgment{
+    \synConstraint{\ctx}{\ECMV}{\TMV'}{C} \\
+    \consistent{\TMV}{\TMV'} \\
+    \subsumable{\ECMV}
   }{
-    \synConstraint{\ctx}{\ECApNonMatchedId{\ECMV_1}{u}{\ECMV_2}}{\TUnknown^{\rightarrow_{R}(exp(u))}}{C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \tarr{\TUnknown^{\rightarrow_L(exp(u))}}{\TUnknown^{\rightarrow_R(exp(u))}}\}}
-  }{MSAp2-C}
+    \anaConstraint{\ctx}{\ECMV}{\TMV}{C \cup \{ \TMV \approx \TMV' \}}
+  }{MASubsume-C}
+  
+    \judgment{
+        \synConstraint{\ctx}{\ECMV}{\TMV'}{C} \\
+        \inconsistent{\TMV}{\TMV'} \\
+        \subsumable{\ECMV}
+    }{
+        \anaConstraint{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV}{C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}}
+    }{MAInconsistentTypes-C}
 \end{mathpar}
 
-\subsubsection{Other Constraint Generating Rules}
-The remaining rules either simply accumulate constraints from each of their premises as done above or are axiomatic and need not accumulate any constraints. As a result, they are somewhat repetitive and are consequently left to the supplemental material.\todo[inline]{wordy. instead maybe: 'See supplement for the remaining rules, which either express atomic constraints or simply accumulate the constraints of their premises'}
+When analyzing an expression against a type that is consistent with the result of its synthesis, we constrain the two types together. In contrast, when analyzing against a type inconsistent with the result of synthesis, we simply constrain the type of the expression hole surrounding the expression against the analyzed type.
 
-\subsubsection{An Example of Constraint Generation}
-Now that we have defined a formal approach to constraint generation, let us revisit $\ECMV_{ex}$ and try once again to identify its constraints:
-$$\ECMV_{ex} \equiv \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}})}{~~\EEHole^0}$$
-We first consider the body of the lambda, $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}$. Based on the rule MSIf-C, we must analyze our scrutinee, $\EEHole^2$ against $\tbool$. This triggers subsumption, yielding the constraint $\{ \TUnknown^{exp(2)} \approx \tbool \}$. Next, we must synthesize the types of our branches: $\ECAp{f}{\underline{2}}$ and $\EEHole^3$. Synthesis of $\EEHole^3$ is simple; $\EEHole^3$ synthesizes $\TUnknown^{exp(3)}$ with no constraints.
+The remaining rules directly follow the intuitions above and are left to the supplemental material.
 
-Synthesis of $\ECAp{f}{\underline{2}}$ is more complex. Following MSAp1-C, we attempt to take the matched arrow of $\TUnknown^1$, yielding the constraint $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}} \}$. Next, we analyze the argument $\underline{2}$ against the input type of $f$, $\TUnknown^{\rightarrow_L(1)}$. This triggers subsumption, which yields the constraint $\{ \TUnknown^{\rightarrow_L(1)} \approx \tnum \}$. With these results in hand, we can determine that the result of synthesis on  $\ECAp{f}{\underline{2}}$ is $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}}, ~\TUnknown^{\rightarrow_L(1)} \approx \tnum \}$.
+\subsection{Unification and PotentialTypeSets}
+\label{sec:unification}
 
-Combining these results and constraining the types of both branches to each other, we find that $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{\EEHole^3}$ synthesizes type $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum,  \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)}\}$. 
+To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer} to accumulate constraint information in \textit{PotentialTypeSet}s.
 
-Synthesis of our overarching lambda expression yields no additional constraints and returns the type $\tarr{\TUnknown^1}{\TUnknown^{\rightarrow_L(1)}}$. Application of the lambda on $\EEHole^0$ yields the constraint $\{ \TUnknown^{exp(0)} \approx \TUnknown^{1} \}$ due to subsumption and yields the final type  $\TUnknown^{\rightarrow_R(1)}$. Thus, we find that $\ctxSynType{\cdot}{\ECMV_{ex}}{\TUnknown^{\rightarrow_R(1)}} ~|~ C_{ex1}$ where 
-$$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
-
-\todo[inline]{i wonder if this section can be made more incremental. like, if the rules were introduced in the order in which they are required for the derivation of the motivating example, then you could interleave the rules with this derivation sketch. as it stands, i feel like i've forgotten the motivating example by the time i get here, whereas the other way it could serve to generate explicit sub-examples for the relevant rules. right now i feel this part at the end is a bit of an awkward balance of symbolic and conversational}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INFERENCE ALGORITHM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\usetikzlibrary{positioning,calc}
-
-\subsection{Constraint Solving with Recovery}
-\label{sec:infalg}
-The problem of inferring types from constraints has been widely explored in the literature. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. With this in mind, we approach type inference with the key goal of representing all potential type fillings for type holes, regardless of any conflicts that may arise during unification.
-
-In order to do this, we begin with a simpler problem: representing our constraints as an undirected graph. We'd like to construct our constraint graph such that if a node for some type hole $\TUnknown^{p_1}$ can be reached from the node for $\TUnknown^{p_2}$, it must be the case that $\TUnknown^{p_1} \approx \TUnknown^{p_2}$. Once we have a graph of all constraints, the problem of identifying potential types to suggest for any type hole in the program can be boiled down to that of identifying our graph's connected components. Put another way, if we want to find the potential types that may be used to fill some type hole, all we need to do is find all nodes that can be reached from it in the constraint graph.
-
-It is important to note that before we begin constructing constraint graphs, we must filter all constraints involving the anonymous type hole $?^{anon}$. While necessary for certain edge cases in type checking, the anonymous type hole represents an inherent lack of expectations. Consequently, all constraints involving it can be ignored.
-
-\subsubsection{Approaches to Constructing Constraint Graphs}
-When constructing a graph of our constraints, our first inclination  might be to allow all types found in our constraints to act as nodes in our graph. We could then create a traversable edge between nodes for every constraint. However, such a choice prevents pairs that are reachable from one another from always being related via the constraint relation. To see why, recall that the constraint relation is only transitive across incomplete types (those containing at least one type hole). Since edges can be traversed transitively, we cannot have traversable edges between all types represented in constraints. Rather, only incomplete types can be linked by traversable edges. Conversely, complete types should only be reachable through incomplete types that have been directly constrained to them. 
-
-To simplify this observation, we assert that only incomplete types can be nodes in our graph. We refer to edges connecting incomplete types as \emph{traversable edges} and draw them as solid lines. Edges linking to complete types will be represented via \emph{solution edges}, which we draw as dashed lines. These edges can only be used to discover complete types and can never be used to travel through them. As a result, complete types cannot be used as a layover between incomplete types. 
-
-As an example of this, consider \cref{fig:ex2ex3graphs}. \Cref{fig:reachable-tag} illustrates a set of constraints $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$ where all nodes can be solved as $\tnum$ by discovering $\tnum$ through $\tehole^1$. Consequently, this graph has a single connected component. On the other hand, \cref{fig:disjoint-nodes} illustrates an example set of constraints $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$ where $\tnum$ is discovered by two separate incomplete types, but cannot be used to connect them. Consequently, it contains two connected components. 
-
-\begin{figure}[htb!]
-\centering
-\begin{subfigure}{.49\textwidth}
-  \centering
-      \begin{tikzpicture}
-      [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-      \node[rectangle,minimum size=0.85cm] (n1) at (3,3) {$\tehole^{1}$};
-      \node[rectangle,minimum size=0.85cm] (n2) at (1,3)  {$\tehole^{2}$};
-      \node[minimum size=0.85cm] (i) at (3,1)  {$\tnum$};
-    
-      \foreach \from/\to in {n1/n2}
-        \draw (\from) -- (\to);
-       \foreach \from/\to in {n1/i}
-        \draw[dashed] (\from) -- (\to);
-    
-    \end{tikzpicture}
-  \caption{Graph of $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$}
-  \label{fig:reachable-tag}
-\end{subfigure}
-\begin{subfigure}{.49\textwidth}
-  \centering
-  \begin{tikzpicture}
-  [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
-  \node[rectangle,minimum size=0.85cm] (n1) at (2,3) {$\tehole^{1}$};
-  \node[rectangle,minimum size=0.85cm] (n2) at (4,3)  {$\tehole^{2}$};
-  \node[minimum size=0.85cm] (i1) at (4,1)  {$\tnum$};
-  \node[minimum size=0.85cm] (i2) at (2,1)  {$\tnum$};
-  \node[minimum size=0.85cm] (i3) at (0,3)  {$\tbool$};
-
-   \foreach \from/\to in {n1/i3, n1/i2, n2/i1}
-    \draw[dashed] (\from) -- (\to);
-
-\end{tikzpicture}
-  \caption{Graph of $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$}
-  \label{fig:disjoint-nodes}
-\end{subfigure}
-\caption{Sample constraint graphs of ground types}
-\label{fig:ex2ex3graphs}
-\end{figure}
-
-% Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
-
-Upon encountering a constraint between two arrow types, we can generate two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex4} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$, we generate the constraints $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. These constraints can then be used to render the graph depicted in \cref{fig:arrowgraph}. Here, we represent incomplete $Arrow$s as nodes whose types are dependent on their left and right hand sides, which may also be nodes. As an example, we see in \cref{fig:arrowgraph} that $\tarr{\tehole^1}{\tehole^2}$ is represented by a large arrow node containing the node $\tehole^1$ on the left and $\tehole^2$ on the right. 
-% Any node linked to an $Arrow$ node can only access its left and right hand sides once they are paired together and wrapped in a binary $\rightarrow$ type. 
-
-With these rules in hand, we can construct graphs for more complex constraint sets. Let us explore the graph of the constraint set $C_{ex1}$ generated from the synthesis of $\ECMV_{ex}$ in section 4.4.8:
-$$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
-We provide an illustration of this constraint graph in \cref{fig:C-ex-graph-traversal}. The red edges in \cref{fig:C-ex-graph-traversal} represent all paths that may be followed beginning at $?^1$. 
-
-Suppose we wanted to generate a suggestion for $?^1$ using this graph. This could be achieved by simply traversing all red edges in \cref{fig:C-ex-graph-traversal} to discover potential types. Note that potential types discovered within the left and right hand side of the $Arrow$ node must be wrapped pairwise in an $\rightarrow$ type before being added to $?^1$'s list of potential types. Following these edges generates the following set of potential types for $?^1$: $\{  ?^0, ?^1, \tarr{\tnum}{?^3}, \tarr{\tehole^{\rightarrow_{L(1)}}}{?^3}, \tarr{\tnum}{\tehole^{\rightarrow_{R(1)}}}, \tarr{\tehole^{\rightarrow_{L(1)}}}{\tehole^{\rightarrow_{R(1)}}}  \}$. Notice that after exploring the arrow, our number of potential types have grown rapidly!
-
-\begin{figure}[htb!]
-\centering
-\captionsetup[subfigure]{justification=centering}
-\begin{subfigure}{.49\textwidth}
-        \centering
-      \begin{tikzpicture}[remember picture,
-  inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
-  innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
-  outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
-  ]
-  \node[outer,draw=green] (A) {
-    \shortstack{
-        $Arrow$\\
-        \begin{tikzpicture}
-          \node [inner] (n1)  {$\tehole^{1}$};
-          \node [inner,right=of n1] (n2) {$\tehole^{2}$};
-          % \draw[red,thick,->] (n1) -- (n2);
-        \end{tikzpicture}
-    }
-  };
-  \node[outer,draw=green,below=of A] (B) {
-    \shortstack{
-        $Arrow$\\
-        \begin{tikzpicture}
-          \node [inner] (n3)  {$\tehole^{3}$};
-          \node [innercirc,right=of n3] (i) {$\tnum$};
-          % \draw[red,thick,->] (n3) -- (i);
-        \end{tikzpicture}
-    }
-  };
-  \draw (n1) -- (n3);
-  \draw[dashed] (n2) -- (i);
-   \draw[thick] (A) -- (B);
-\end{tikzpicture}
-\caption{Expanded constraint graph of\\ $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
-\label{fig:arrowgraph}
-\end{subfigure}
-\begin{subfigure}{.49\textwidth}
-  \centering
-  \begin{tikzpicture}[remember picture,
-  tag/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
-  holey/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=5pt,minimum size=0.85cm},
-  outer/.style={draw=green,fill=green!20,thick,inner sep=10pt},
-  ]
-  \node[holey] (hole1) {$\tehole^1$};
-  \node[holey, right=of hole1] (hole0) {$\tehole^0$};
-  \node[outer, below=of hole1] (Arrow) {
-    \shortstack{
-        $Arrow$\\
-        \begin{tikzpicture}
-          \node [holey] (holeL1)  {$\tehole^{\rightarrow_{L(1)}}$};
-          \node [holey, right=of holeL1] (holeR1) {$\tehole^{\rightarrow_{R(1)}}$};
-        \end{tikzpicture}
-    }
-  };
- \node[tag, below=of holeL1] (num) {$\tnum$};
- \node[holey, below=of holeR1] (hole3) {$\tehole^3$};
- \node[holey, right=of holeR1] (hole2) {$\tehole^2$};
- \node[tag, below=of hole2] (bool) {$\tbool$};
-  \draw[draw=red] (hole1) -- (hole0);
-  \draw[draw=red] (hole1) -- (Arrow);
-  \draw[dashed, draw=red] (num) -- (holeL1);
-  \draw[draw=red] (hole3) -- (holeR1);
-  \draw[dashed] (bool) -- (hole2);
-\end{tikzpicture}
-% \caption{Constraint graph of\\ 
-% $C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^{exp(0)} \approx \TUnknown^{1},$ \\
-% $\TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum,$ \\
-% $\TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$}
-\caption{Constraint graph of $C_{ex1}$}
-\label{fig:C-ex-graph-traversal}
-\end{subfigure}
-\caption{Sample constraint graphs including binary types}
-\label{fig:ex1ex2graphs}
-\end{figure}
-
-\subsubsection{PotentialTypeSets and the Graph Construction Algorithm}
-Now that we have a clear approach to generating constraint graphs, how might we represent the types that are adjacent to each node? One approach would be to simply store an adjacency list or matrix. However, we'd like to be able to efficiently store all potential hole fillings that can be derived from a type hole's connected components. Recall the rapid growth of potential types discovered for $?^1$ from the graph of $C_{ex1}$ in \cref{fig:C-ex-graph-traversal}. Since the set of potential types can grow at a combinatorial rate, we define a new, condensed data structure to house our potential type hole fillings without loss of information: a \emph{PotentialTypeSet}.
-
-A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. A single \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of information, we continuously extend some \emph{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in \cref{fig:possible_type_sets}.
+A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. A single \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of information, we continuously extend some \emph{PotentialTypeSet}.
 
 \begin{figure}[hbt!]
 \centering
-\vspace{-3px} 
 $\arraycolsep=4pt\begin{array}{lll}
 PotentialTypeSet~~ s & ::= 
 single(t) ~\vert~ 
@@ -411,64 +244,378 @@ PotentialType~~ t & ::=
   \\
 \end{array}$
 \label{fig:syntax_possible_type_sets}
-\vspace{5px}
-\hrule
-\[\begin{array}{rcl}
-    single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
-    single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
-    cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
-    cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
-    cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
-\end{array}\] 
-\caption{Syntax of PotentialTypeSets, PotentialTypes, and their Merging}
-\vspace{5px} 
-\label{fig:possible_type_sets}
-\vspace{-5px}
 \end{figure}
 
-With this in hand, we formalize the intuitions discussed in section 4.5.1 in a graph construction algorithm. This algorithm accumulates a mapping from incomplete types, which represent our nodes, to their \emph{PotentialTypeSet}, which represents a subset of nodes reachable from a given incomplete type. Whenever we attempt to create a traversable edge or a solution edge between nodes, we retrieve the \emph{PotentialTypeSet}s of all involved nodes, compute the result of merging them, and update our graph accordingly. We assume the existence of a \lstinline{Map.add} function that adds a new element to the supplied map if it does not already exist, and otherwise does not change any values. The corresponding definition is provided in \cref{fig:algcode_construct_graph}
+This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textit{PotentialTypeSet}s. Each \textit{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}. 
 
-\begin{figure}[hbt!]
-\begin{lstlisting}[escapeinside={(*}{*)}]
-let rec construct_graph (~graph=Map.empty(), constraints) =
-    match constraints with
-    | [] -> graph
-    | hd::tl -> (
-        (match hd with
-        | ((*$\tarr{t1_L}{t1_R}$*), (*$\tarr{t2_L}{t2_R}$*)) ->
-            construct_graph(~graph, (((*$t1_L$*), (*$t2_L$*)))::(((*$t1_R$*), (*$t2_R$*)))::tl)
-        | ((*$\tehole^{p}$*) as hole, t)
-        | (t, (*$\tehole^{p}$*) as hole) ->
-            let graph = Map.add(graph, hole, hole) in
-            if (contains_hole(t)) then (
-                let graph = Map.add(graph, t, t) in
-                let graph = create_traversable_edge(graph, t, hole) in
-                construct_graph(~graph, tl)
-            ) else (
-                let graph = create_solution_edge(graph, hole, t) in
-                construct_graph(~graph, tl)
-            )
-        | _ -> construct_graph(~graph, tl))
+% \subsubsection{Constraints}
+% Individual constraints are written $\tau_1 \approx \tau_2$\todo[inline]{might be nice to have a definition box defining this judgement and maybe listing properties}. 
+% The relationship that a constraint expresses is not quite consistency, nor is it equality. Rather, if $\tau_1 \approx \tau_2$, $\tau_1$ and $\tau_2$ must have the same solution \todo[inline]{not obvious to me at this point what a 'solution of a type' (vs constraint) refers to} once the constituent type holes are filled. The constraint relation is reflexive and symmetric. It also behaves transitively, but only through type holes and types containing type holes. We refer to such types as "incomplete" types, following \citet{HazelnutPOPL}.
 
-\end{lstlisting}
-\hrule
-\caption{Constraint graph creation algorithm of type hole inference}
-\label{fig:algcode_construct_graph}
-\end{figure}
+% As an example of the constraint generation process, let us consider the program illustrated in \cref{fig:editor_ghost}. We define an equivalent marked expression $\ECMV_{ex}$ below where the let expression has been replaced with an annotated lambda applied to the let body:
+% $$\ECMV_{ex} = \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}})}{~~\EEHole^0}$$
+% What constraints might we expect this expression to generate? In this expression, we expect that the annotation of the lambda is consistent with the type of its argument, $\TUnknown^{exp(0)}$. This notion might generate the constraint $\{ \TUnknown^1 \approx \TUnknown^{exp(0)}\}$. We might further notice that we expect both branches of the if expressions to synthesize consistent types. But what is the type of $\ECAp{f}{\underline{2}}$? Previously, we might have argued that it would simply be $\TUnknown$; however, now we must ask exactly \emph{which} type hole this application synthesizes and determine its provenance. In order to further understand these questions, let us more formally explore constraint generation before revisiting this example.
 
-\subsubsection{Computing PotentialTypeSets Using Constraint Graphs} 
-The function \lstinline{construct_graph} builds a mapping from each type hole to a \emph{PotentialTypeSet} containing a subset of its connected component. However, in order to generate all potential type hole fillings, we require that each \emph{PotentialTypeSet} represent the entire connected component. One method to expand our \emph{PotentialTypeSet}s would be to conduct a depth first search of our graph. Instead of this, we choose to simply augment our current approach using union find, yielding a version of \lstinline{construct_graph} that is reminiscent of Huet's unification algorithm \cite{Huet}.
+% \subsubsection{Subsumption Constraints}
+% % As discussed earlier, constraints constitute a series of expectations for what different types should be. One key mechanism by which we facilitate our accumulation of these expectations is analysis. Indeed, when we expect something should have a type \TMV, we commonly analyze it against that type. As a classic example of this, consider subsumption. 
 
-In order to change our graph construction algorithm to a constraint solver, all we need to do is update our definitions of \lstinline{create_traversable_edge} and \lstinline{create_solution_edge} to use represent each potential type set using union find. In order to accommodate this change, minor adjustments must be made to the definitions presented in \cref{fig:possible_type_sets} to create union findable possible type sets and their extension logic, $\amalg_{UF}$. These definitions are left to the supplemental material for reference.
+% Suppose we have a marked expression \ECMV~ that satisfies the judgement \ctxSynType{\ctx}{\ECMV}{\TMV'} for some context \ctx. If we attempt to analyze \ECMV~ against the type $\tau$, we require, or put another way, we expect, that \consistent{\TMV}{\TMV'}. We extend the rule MASubsume as follows so that it generates the corresponding constraint $\tau \approx \tau'$:
+% \begin{mathpar}
+%   \judgment{
+%     \synConstraint{\ctx}{\ECMV}{\TMV'}{C} \\
+%     \consistent{\TMV}{\TMV'} \\
+%     \subsumable{\ECMV}
+%   }{
+%     \anaConstraint{\ctx}{\ECMV}{\TMV}{C \cup \{ \TMV \approx \TMV'\}}
+%   }{MASubsume-C}
+% \end{mathpar}
+% % Notice that we also accumulate constraints generated in each premise in our conclusion.
 
-An additional step is taken to mark type holes with an error if their \emph{PotentialTypeSet} contains a cycle that is not a self loop. In Hindley-Milner type inference this is referred to as the occurs-check.
+% One key question is how one should manage constraints whenever marked expressions are marked with errors. Should an expected type pass through the mark, which would necessarily create an unsolvable constraint? We assert that the answer is no: marks  act as quarantines. We can, however, take advantage of the interpretation of marks as non-empty holes to infer a type for the marked expression, i.e. the type that mark repair needs to target.
 
-After our union find based \lstinline{construct_graph} and occurs check marking have been completed, we are ready to identify the solvability of our type holes. We consider type holes solvable if their \textit{PotentialTypeSet} contains at most one type that is not a hole. On the other hand, if a type hole's \textit{PotentialTypeSet} contains multiple conflicting types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases,  feedback can be provided as in \cref{fig:editor_conflict}.
+% With this guiding principle in hand, let us approach constraint generation for subsumption when \inconsistent{\TMV}{\TMV'} by extending MAInconsistentTypes:
+% \begin{mathpar}
+%   \judgment{
+%     \synConstraint{\ctx}{\ECMV}{\TMV'}{C}  \\
+%     \inconsistent{\TMV}{\TMV'} \\
+%     \subsumable{\ECMV}
+%   }{
+%     \anaConstraint{\ctx}{\ECInconTypeId{\ECMV}{u}}{\TMV}{C \cup \{ \TMV \approx \TUnknown^{exp(u)} \}}
+%   }{MAInconsistentTypes-C}
+% \end{mathpar}
+% % Here, instead of expecting that the type of \ECMV~ be consistent with the type $\tau$, we prevent any conflicts that may arise from $\tau$ reaching beyond our type hole membrane. We then enforce that the hole surrounding \ECMV~ synthesize a type consistent with $\tau$.
 
-% \subsubsection{Other Binary Types}
-% Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. We follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
+% \subsubsection{If Expressions and Their Constraints}
+% Expectations for the result of typechecking on expressions is not limited to analysis. Indeed, there are multiple cases where we hold expectations for the types of our expressions in synthesis as well. As a simple example, consider if expressions. We expect that both branches have consistent types and assess this implicitly by attempting to compute their join. This leads to the following constraint generating rule for if expression synthesis where we simply accumulate constraints and require that $\TMV_1 \approx \TMV_2$:
+% \begin{mathpar}
+%   \judgment{
+%     \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}  \\
+%     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
+%     \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
+%   }{
+%     \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TJoin{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+%   }{MSIf-C}
+% \end{mathpar} 
+
+% Our logic is somewhat trickier when the branches of an if expression have no lower bound, causing it to be wrapped in a marked hole. Inconsistency among branches should be considered an error that lies \emph{within} the hole membrane surrounding our marked expression. Consequently, we constrain $\TMV_1 \approx \TMV_2$ as before and do not consider the type of our hole membrane, $\TUnknown^{exp(u)}$, in the constraints:
+% \begin{mathpar}
+%   \judgment{
+%     \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1} \\
+%     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
+%     \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3} \\
+%     \inconsistent{\TMV_1}{\TMV_2}
+%   }{
+%     \synConstraint{\ctx}{\ECInconBrId{\ECMV_1}{\ECMV_2}{\ECMV_3}{u}}{\TUnknown^{exp(u)}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+%   }{MSInconsistentBranches-C}
+% \end{mathpar}
+% % We assume that the definition of $\TJoin{\TMV_1}{\TMV_2}$ has been adjusted to accept type holes with provenances where we arbitrarily decide that $\TJoin{\TUnknown^{p1}}{\TUnknown^{p2}} = \TUnknown^{p1}$.
+
+% \subsubsection{Matched Arrow Constraints}
+% When we generate a matched arrow form for a type hole, we expect that the original type hole be the same as the arrow type outputted by the judgement. Consequently, we find that matched arrow judgements must also accumulate constraints. Thus, we adjust our matched arrow judgement to be of the form $\matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C}$.
+
+% However, one key question that remains is which provenance to assign the holes outputted by the matched arrow judgement. If we were to simply generate fresh holes ids, they would have no concrete link to the program. To resolve this, we introduce matched arrow provenances, which gives information on why a type hole was created while detailing which type hole it spawned from. 
+% Using this, the constraint generating form of TMAHole can constrain the original hole to its matched counterpart while assigning matched arrow provenances to each newly created type hole:
+% \begin{mathpar}
+% \judgment{ }{
+%   \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
+% }{TMAHole-C}
+% \end{mathpar}
+
+% \subsubsection{Lambda Expressions and Their Constraints}
+% Our rule for analysis of annotated lambdas when no local errors are present asserts that the annotation \TMV~ be consistent with the input type of the argument to analysis:
+% \begin{mathpar}
+%   \judgment{
+%     \matchedArrowConstraint{\TMV_3}{\TMV_1}{\TMV_2}{C_1}\\
+%     \consistent{\TMV}{\TMV_1} \\
+%     \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}{C_2}
+%   }{
+%     \anaConstraint{\ctx}{\ECLam{x}{\TMV}{\ECMV}}{\TMV_3}{C_1 \cup C_2 \cup \{ \TMV \approx \TMV_1 \}}
+%   }{MALam1-C}
+% \end{mathpar}
+
+% Our rules for the remaining two lambda analysis cases where the lambda expression is wrapped in a marked hole are trickier. Let us begin by assessing the case where the analyzed type has no matched arrow form. In such cases, we previously analyzed the body of the lambda against the unknown type to ensure its validity. However, which unknown type are we analyzing the body against? As discussed earlier, performing analysis imparts the expectation that the type of the expression is consistent with the argument of analysis. If we were to simply analyze against the type of the hole membrane we use to surround the marked lambda, we'd impart the expectation that the lambda's body is consistent with the hole membrane itself. This would subvert our goal of separating the program outside the hole with that inside!\todo[inline]{i don't totally follow why this reasoning doesnt apply to MALam3-C as well} In fact, any hole we choose would impart some invalid expectation with respect to the goals we've outlined. Consequently, we introduce the anonymous provenance: this will have its constraints ignored by the constraint solver when we later describe unification.
+% \begin{center}
+%     $\arraycolsep=4pt\begin{array}{lll}
+%     \Prov~~ p & ::= & 
+%         ... ~\vert~ 
+%         anon
+%         \\
+%     \end{array}$
+% \end{center}
+% We can analyze the lambda's body against an anonymous unknown type:
+% \begin{mathpar}
+%   \judgment{
+%     \notMatchedArrow{\TMV_3} \\
+%     \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TUnknown^{anon}}{C}
+%   }{
+%     \anaConstraint{\ctx}{\ECLamAnaNonMatchedArrowId{x}{\TMV}{\ECMV}{u}}{\TMV_3} {C \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}}
+%   }{MALam2-C}
+
+%   \judgment{
+%     \matchedArrowConstraint{\TMV_3}{\TMV_1}{\TMV_2}{C_1}\\
+%     \inconsistent{\TMV}{\TMV_1} \\\\
+%     \anaConstraint{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}{C_2}
+%   }{
+%     \anaConstraint{\ctx}{\ECInconTypeId{\ECLam{x}{\TMV}{\ECMV}}{u}}{\TMV_3} {C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \TMV_3 \}}
+%   }{MALam3-C}
+% \end{mathpar}
+% % Note that the conclusion of these rules add the constraint $\{ \TUnknown^{exp(u)} \approx \TMV_3 \}$. The argument of analysis $\TMV_3$ constitutes an expectation of types from outside the hole surrounding our lambda. Consequently, rather than allowing it to influence the program inside the hole, we simply constrain $\TMV_3$ to the expression hole's type, $?^{exp(u)}$.
+
+% \subsubsection{Applications and Their Constraints}
+% This brings us at last to the application of lambdas. When the function position expression $\ECMV_1$ lacks a matched arrow form, we proceed as if we had called\todo{phrasing} matched arrow on the marked expression hole surrounding it. To this end, the function argument $\ECMV_2$ must be analyzed against $\TUnknown^{\rightarrow_L{u}}$ and we must return $\TUnknown^{\rightarrow_R{u}}$ as the result of synthesis. 
+% \begin{mathpar}
+%   \judgment{
+%     \synConstraint{\ctx}{\ECMV_1}{\TMV}{C_1} \\
+%     \notMatchedArrow{\TMV} \\
+%     \anaConstraint{\ctx}{\ECMV_2}{\TUnknown^{\rightarrow_{L}(exp(u))}}{C_2}
+%   }{
+%     \synConstraint{\ctx}{\ECApSynNonMatchedArrowId{\ECMV_1}{u}{\ECMV_2}}{\TUnknown^{\rightarrow_{R}(exp(u))}}{C_1 \cup C_2 \cup \{ \TUnknown^{exp(u)} \approx \tarr{\TUnknown^{\rightarrow_L(exp(u))}}{\TUnknown^{\rightarrow_R(exp(u))}}\}}
+%   }{MSAp2-C}
+% \end{mathpar}
+
+% \subsubsection{Other Constraint Generating Rules}
+% The remaining rules either simply accumulate constraints from each of their premises as done above or are axiomatic and need not accumulate any constraints. As a result, they are somewhat repetitive and are consequently left to the supplemental material.\todo[inline]{wordy. instead maybe: 'See supplement for the remaining rules, which either express atomic constraints or simply accumulate the constraints of their premises'}
+
+% \subsubsection{An Example of Constraint Generation}
+% Now that we have defined a formal approach to constraint generation, let us revisit $\ECMV_{ex}$ and try once again to identify its constraints:
+% $$\ECMV_{ex} \equiv \ECAp{(\ECLam{f}{\TUnknown^1}{~~\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}})}{~~\EEHole^0}$$
+% We first consider the body of the lambda, $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{~\EEHole^3}$. Based on the rule MSIf-C, we must analyze our scrutinee, $\EEHole^2$ against $\tbool$. This triggers subsumption, yielding the constraint $\{ \TUnknown^{exp(2)} \approx \tbool \}$. Next, we must synthesize the types of our branches: $\ECAp{f}{\underline{2}}$ and $\EEHole^3$. Synthesis of $\EEHole^3$ is simple; $\EEHole^3$ synthesizes $\TUnknown^{exp(3)}$ with no constraints.
+
+% Synthesis of $\ECAp{f}{\underline{2}}$ is more complex. Following MSAp1-C, we attempt to take the matched arrow of $\TUnknown^1$, yielding the constraint $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}} \}$. Next, we analyze the argument $\underline{2}$ against the input type of $f$, $\TUnknown^{\rightarrow_L(1)}$. This triggers subsumption, which yields the constraint $\{ \TUnknown^{\rightarrow_L(1)} \approx \tnum \}$. With these results in hand, we can determine that the result of synthesis on  $\ECAp{f}{\underline{2}}$ is $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}}, ~\TUnknown^{\rightarrow_L(1)} \approx \tnum \}$.
+
+% Combining these results and constraining the types of both branches to each other, we find that $\ECIf{\EEHole^2~}{~(\ECAp{f}{\underline{2}})}{\EEHole^3}$ synthesizes type $\TUnknown^{\rightarrow_R(1)}$ with constraint set $\{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum,  \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)}\}$. 
+
+% Synthesis of our overarching lambda expression yields no additional constraints and returns the type $\tarr{\TUnknown^1}{\TUnknown^{\rightarrow_L(1)}}$. Application of the lambda on $\EEHole^0$ yields the constraint $\{ \TUnknown^{exp(0)} \approx \TUnknown^{1} \}$ due to subsumption and yields the final type  $\TUnknown^{\rightarrow_R(1)}$. Thus, we find that $\ctxSynType{\cdot}{\ECMV_{ex}}{\TUnknown^{\rightarrow_R(1)}} ~|~ C_{ex1}$ where 
+% $$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
+
+% \todo[inline]{i wonder if this section can be made more incremental. like, if the rules were introduced in the order in which they are required for the derivation of the motivating example, then you could interleave the rules with this derivation sketch. as it stands, i feel like i've forgotten the motivating example by the time i get here, whereas the other way it could serve to generate explicit sub-examples for the relevant rules. right now i feel this part at the end is a bit of an awkward balance of symbolic and conversational}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INFERENCE ALGORITHM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \usetikzlibrary{positioning,calc}
+
+% \subsection{Constraint Solving with Recovery}
+% \label{sec:infalg}
+% The problem of inferring types from constraints has been widely explored in the literature. In the spirit of Hazel, which allows users to program with holes and even run incomplete programs, it would be beneficial to provide holistic type-related feedback for all edit states. With this in mind, we approach type inference with the key goal of representing all potential type fillings for type holes, regardless of any conflicts that may arise during unification.
+
+% In order to do this, we begin with a simpler problem: representing our constraints as an undirected graph. We'd like to construct our constraint graph such that if a node for some type hole $\TUnknown^{p_1}$ can be reached from the node for $\TUnknown^{p_2}$, it must be the case that $\TUnknown^{p_1} \approx \TUnknown^{p_2}$. Once we have a graph of all constraints, the problem of identifying potential types to suggest for any type hole in the program can be boiled down to that of identifying our graph's connected components. Put another way, if we want to find the potential types that may be used to fill some type hole, all we need to do is find all nodes that can be reached from it in the constraint graph.
+
+% It is important to note that before we begin constructing constraint graphs, we must filter all constraints involving the anonymous type hole $?^{anon}$. While necessary for certain edge cases in type checking, the anonymous type hole represents an inherent lack of expectations. Consequently, all constraints involving it can be ignored.
+
+% \subsubsection{Approaches to Constructing Constraint Graphs}
+% When constructing a graph of our constraints, our first inclination  might be to allow all types found in our constraints to act as nodes in our graph. We could then create a traversable edge between nodes for every constraint. However, such a choice prevents pairs that are reachable from one another from always being related via the constraint relation. To see why, recall that the constraint relation is only transitive across incomplete types (those containing at least one type hole). Since edges can be traversed transitively, we cannot have traversable edges between all types represented in constraints. Rather, only incomplete types can be linked by traversable edges. Conversely, complete types should only be reachable through incomplete types that have been directly constrained to them. 
+
+% To simplify this observation, we assert that only incomplete types can be nodes in our graph. We refer to edges connecting incomplete types as \emph{traversable edges} and draw them as solid lines. Edges linking to complete types will be represented via \emph{solution edges}, which we draw as dashed lines. These edges can only be used to discover complete types and can never be used to travel through them. As a result, complete types cannot be used as a layover between incomplete types. 
+
+% As an example of this, consider \cref{fig:ex2ex3graphs}. \Cref{fig:reachable-tag} illustrates a set of constraints $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$ where all nodes can be solved as $\tnum$ by discovering $\tnum$ through $\tehole^1$. Consequently, this graph has a single connected component. On the other hand, \cref{fig:disjoint-nodes} illustrates an example set of constraints $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$ where $\tnum$ is discovered by two separate incomplete types, but cannot be used to connect them. Consequently, it contains two connected components. 
+
+% \begin{figure}[htb!]
+% \centering
+% \begin{subfigure}{.49\textwidth}
+%   \centering
+%       \begin{tikzpicture}
+%       [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
+%       \node[rectangle,minimum size=0.85cm] (n1) at (3,3) {$\tehole^{1}$};
+%       \node[rectangle,minimum size=0.85cm] (n2) at (1,3)  {$\tehole^{2}$};
+%       \node[minimum size=0.85cm] (i) at (3,1)  {$\tnum$};
+    
+%       \foreach \from/\to in {n1/n2}
+%         \draw (\from) -- (\to);
+%        \foreach \from/\to in {n1/i}
+%         \draw[dashed] (\from) -- (\to);
+    
+%     \end{tikzpicture}
+%   \caption{Graph of $C_{ex2} = \{ \tehole^{1} \approx \tnum, ~ \tehole^{1} \approx~ \tehole^{2}\}$}
+%   \label{fig:reachable-tag}
+% \end{subfigure}
+% \begin{subfigure}{.49\textwidth}
+%   \centering
+%   \begin{tikzpicture}
+%   [scale=.8,auto=left,every node/.style={circle,fill=blue!20}]
+%   \node[rectangle,minimum size=0.85cm] (n1) at (2,3) {$\tehole^{1}$};
+%   \node[rectangle,minimum size=0.85cm] (n2) at (4,3)  {$\tehole^{2}$};
+%   \node[minimum size=0.85cm] (i1) at (4,1)  {$\tnum$};
+%   \node[minimum size=0.85cm] (i2) at (2,1)  {$\tnum$};
+%   \node[minimum size=0.85cm] (i3) at (0,3)  {$\tbool$};
+
+%    \foreach \from/\to in {n1/i3, n1/i2, n2/i1}
+%     \draw[dashed] (\from) -- (\to);
+
+% \end{tikzpicture}
+%   \caption{Graph of $C_{ex3} = \{ \tehole^1 \approx \tnum, ~ \tehole^1 \approx \tbool, ~ \tnum \approx~ \tehole^2\}$}
+%   \label{fig:disjoint-nodes}
+% \end{subfigure}
+% \caption{Sample constraint graphs of ground types}
+% \label{fig:ex2ex3graphs}
+% \end{figure}
+
+% % Constructing a graph of type nodes and adding edges between them has an important caveat: Only $\tehole^{p}$ or types containing at least one $\tehole^{p}$ are added to the graph as nodes. See Figure \ref{fig:ex1ex2graphs} for an illustration. In part (a) of Figure \ref{fig:ex1ex2graphs}, $\tehole^{1}$ and $\tehole^{2}$ are nodes in the graph \textit{linked} by a solid edge, and $\tnum$ is not. Instead, $\tnum$ is more like a \textit{tag} adding additional type information to $\tehole^{1}$. Hence, we use a dotted edge in the illustration to represent this distinction. Since $\tnum$ is constrained to $\tehole^{1}$, the solver can infer using union-find that $\tehole^{2}$ must also contain $\tnum$ in its \textit{PotentialTypeSet}, because $\tehole^{1}$ and $\tehole^{2}$ are part of the same connected component. By contrast, in part (b), $\tehole^{1}$ and $\tehole^{2}$ are both \textit{tagged} with $\tnum$, but because they are not part of the same connected component, the solver will not infer that they share the same \textit{PotentialTypeSet}. Consequently, the solver will correctly not infer that $\tehole^2$ contains $\tbool$ in its \textit{PotentialTypeSet}.
+
+% Upon encountering a constraint between two arrow types, we can generate two new constraints on-the-fly: one between the left children of the arrows, and one between the right children of the arrows. For example, given the constraint set $C_{ex4} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$, we generate the constraints $\tehole^1 \approx \tehole^3$ and $\tehole^2 \approx \tnum$. These constraints can then be used to render the graph depicted in \cref{fig:arrowgraph}. Here, we represent incomplete $Arrow$s as nodes whose types are dependent on their left and right hand sides, which may also be nodes. As an example, we see in \cref{fig:arrowgraph} that $\tarr{\tehole^1}{\tehole^2}$ is represented by a large arrow node containing the node $\tehole^1$ on the left and $\tehole^2$ on the right. 
+% % Any node linked to an $Arrow$ node can only access its left and right hand sides once they are paired together and wrapped in a binary $\rightarrow$ type. 
+
+% With these rules in hand, we can construct graphs for more complex constraint sets. Let us explore the graph of the constraint set $C_{ex1}$ generated from the synthesis of $\ECMV_{ex}$ in section 4.4.8:
+% $$C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum, \TUnknown^{exp(0)} \approx \TUnknown^{1}, \TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$$
+% We provide an illustration of this constraint graph in \cref{fig:C-ex-graph-traversal}. The red edges in \cref{fig:C-ex-graph-traversal} represent all paths that may be followed beginning at $?^1$. 
+
+% Suppose we wanted to generate a suggestion for $?^1$ using this graph. This could be achieved by simply traversing all red edges in \cref{fig:C-ex-graph-traversal} to discover potential types. Note that potential types discovered within the left and right hand side of the $Arrow$ node must be wrapped pairwise in an $\rightarrow$ type before being added to $?^1$'s list of potential types. Following these edges generates the following set of potential types for $?^1$: $\{  ?^0, ?^1, \tarr{\tnum}{?^3}, \tarr{\tehole^{\rightarrow_{L(1)}}}{?^3}, \tarr{\tnum}{\tehole^{\rightarrow_{R(1)}}}, \tarr{\tehole^{\rightarrow_{L(1)}}}{\tehole^{\rightarrow_{R(1)}}}  \}$. Notice that after exploring the arrow, our number of potential types have grown rapidly!
+
+% \begin{figure}[htb!]
+% \centering
+% \captionsetup[subfigure]{justification=centering}
+% \begin{subfigure}{.49\textwidth}
+%         \centering
+%       \begin{tikzpicture}[remember picture,
+%   inner/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+%   innercirc/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+%   outer/.style={draw=green,fill=green!20,thick,inner sep=10pt}
+%   ]
+%   \node[outer,draw=green] (A) {
+%     \shortstack{
+%         $Arrow$\\
+%         \begin{tikzpicture}
+%           \node [inner] (n1)  {$\tehole^{1}$};
+%           \node [inner,right=of n1] (n2) {$\tehole^{2}$};
+%           % \draw[red,thick,->] (n1) -- (n2);
+%         \end{tikzpicture}
+%     }
+%   };
+%   \node[outer,draw=green,below=of A] (B) {
+%     \shortstack{
+%         $Arrow$\\
+%         \begin{tikzpicture}
+%           \node [inner] (n3)  {$\tehole^{3}$};
+%           \node [innercirc,right=of n3] (i) {$\tnum$};
+%           % \draw[red,thick,->] (n3) -- (i);
+%         \end{tikzpicture}
+%     }
+%   };
+%   \draw (n1) -- (n3);
+%   \draw[dashed] (n2) -- (i);
+%    \draw[thick] (A) -- (B);
+% \end{tikzpicture}
+% \caption{Expanded constraint graph of\\ $C_{ex3} = \{ \tarr{\tehole^1}{\tehole^2} \approx \tarr{\tehole^3}{\tnum} \}$}
+% \label{fig:arrowgraph}
+% \end{subfigure}
+% \begin{subfigure}{.49\textwidth}
+%   \centering
+%   \begin{tikzpicture}[remember picture,
+%   tag/.style={circle,draw=blue!50,fill=blue!20,thick,inner sep=3pt,minimum size=0.85cm},
+%   holey/.style={rectangle,draw=blue!50,fill=blue!20,thick,inner sep=5pt,minimum size=0.85cm},
+%   outer/.style={draw=green,fill=green!20,thick,inner sep=10pt},
+%   ]
+%   \node[holey] (hole1) {$\tehole^1$};
+%   \node[holey, right=of hole1] (hole0) {$\tehole^0$};
+%   \node[outer, below=of hole1] (Arrow) {
+%     \shortstack{
+%         $Arrow$\\
+%         \begin{tikzpicture}
+%           \node [holey] (holeL1)  {$\tehole^{\rightarrow_{L(1)}}$};
+%           \node [holey, right=of holeL1] (holeR1) {$\tehole^{\rightarrow_{R(1)}}$};
+%         \end{tikzpicture}
+%     }
+%   };
+%  \node[tag, below=of holeL1] (num) {$\tnum$};
+%  \node[holey, below=of holeR1] (hole3) {$\tehole^3$};
+%  \node[holey, right=of holeR1] (hole2) {$\tehole^2$};
+%  \node[tag, below=of hole2] (bool) {$\tbool$};
+%   \draw[draw=red] (hole1) -- (hole0);
+%   \draw[draw=red] (hole1) -- (Arrow);
+%   \draw[dashed, draw=red] (num) -- (holeL1);
+%   \draw[draw=red] (hole3) -- (holeR1);
+%   \draw[dashed] (bool) -- (hole2);
+% \end{tikzpicture}
+% % \caption{Constraint graph of\\ 
+% % $C_{ex1} = \{ \TUnknown^{exp(2)} \approx \tbool, \TUnknown^{exp(0)} \approx \TUnknown^{1},$ \\
+% % $\TUnknown^1 \approx \tarr{\TUnknown^{\rightarrow_L(1)}}{\TUnknown^{\rightarrow_R(1)}},  \TUnknown^{\rightarrow_L(1)} \approx \tnum,$ \\
+% % $\TUnknown^{\rightarrow_R(1)} \approx \TUnknown^{exp(3)} \}$}
+% \caption{Constraint graph of $C_{ex1}$}
+% \label{fig:C-ex-graph-traversal}
+% \end{subfigure}
+% \caption{Sample constraint graphs including binary types}
+% \label{fig:ex1ex2graphs}
+% \end{figure}
+
+% \subsubsection{PotentialTypeSets and the Graph Construction Algorithm}
+% Now that we have a clear approach to generating constraint graphs, how might we represent the types that are adjacent to each node? One approach would be to simply store an adjacency list or matrix. However, we'd like to be able to efficiently store all potential hole fillings that can be derived from a type hole's connected components. Recall the rapid growth of potential types discovered for $?^1$ from the graph of $C_{ex1}$ in \cref{fig:C-ex-graph-traversal}. Since the set of potential types can grow at a combinatorial rate, we define a new, condensed data structure to house our potential type hole fillings without loss of information: a \emph{PotentialTypeSet}.
+
+% A \textit{PotentialTypeSet} is a recursive data structure representing the potential solutions for a type hole, inferred from type constraints. A single \emph{PotentialTypeSet} contains \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than ever substituting types during unification, which results in a loss of information, we continuously extend some \emph{PotentialTypeSet}. We provide a formalization of \textit{PotentialTypeSet}, \textit{PotentialType}, and their extension below in \cref{fig:possible_type_sets}.
+
+% \begin{figure}[hbt!]
+% \centering
+% \vspace{-3px} 
+% $\arraycolsep=4pt\begin{array}{lll}
+% PotentialTypeSet~~ s & ::= 
+% single(t) ~\vert~ 
+% cons(t, s)
+% \\
+% PotentialType~~ t & ::= 
+%   \tnum ~\vert~
+%   \tbool ~\vert~
+%   \tehole^p ~\vert~
+%   \tarr{s}{s}
+%   \\
+% \end{array}$
+% \label{fig:syntax_possible_type_sets}
+% \vspace{5px}
+% \hrule
+% \[\begin{array}{rcl}
+%     single(\tarr{s_1}{s_2}) ~\amalg~ single(\tarr{s_3}{s_4}) & = & single({\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)}}) \\
+%     single(t) ~\amalg~ single(t') & = & cons(t, single(t')) \\
+%     cons(t,s) ~\amalg~ single(t) & = & cons(t, s) \\
+%     cons(\tarr{s_1}{s_2}, s) ~\amalg~ single(\tarr{s_3}{s_4}) & = & cons(\tarr{(s1 ~\amalg~ s3)}{(s2 ~\amalg~ s4)} , s) \\
+%     cons(t,s) ~\amalg~ cons(t',s') & = & cons(t,s) ~\amalg~ single(t') ~\amalg~ s' \\
+% \end{array}\] 
+% \caption{Syntax of PotentialTypeSets, PotentialTypes, and their Merging}
+% \vspace{5px} 
+% \label{fig:possible_type_sets}
+% \vspace{-5px}
+% \end{figure}
+
+% With this in hand, we formalize the intuitions discussed in section 4.5.1 in a graph construction algorithm. This algorithm accumulates a mapping from incomplete types, which represent our nodes, to their \emph{PotentialTypeSet}, which represents a subset of nodes reachable from a given incomplete type. Whenever we attempt to create a traversable edge or a solution edge between nodes, we retrieve the \emph{PotentialTypeSet}s of all involved nodes, compute the result of merging them, and update our graph accordingly. We assume the existence of a \lstinline{Map.add} function that adds a new element to the supplied map if it does not already exist, and otherwise does not change any values. The corresponding definition is provided in \cref{fig:algcode_construct_graph}
+
+% \begin{figure}[hbt!]
+% \begin{lstlisting}[escapeinside={(*}{*)}]
+% let rec construct_graph (~graph=Map.empty(), constraints) =
+%     match constraints with
+%     | [] -> graph
+%     | hd::tl -> (
+%         (match hd with
+%         | ((*$\tarr{t1_L}{t1_R}$*), (*$\tarr{t2_L}{t2_R}$*)) ->
+%             construct_graph(~graph, (((*$t1_L$*), (*$t2_L$*)))::(((*$t1_R$*), (*$t2_R$*)))::tl)
+%         | ((*$\tehole^{p}$*) as hole, t)
+%         | (t, (*$\tehole^{p}$*) as hole) ->
+%             let graph = Map.add(graph, hole, hole) in
+%             if (contains_hole(t)) then (
+%                 let graph = Map.add(graph, t, t) in
+%                 let graph = create_traversable_edge(graph, t, hole) in
+%                 construct_graph(~graph, tl)
+%             ) else (
+%                 let graph = create_solution_edge(graph, hole, t) in
+%                 construct_graph(~graph, tl)
+%             )
+%         | _ -> construct_graph(~graph, tl))
+
+% \end{lstlisting}
+% \hrule
+% \caption{Constraint graph creation algorithm of type hole inference}
+% \label{fig:algcode_construct_graph}
+% \end{figure}
+
+% \subsubsection{Computing PotentialTypeSets Using Constraint Graphs} 
+% The function \lstinline{construct_graph} builds a mapping from each type hole to a \emph{PotentialTypeSet} containing a subset of its connected component. However, in order to generate all potential type hole fillings, we require that each \emph{PotentialTypeSet} represent the entire connected component. One method to expand our \emph{PotentialTypeSet}s would be to conduct a depth first search of our graph. Instead of this, we choose to simply augment our current approach using union find, yielding a version of \lstinline{construct_graph} that is reminiscent of Huet's unification algorithm \cite{Huet}.
+
+% In order to change our graph construction algorithm to a constraint solver, all we need to do is update our definitions of \lstinline{create_traversable_edge} and \lstinline{create_solution_edge} to use represent each potential type set using union find. In order to accommodate this change, minor adjustments must be made to the definitions presented in \cref{fig:possible_type_sets} to create union findable possible type sets and their extension logic, $\amalg_{UF}$. These definitions are left to the supplemental material for reference.
+
+% An additional step is taken to mark type holes with an error if their \emph{PotentialTypeSet} contains a cycle that is not a self loop. In Hindley-Milner type inference this is referred to as the occurs-check.
+
+% After our union find based \lstinline{construct_graph} and occurs check marking have been completed, we are ready to identify the solvability of our type holes. We consider type holes solvable if their \textit{PotentialTypeSet} contains at most one type that is not a hole. On the other hand, if a type hole's \textit{PotentialTypeSet} contains multiple conflicting types, or if the type hole fails the occurs check, then it is considered unsolvable. In both cases,  feedback can be provided as in \cref{fig:editor_conflict}.
+
+% % \subsubsection{Other Binary Types}
+% % Suppose we wanted to extend our definitions of constraint generation and solving to contain binary products as discussed in section 2.2. This would require an extension of our constraint generation rules and definitions of \emph{PotentialTypeSet}s. We follow the same procedures in section 4.4 and introduce a new matched product judgement that constrains inputted holes to their matched product form. In order to extend \emph{PotentialTypeSet}s to support binary products, we must slightly adjust our definitions to be more general across different binary type operators. The resulting rules are very similar to those discussed earlier, and are also consequently left for review in the supplemental material.
 
 \subsection{Polymorphic Generalization}
+\label{sec:polymorphicGlobal}
 % In order to extend our definitions of \emph{PotentialTypeSet}s to allow parametric polymorphism, we simply include a new ground type: $\TVar$.
 % \begin{center}
 % $\arraycolsep=4pt\begin{array}{lll}

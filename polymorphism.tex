@@ -1,15 +1,96 @@
 \subsection{Parametric Polymorphism}
 \label{sec:calculus-polymorphism}
 
-To demonstrate that the judgmental structure of the marked lambda calculus may be applied to richer typing features, we now explore an extension of the core language developed above to System F-style parametric polymorphism.
+% TODO less explicit development?
 
-\[\begin{array}{rrcl}
-  \TMName  & \TMV  & \Coloneqq & \cdots \mid \TForall{\TVarMV}{\TMV} \mid \TVarMV \\
-  \MTMName & \MTMV & \Coloneqq & \cdots
-                     % \MTUnknown \mid \MTNum \mid \MTBool
-                     % \mid \MTArrow{\MTMV}{\MTMV} \mid \MTProd{\MTMV}{\MTMV}
-                     \mid \MTForall{\MTVarMV}{\MTMV} \mid \MTVarMV \mid \MTUnbound{\MTVarMV} \\
-  \EMName  & \EMV  & \Coloneqq & \cdots \mid \ETypeLam{\TVarMV}{\EMV} \mid \ETypeAp{\EMV}{\TMV} \\
-  \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECTypeLam{\MTVarMV}{\ECMV} \mid \ECTypeAp{\ECMV}{\MTMV} \\
-           &       & \mid      & \ECSynNonMatchedForall{\ECMV} \mid \ECAnaNonMatchedForall{\ECMV}
-\end{array}\]
+To further demonstrate that the judgmental structure of the marked lambda calculus may be applied to richer typing features, we now explore an extension of the core language developed above to System F-style parametric polymorphism.
+Toward this end, we supplement the language in \cref{fig:calculus-polymorphism-syntax} with type abstractions $\ETypeLam{\TVarMV}{\EMV}$ and applications $\ETypeAp{\EMV}{\TMV}$.
+These operate on forall types $\TForall{\TVarMV}{\TMV}$ and type variables $\TVarMV$, which are governed by a well-formedness judgment, written $\tvarCtxWFU{\tvarCtx}{\TMV}$, in the standard way.
+%
+\begin{figure}[htbp]
+    \[\begin{array}{rrcl}
+        \TMName  & \TMV  & \Coloneqq & \cdots \mid \TForall{\TVarMV}{\TMV} \mid \TVarMV \\
+        \MTMName & \MTMV & \Coloneqq & \cdots
+                         % \MTUnknown \mid \MTNum \mid \MTBool
+                         % \mid \MTArrow{\MTMV}{\MTMV} \mid \MTProd{\MTMV}{\MTMV}
+                         \mid \MTForall{\MTVarMV}{\MTMV} \mid \MTVarMV \mid \MTFree{\MTVarMV} \\
+        \EMName  & \EMV  & \Coloneqq & \cdots \mid \ETypeLam{\TVarMV}{\EMV} \mid \ETypeAp{\EMV}{\TMV} \\
+        \ECMName & \ECMV & \Coloneqq & \cdots \mid \ECTypeLam{\MTVarMV}{\ECMV} \mid \ECTypeAp{\ECMV}{\MTMV} \\
+               &       & \mid         & \ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV} \mid \ECTypeApSynNonMatchedForall{\ECMV}{\MTMV}
+    \end{array}\]
+    \caption{Extension of the marked lambda calculus for parametric polymorphism}
+    \label{fig:calculus-polymorphism-syntax}
+\end{figure}
+
+Crucially, just as expression variables may be free, arbitrary programs may contain free type variables; similar to the introduction of both unmarked and marked patterns in the previous section, we now need separate notions of unmarked and marked types.
+The latter we denote by the metavariable $\MTMV$.
+
+A marking judgment, written $\tvarCtxTypeMarkedInto{\tvarCtx}{\TMV}{\MTMV}$, then, relates the two sorts.
+It is parameterized over a context of type variables $\tvarCtx$, and most of the rules recurse straightforwardly.
+When a free type variable $\MTVarMV$ is encountered, however, we mark it as such, writing $\MTFree{\MTVarMV}$.
+This gives the following marking and well-formedness rules:
+%
+\begin{mathpar}
+  \inferrule[MKTFree]{
+    \notInTvarCtx{\tvarCtx}{\TVarMV}
+  }{
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TVarMV}{\MTFree{\MTVarMV}}
+  }
+
+  \inferrule[MTWFFree]{
+    \notInTvarCtx{\tvarCtx}{\MTVarMV}
+  }{
+    \tvarCtxWFM{\tvarCtx}{\MTFree{\MTVarMV}}
+  }
+\end{mathpar}
+%
+Just as expression error marks synthesize the unknown type to allow type-checking to continue, these marked types operate identically to the unknown type with respect to consistency and other auxiliary notions. Furthermore, we define analogous notions of mark erasure on types, and, as with pattern marking above, metatheoretic statements ensure their correctness.
+
+% TODO make reference to other polymorphic GTLC systems in relation to how auxiliary judgment rules are formulated
+
+The development of marking for type abstractions is similar to that for ordinary lambda abstractions.
+The synthetic case is straightforward; in analytic position, if the type being analyzed against is not a matched forall type, an error is marked:
+%
+\begin{mathpar}
+  \inferrule[MKATypeLam2]{
+    \notMatchedForall{\MTMV} \\
+    \bothCtxAnaFixedInto{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\EMV}{\ECMV}{\MTUnknown}
+  }{
+    \bothCtxAnaFixedInto{\tvarCtx}{\ctx}{\ETypeLam{\TVarMV}{\EMV}}{\ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+
+  \inferrule[MATypeLam2]{
+    \notMatchedForall{\MTMV} \\
+    \bothCtxAnaTypeM{\extendTvarCtx{\tvarCtx}{\MTVarMV}}{\ctx}{\ECMV}{\MTUnknown}
+  }{
+    \bothCtxAnaTypeM{\tvarCtx}{\ctx}{\ECTypeLamAnaNonMatchedForall{\MTVarMV}{\ECMV}}{\MTMV}
+  }
+\end{mathpar}
+
+Likewise, type application mirrors ordinary application: in the case that the expression being applied does not synthesize a matched forall type, an error is marked. With this, totality of marking is satisfied.
+%
+\begin{mathpar}
+  \inferrule[MKSTypeAp2]{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\EMV}{\ECMV}{\MTMV} \\
+    \tvarCtxTypeMarkedInto{\tvarCtx}{\TMV_2}{\MTMV_2} \\
+    \notMatchedForall{\MTMV}
+  }{
+    \bothCtxSynFixedInto{\tvarCtx}{\ctx}{\ETypeAp{\EMV}{\TMV_2}}{\ECTypeAp{\ECMV}{\MTMV_2}}{\MTUnknown}
+  }
+
+  \inferrule[MSTypeAp2]{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECMV}{\MTMV} \\
+    \tvarCtxWFM{\tvarCtx}{\MTMV_2} \\
+    \notMatchedForall{\MTMV}
+  }{
+    \bothCtxSynTypeM{\tvarCtx}{\ctx}{\ECTypeApSynNonMatchedForall{\ECMV}{\MTMV_2}}{\MTUnknown}
+  }
+\end{mathpar}
+
+The case studies above demonstrate that the framework of the marked lambda calculus is suitable to support a variety of extensions to richer judgmental structures.
+We hope that this spurs language designers to design marked variants of other calculi, following the recipe we have demonstrated.
+% TODO explicitly give recipe.
+
+We leave as future work the task of defining a marked version of even more elaborate bidirectional type systems, e.g. \citet{dunfield2013complete}'s rather substantial formulation of implicit type application in a bidirectional setting (which would have to handle, for example, the situation where no implicit argument can be resolved).
+
+% TODO cite gradual dependent types papers, etc.
