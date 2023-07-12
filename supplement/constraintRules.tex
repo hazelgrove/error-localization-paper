@@ -2,7 +2,30 @@
 
 \begin{document}
 \section{Constraint generation}
-A list of constraint generating bidirectional typing rules under the marked lambda calculus for type hole inference (see Section 4).
+A list of constraint generating bidirectional typing rules under the marked lambda calculus for type
+hole inference (see Section 4). \\
+
+\judgbox{\ensuremath{\matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C}}} $\TMV$ has matched arrow type $\TArrow{\TMV_1}{\TMV_2}$ and generates constraints $C$
+\begin{mathpar}
+  \judgment{ }{
+    \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
+  }{TMAHole-C}
+
+  \judgment{ }{
+    \matchedArrowConstraint{\TArrow{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}{\{\}}
+  }{TMAArr-C}
+\end{mathpar}
+
+\judgbox{\ensuremath{\matchedProdConstraint{\TMV}{\TMV_1}{\TMV_2}{C}}} $\TMV$ has matched binary product type $\TProd{\TMV_1}{\TMV_2}$ and generates constraints $C$
+\begin{mathpar}
+  \judgment{ }{
+    \matchedProdConstraint{\TUnknown^p}{\TUnknown}{\TUnknown}{\{ \TUnknown^p \approx \TProd{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}}
+  }{TMPHole-C}
+
+  \judgment{ }{
+    \matchedProdConstraint{\TProd{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}{\{\}}
+  }{TMPProd-C}
+\end{mathpar}
 
 \judgbox{\ensuremath{\synConstraint{\ctx}{\ECMV}{\TMV}{C}}} $\ECMV$ synthesizes type $\TMV$ and generates constraints $C$
 %
@@ -184,31 +207,5 @@ A list of constraint generating bidirectional typing rules under the marked lamb
     \anaConstraint{\ctx}{\ECMV}{\TMV}{C \cup \{ \TMV \approx \TMV' \}}
   }{MASubsume-C}
 \end{mathpar}
-
-\begin{figure}[htb]
-  \raggedright
-  \judgbox{\ensuremath{\matchedArrowConstraint{\TMV}{\TMV_1}{\TMV_2}{C}}} $\TMV$ has matched arrow type $\TArrow{\TMV_1}{\TMV_2}$ and generates constraints $C$
-  \begin{mathpar}
-    \judgment{ }{
-      \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
-    }{TMAHole-C}
-
-    \judgment{ }{
-      \matchedArrowConstraint{\TArrow{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}{\{\}}
-    }{TMAArr-C}
-  \end{mathpar}
-
-  \judgbox{\ensuremath{\matchedProdConstraint{\TMV}{\TMV_1}{\TMV_2}{C}}} $\TMV$ has matched binary product type $\TProd{\TMV_1}{\TMV_2}$ and generates constraints $C$
-  \begin{mathpar}
-    \judgment{ }{
-      \matchedProdConstraint{\TUnknown^p}{\TUnknown}{\TUnknown}{\{ \TUnknown^p \approx \TProd{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}}
-    }{TMPHole-C}
-
-    \judgment{ }{
-      \matchedProdConstraint{\TProd{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}{\{\}}
-    }{TMPProd-C}
-  \end{mathpar}
-  \label{fig:Matched Rules}
-\end{figure}
 
 \end{document}
