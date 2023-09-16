@@ -1,0 +1,26 @@
+Review #336B
+
+Overall merit
+
+A. Strong accept: I will argue for acceptance.
+
+Reviewer expertise
+
+Y. Knowledgeable: I am knowledgeable about the topic of the paper (or at least key aspects of it).
+
+Summary of the paper
+
+The paper presents the marked lambda calculus, a lambda calculus extended with marked expressions that denote expressions known to be ill-typed but which we nevertheless want to be able to include in a program in order to detect other type errors in the program as well as use editor features that depend on having a well-typed program. The calculus has been integrated into Hazel, and explored in conjunction with Hazel's structure-editing features as well as syntax error recovery.
+
+Assessment of the paper
+
+I found this to be a very strong paper. While building on solid foundations like gradual typing, the ideas are still interesting and (I think) novel, and remarkably well-explored. The paper gives a great amount of detail at all levels, and also covers a lot of ground (with, of course, many technical details reserved for the supplementary material). The paper was also quite polished and enjoyable to read. In addition to the contribution of the marked lambda calculus and Hazel extensions, the paper also gives some interesting thoughts and directions for error localization, which is a difficult problem. I feel like some of these ideas could be distilled out and used, e.g., in an undergraduate compilers class to help student compilers produce better error messages without a huge amount of overhead and engineering.
+I saw very few weaknesses in the paper. One question I had was why the authors didn't expand on some of the discussions, e.g. in Sections 3.2 and 4, given that they still had about 1.5 pages.
+Detailed comments for authors
+In rules USIf and MKSIf, it seems a bit odd (to me) to have a partial operator in the conclusion. Generally, I assume that if the premises of a rule hold, the rule can be applied, but it seems that the partiality of the meet operator is (intentionally) being used here to create situations in which the rule can't apply and the unmarked expression is ill-typed. Is there a reason you did this instead of explicitly adding as a premise that the meet exists?
+Line 557 talks about lambda abstraction and matched arrow types---did you mean pairs/products?
+Lines 644-645 say that "[i]f the pattern a suggests that the conditional is in synthetic position, it will be marked with an inconsistent branches error mark following our development above. If instead it is in analytic position against the unknown type, no mark will be produced." Is this desirable? I would expect to get a type error pointing out inconsistent branch types regardless of how the expression is type checked.
+
+Questions to be addressed by author response
+Have you thought about how this (e.g., Section 2.1.1) would work with operator overloading (e.g. if you add a float type and overload + to operate on both ints and floats?)
+I accept that producing error messages was not the focus of the paper, but are there more general lessons you can draw on error localization (e.g., for other languages/paradigms, or if one wants to do better error localization but without buying fully into the mechanisms of typed holes)?

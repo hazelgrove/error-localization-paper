@@ -1,0 +1,74 @@
+Review #336C
+
+Overall merit
+
+A. Strong accept: I will argue for acceptance.
+
+Reviewer expertise
+
+Y. Knowledgeable: I am knowledgeable about the topic of the paper (or at least key aspects of it).
+
+Summary of the paper
+
+When under development, programs spend far more time in ill-formed and ill-typed state than in well-formed and well-typed state. As a consequence, developer environments would be wise to provide tooling that is useful even when the program is in an imperfect state. The work in this paper contributes to that effort.
+In particular, this paper develops a type discipline for programs that accounts for ill-typed states (so long as the program is well-formed according to some context-free specification). Using ideas from bidirectional typing and gradual typing, they develop a type system that constructively incorporates ill-typed subterms as well as well-typed into the specification of editor states. Doing s provides the means to precisely specify how type and variable binding errors are localized and reported to a developer.
+The paper presents a heuristic recipe for transforming a bidirectional type system into a "marked" type system, that marks individual terms as ill-typed, including metadata that indicates how the term in question violates typing rules. One key component of this development is an algorithmic type-directed marking system that introduces marks to a syntactically well-formed program. The marks, in concert with the unknown type of gradual typing, restrict the reach of ill-typed terms, and help the type system continue to type code fragments in the presence of ill-typed terms.
+Atop this machinery, the paper presents a constraint-based inference system that can be used to improve the precision of dynamically-typed variables and code.
+Together, these tools are used to drive a type-sensitive editor that marks ill-typed terms, identifies mismatches in a manner consistent with the bidirectional discipline, and provides an interface for experimenting with type assignments.
+
+Assessment of the paper
+
+I found this work to be quite interesting, and for the most part well-explained. It makes a substantial effort toward making substantial use of type structure to support tooling, in a principled manner. The paper makes impressive use of bidirectional typing to drive the affect of type annotations and the types of individual terms on the flow of type information.
+The paper does a mostly reasonable job of identifying some situations where the type system designer must make decisions about synthesis and analysis, and their affect on the marking system, because the source type system does not fully determine the marking system. I think that some more signposting of this kind would improve the exposition. Decisions and compromises seem inevitable. Nonetheless, I think that the framing presented goes a long way toward systematizing much of the approach while being about how the approach does not solve all problems.
+I think that there are a few places in the paper that could use more exposition, but the overall idea and presentation are appealing.
+
+Detailed comments for authors
+
+Though the word "Total" is technically sensible, I was confused by it at first. The term "Comprehensive Type Error Localization" seems like a better fit, but that may just be me.
+line 33: this statement may be a bit too strong at least in practice. Even Haskell is willing to run programs that have type holes in them. And some programming languages have dynamic semantics that do give meaning to at least some ill-typed programs. As such it seems hyperbolic to claim that such programs are "meaningless everywhere".
+line 134: It seems like this section may be talking about "bidirectional typing" in particular rather than "local type inference"? This paper does use a constraint based inference system, so it's I'm not sure that this terminology differentiates say Wand's approach from Pierce and Turner's approach. But constraint based inference (part of local type inference) is not the topic of Section 2.
+line 170: "these programs are syntactically well-formed" only so long as you don't consider binding structure to be part of syntactic well-formedness.
+line 192: It wasn't clear to me why Siek and Taha 2006 is cited here.
+line 288: I was expecting some kind of "Localisation" principle about pushing errors to a maximally local position. Is that not possible? It seems related to "the neutral approach."
+line 442: what would break if you synthesized the body in the premise of the rule rather than checking against? Anything? Is there a guiding principle around this?
+line 446: It is worth explicitly saying that unannotated lambda abstractions typically do not synthesize in bidirectional systems (there is nothing technically preventing one from doing that, but the language would veer toward "unidirectional"/Hindley-Milner at that point).
+line 452: In the premise of MKALAM3, why is x typed \tau_1, as opposed to \tau or "?"? What is the guiding principle at play here?
+line 458: In the USAp rule, is it necessary for e2 to be checked against \tau_1? Is it plausible to instead synthesize the argument type and then "half-check/half-synthesize" the function? It would be nice to understand what the boundaries of this design are.
+line 531: Why must localization be deterministic? Given the number of design decisions involved, is it plausible to defer them or choose in some delayed manner, or by using more program context to decide?
+line 611: I did not understand why this subsection is here. It seems more suited to the end of the paper.
+line 632: "the most obvious approach..." this was not obvious to me!
+Section 2.3 seems to reuse the ? type to model phenomena that should make sense in a language that is bidirectionally-typed, has pattern matching, and has no notion of gradual typing whatsoever. I think that this would be a much better contribution if it started with explicating a purely static version of bidirectional pattern matching and then demonstrated that the marking recipe transfers over to this purely-static version. I expect that such a system would need some way of accounting for partial analysis and synthesis, but without using gradual typing (albeit something related but static).
+line 678: the USLETPAT rule seems to depend on all expressions being able to synthesize, which is not the case in all bidirectional systems (e.g. the common treatment of unannotated lambdas). Can this be generalized?
+line 730 "these marked types operate identically..." why is that the "right" thing to do? What is the guiding principle (aside from it seeming to work)?
+line 791: The idea of "the cursor" was not explained. I had to guess to figure out what this was referring to. Do introduce it.
+line 793: please give an informal explanation of what these judgments mean.
+line 816: what is the box superscript?
+line 828: I find it strange to call bidirectional typing "local type inference" since local type inference (at least in Pierce and Turner) was a combination of bidirectional typing and constraint solving.
+line 884: What is the red angle bracket? I didn't see it explained.
+line 963: "without needing to introduce explicit constraints" I did not understand this, since the rules seem to be adding explicit constraints.
+line 969: "A marked expression has already been deemed erroneous" but why is it the expression, rather than the boundary between outside and inside?
+line 982: "a standard union-find based unification algorithm" but this algorithm must account for consistency, right?
+
+What follows are typos:
+line 119: "the general approach that we hope this paper will be..." something is grammatically wrong here.
+line 197: "to create marked variants of..." misplaced "ed"
+line 393: "motivating a free variable mark"
+line 405: typo in USLAM: the premise should have x : \tau_1
+line 416: typo in TMAARR: missing _1 and _2 subscripts
+line 422: typo in MSLAM: same as for USLAM
+line 498: "the meet of the branch types" but the symbol used in the rule is a join.
+line 580: The output type of MKSPROJL2 seems to come from nowhere.
+line 747: it looks like the output expression is missing a mark around e.
+line 805: "given by a singular action judgment"
+line 809: "the problem outlined above: since ..."
+line 822: "our initial design that aims to ..."
+line 846: "during the bidirectional marking process"
+line 859: "For example in the Hazel program in Figure 8..." or remove the program from the figure
+line 895: mention Figure 10 somewhere in this paragraph, or remove it from the figure.
+line 913: "where the type of f" do you really mean "x" as in Figure 11?
+line 952: "links the unknown type to some" two "to"s
+line 1007: "be a bit more careful about when we generalize"
+
+Questions to be addressed by author response
+
+Please answer the questions asked above.

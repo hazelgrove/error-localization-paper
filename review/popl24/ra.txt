@@ -1,0 +1,58 @@
+Review #336A
+
+Overall merit
+
+A. Strong accept: I will argue for acceptance.
+
+Reviewer expertise
+
+X. Expert: I am an expert on the topic of the paper (or at least key aspects of it).
+
+Summary of the paper
+
+The paper presents the "marked lambda calculus", with the property that all syntacticly well formed terms are meaningful. This allows for a principled treatment of type errors, and enables programming environments that can manipulate and reason about ill typed programs.
+
+Assessment of the paper
+
+I like this paper. The core calculus elegantly combines bidirectional type checking and gradual types with the simple idea to add "marked" term constructors for each possible way the standard typing rules can fail, thus obtaining a calculus in which every (syntactically well formed) term can be marked up in a well typed way. The meta theory comes with a mechanized formalization, and a reimplementation of the Hazel programming environment based on the marked calculus.
+The core calculus is presented as an approach to formal treatment of type errors that is meant to scale up to more advanced type systems than simply typed lambda calculus. As evidence for this several extensions are presented: deconstructing let-bindings, System F-style polymorphism, and constraint-based global inferences.
+Detailed comments for authors
+
+Section 2.1
+Spell out that the marked rules can be systematically derived already here (currently it's left until the very end of section 2 on line 752: "by considering each failure case...")
+
+Section 2.1.4
+In the MKALam3 and MALam3 rules, where the type annotation on a lambda doesn't match the type from the environment, there is a choice of which type (τ, τ₁, or ?) to push in when checking the body. In the rules you have chosen τ₁ from the environment. I would argue that τ is the more natural choice from the programmer's point of view (that's what they wrote!) and ? is the more principled one. At the very least, you need to acknowledge that there is a choice to make here.
+
+Section 2.1.6
+Putting an explicit τ₁ ~ τ₂ premiss on the USIf and UAIf rules would make things more clear (e.g. removing partiality concerns for τ₁ ⊔ τ₂) and match the τ₁ ≁ τ₂ constraint on the corresponding failure rules. Also for MSIf-C in section 4.2.
+
+Section 2.3
+I am not convinced by this section. You write that "the most obvious approach is to synthesize a type from the pattern and analyze the definition against that type", and then add machinery to make the checking of the definition switch from analysis to synthesis to get the appropriate behaviour. To me, the obvious approach would be the other way around: synthesize a type for the definition and analyze the pattern against that type. In fact, once you get down to the USLetPat rule, you do exactly this! It's not clear at all why the first two premisses (involving τp) are needed at all, since no information flows out of them. In the ISLetPat rule you do use the marked terms from those checks, but I don't see why you couldn't move the marking to the definition synthesis and pattern analysis.
+Also, checking the definition in both synthesis and analysis mode looks like it might suffer exponential blowup problems for terms of the form let p₁ = let p₂ = let p₃ = ...
+
+Section 4.4
+Is the correspondance between this approach to polymorphism (using the gradual unknown type for unification variables) and standard Hindley-Milner known? Are there any systems implementing this currently? It looks plausible that it could just work, but [Siek and Vachharajani 2008] has a monomorphic language. It would be nice with more something more solid than the casual "The same approach can be taken with type hole inference" in Section 4.4. For instance, if it was included in the Hazel implementation.
+
+Section 5
+You should mention the Helium Haskell compiler work: Constraint based type inferencing in Helium (Heeren et al, 2003).
+Hazel supplementary material
+In section 3.1 you write that you have implemented marking for algebraic datatypes and explicit polymorphism, but there are no examples for this in the supplied Hazel build, and I can't figure out what the syntax is.
+
+Minor issues
+
+l.17 sy[s]tem
+l.118-120 "the general approach that we hope [] will be adopted"
+l.197 mark[ed] variants
+Fig 4. Missing TCPair
+l.405 (USLam) Premiss should bind x : τ₁
+l.416 (TMAArr) τ₁ → τ₂ instead of τ → τ
+l.422 (MSLam) Premiss should bind x : τ₁
+Fig 6. Missing case for pairs
+l.580 (MKSProjL2) Conclusion should be "=> ?"
+l.661-664, l.671-674 Missing rules for pair patterns
+l.691 error marks [analogous] to
+l.764 a new version of [] Hazel
+l.958, l.978 the notation for the inconsistent type mark changed (from ≁ to :)
+l.966 (TMPHole-C) missing provenances on result
+l.991 Missing s × s case for PotentialType
