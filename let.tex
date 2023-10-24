@@ -17,7 +17,7 @@ Consider the following program:
   \ELet{\PPair{\PVar{a}}{\PVar{b}}}{\EPair{1}{2}}{\EMV}
 \]%
 
-To type this, the most obvious approach is to synthesize a type from the pattern and analyze the
+To type this, one approach is to synthesize a type from the pattern and analyze the
 definition against that type. However, this may run afoul of user expectation, which might
 reasonably suppose it to be equivalent to the expanded expression
 $\ELet{\PVar{a}}{1}{\ELet{\PVar{b}}{2}{\EMV}}$. In the original, the pattern synthesizes the type
@@ -93,29 +93,26 @@ cannot escape into the rest of the program and cause body expressions to synthes
   }{UAPAnn}
 \end{mathpar}
 
-To ensure propagation of type information between pattern, definition, and body, the destructuring
-let requires some extra machinery.
+
+Let synthesis is straightforward: we synthesize the definition's type, then analyze the pattern against it:
+
 \[%
   \judgment{
-    \ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
-    \ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
-    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\\\
+    %\ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
+    %\ctxAnaTypeU{\ctx}{\EMV_{1}}{\TMV_p} \\
+    \ctxSynTypeU{\ctx}{\EMV_{1}}{\TMV_{1}} \\
     \ctxAnaPatU{\ctx}{\PMV}{\TMV_{1}}{\ctx'} \\
     \ctxSynTypeU{\ctx'}{\EMV_{2}}{\TMV_2}
   }{
     \ctxSynTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
   }{USLetPat}
 \]%
-First, to ensure that the pattern and definition types are consistent, the pattern synthesizes a
-type, against which the definition is analyzed. Then, the definition synthesizes a type, against
-which the pattern is analyzed. This analysis is guaranteed to succeed; we need the context it
-produces for use in the synthesis of the body's type. The analytic rule is similar, with the final
-premise and conclusion changed to analysis.
 
-The marking rule is directly analogous and utilizes the marking of patterns, which we omit---they
-may be derived in the same way as those for expressions and are governed by similar metatheorems (again, totality guides the derivation).
-In the analytic cases, we introduce error marks that parallel to $\ECInconType{\ECMV}$ and 
-$\ECAnaNonMatchedProd{\ECMV}$.
+The analytic rule is similar, with the final
+premise and conclusion changed to analysis.
+\\
+Attempting an analogous marking rule runs into trouble. We want any type annotations in the pattern to be canonical, which means analyzing the definition to attribute to it any inconsistencies. But we still must analyze the pattern, incorporating the definition's type to produce the context needed by the body. So we do a 'round trip': Analyze the definition against the pattern's type, and then the pattern against the definition's. Since the first analysis establishes consistency, this second analysis is guaranteed to succeed; we only care about the context produced:
+
 \[%
   \judgment{
     \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
@@ -127,3 +124,8 @@ $\ECAnaNonMatchedProd{\ECMV}$.
     \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
   }{ISLetPat}
 \]%
+
+We omit the marking of patterns---they
+may be derived in the same way as those for expressions and are governed by similar metatheorems (again, totality guides the derivation).
+In the analytic cases, we introduce error marks that parallel to $\ECInconType{\ECMV}$ and 
+$\ECAnaNonMatchedProd{\ECMV}$.
