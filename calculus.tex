@@ -372,7 +372,7 @@ rules:
 
 However, consider the case that a variable, such as $y$ in \cref{fig:calculus-examples-free}, is \emph{not}
 bound. Similar to above, \textsc{USVar} would not apply. A total marking procedure should, however, report the error and
-continue, motivating an \emph{free variable mark} $\ECFree{x}$ and the accompanying rules:
+continue, motivating a \emph{free variable mark} $\ECFree{x}$ and the accompanying rules:
 %
 \begin{mathpar}
   \judgment{
@@ -985,10 +985,10 @@ shadow a previous declaration and require the removal of error holes in body. Th
 
 The fundamental issue is that Hazelnut did not have a total marking system that it could deploy to remark expressions where needed. The marked lambda calculus allows us to solve this problem, in two different ways.
 
-One approach is to define an untyped action calculus, \emph{wholly decoupling} edit actions from typing. Under this simplified design, the action calculus, given by the singular action
+One approach is to define an untyped action calculus, \emph{wholly decoupling} edit actions from typing. Under this simplified design, the action calculus, given by a singular action
 judgment, written $\AUEAction{\EMV}{\EMV'}{\AMV}$, is concerned only with the manipulation of
 syntax, and the total marking procedure yields statically meaningful terms with error marks inserted at the appropriate positions as a kind of editor decoration. This solves the problem
-outlined above; since marking operates on the entire program after each action, arbitrary
+outlined above: since marking operates on the entire program after each action, arbitrary
 constructions are permitted.
 
 Alternatively, instead of a wholly untyped action calculus, one may directly integrate re-marking logic into the typed Hazelnut
@@ -1006,7 +1006,7 @@ The
 supplemental material contains a complete formal description of both variants, and the untyped
 action semantics and related metatheory are mechanized in Agda. Because of the simplicity of the
 untyped version, and because marking is defined separately, this Agda mechanization can serve
-universally as a baseline for correctness of approaches, like our initial design that aim to make
+universally as a baseline for correctness of approaches, like our initial design that aims to make
 use of type and scope information, and perhaps other analyses, to minimize re-marking. We leave a
 complete assessment of this and other re-marking optimization approaches to future work, particularly
 because Hazel is now moving toward the decoupled approach for future development.
