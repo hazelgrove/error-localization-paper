@@ -33,7 +33,7 @@ All rules and theorems may be found organized by judgement form in the supplemen
 reference, alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis}
 (discussed in \cref{sec:calculus-agda}).
 We intentionally keep the marked lambda calculus minimal, because it is intended to capture the
-essential idea and introduce a general pattern that language designers can employ to created mark
+essential idea and introduce a general pattern that language designers can employ to created marked
 variants of their own type systems.
 As an initial example, we consider a surprisingly subtle combination of features as a more
 substantial case study: the combination of destructing let expressions with granular type
@@ -262,6 +262,13 @@ replaces the notion of \emph{type equality} to relate the unknown type to all ot
     }{
       \consistent{\TArrow{\TMV_1}{\TMV_2}}{\TArrow{\TMV_1'}{\TMV_2'}}
     }{TCArr}
+
+    \inferrule[TCProd]{
+      \consistent{\TMV_1}{\TMV_1'} \\
+      \consistent{\TMV_2}{\TMV_2'} \\
+    }{
+      \consistent{\TProd{\TMV_1}{\TMV_2}}{\TProd{\TMV_1'}{\TMV_2'}}
+    }
   \end{mathpar}
   \vspace{-10px}
   \caption{Type consistency.}
@@ -394,7 +401,7 @@ type annotation and body match them.
 %
 \begin{mathpar}
   \judgment{
-    \ctxSynTypeU{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\TMV_2}
+    \ctxSynTypeU{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\TMV_2}
   }{
     \ctxSynTypeU{\ctx}{\ELam{x}{\TMV_1}{\EMV}}{\TArrow{\TMV_1}{\TMV_2}}
   }{USLam}
@@ -423,7 +430,7 @@ technical mechanism to avoid duplication of rules related to arrow types \cite{s
     }{TMAUnknown}
 
     \judgment{ }{
-      \matchedArrow{\TArrow{\TMV}{\TMV}}{\TMV}{\TMV}
+      \matchedArrow{\TArrow{\TMV_1}{\TMV_2}}{\TMV_1}{\TMV_2}
     }{TMAArr}
   \end{mathpar}
   \vspace{-10px}
@@ -443,7 +450,7 @@ abstraction:
   }{MKSLam}
 
   \judgment{
-    \ctxSynTypeM{\extendCtx{\ctx}{x}{\TMV}}{\ECMV}{\TMV_2}
+    \ctxSynTypeM{\extendCtx{\ctx}{x}{\TMV_1}}{\ECMV}{\TMV_2}
   }{
     \ctxSynTypeM{\ctx}{\ECLam{x}{\TMV_1}{\ECMV}}{\TArrow{\TMV_1}{\TMV_2}}
   }{MSLam}
@@ -509,7 +516,7 @@ error, and we add a final pair of analytic rules:
   \judgment{
     \matchedArrow{\TMV_3}{\TMV_1}{\TMV_2} \\
     \inconsistent{\TMV}{\TMV_1} \\\\
-    \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV_1}}{\EMV}{\ECMV}{\TMV_2}
+    \ctxAnaFixedInto{\extendCtx{\ctx}{x}{\TMV}}{\EMV}{\ECMV}{\TMV_2}
   }{
     \ctxAnaFixedInto{\ctx}{\ELam{x}{\TMV}{\EMV}}{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\TMV_3}
   }{MKALam3}
@@ -657,7 +664,8 @@ there is an expected type for both branches, we shift the blame for any errors t
     \meetsTo{\TMV}{\TUnknown}{\TMV} \\
     \meetsTo{\TNum}{\TNum}{\TNum} \\
     \meetsTo{\TBool}{\TBool}{\TBool} \\
-    \meetsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}}
+    \meetsTo{(\TArrow{\TMV_1}{\TMV_2})}{(\TArrow{\TMV_1'}{\TMV_2'})}{\TArrow{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}} \\
+    \meetsTo{(\TProd{\TMV_1}{\TMV_2})}{(\TProd{\TMV_1'}{\TMV_2'})}{\TProd{(\TMeet{\TMV_1}{\TMV_1'})}{(\TMeet{\TMV_2}{\TMV_2'})}}
   \end{array}\]
   \vspace{-10px}
   \caption{Type meet.}
@@ -850,7 +858,7 @@ In the case that the subject of the projection does not synthesize a matched pro
     \ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV} \\
     \notMatchedProd{\TMV}
   }{
-    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjLSynNonMatchedProd{\ECMV}}{\TMV_1}
+    \ctxSynFixedInto{\ctx}{\EProjL{\EMV}}{\ECProjLSynNonMatchedProd{\ECMV}}{\TUnknown}
   }
   
   \inferrule[MSProjL2]{
@@ -949,7 +957,7 @@ match those presented here.
 \subsection{Hazel Implementation}
 \label{sec:calculus-hazel}
 
-We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of the Hazel. % TODO citation and explain what in the world Hazel is (reviewer A stated that the lack of this made this section pretty much impossible to understand)
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of Hazel. % TODO citation and explain what in the world Hazel is (reviewer A stated that the lack of this made this section pretty much impossible to understand)
 In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above).
 Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser.
 The supplemental material contains a pre-built implementation.

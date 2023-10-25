@@ -66,6 +66,13 @@ We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesi
   \judgment{ }{
     \ctxSynPatU{\ctx}{\PVar{x}}{\TUnknownSwitch}
   }{USPVar}
+
+  \inferrule[USPPair]{
+    \ctxSynPatU{\ctx}{\PMV_1}{\TMV_1} \\
+    \ctxSynPatU{\ctx}{\PMV_2}{\TMV_2}
+  }{
+    \ctxSynPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TProd{\TMV_1}{\TMV_2}}
+  }
  
   \judgment{
     \ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}
@@ -84,6 +91,14 @@ cannot escape into the rest of the program and cause body expressions to synthes
   \judgment{ }{
     \ctxAnaPatU{\ctx}{\PVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
   }{UAPVar}
+  
+  \inferrule[UAPPair]{
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \ctxAnaPatU{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
+    \ctxAnaPatU{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
+  }{
+    \ctxAnaPatU{\ctx}{\PPair{\PMV_1}{\PMV_2}}{\TMV}{\ctx_2}
+  }
  
   \judgment{
     \ctxAnaPatU{\ctx}{\PMV}{\TMV'}{\ctx'} \\
@@ -94,7 +109,7 @@ cannot escape into the rest of the program and cause body expressions to synthes
 \end{mathpar}
 
 
-Let synthesis is straightforward: we synthesize the definition's type, then analyze the pattern against it:
+Synthesis for let expressions is straightforward: we synthesize the definition's type, then analyze the pattern against it:
 
 \[%
   \judgment{
@@ -110,8 +125,13 @@ Let synthesis is straightforward: we synthesize the definition's type, then anal
 
 The analytic rule is similar, with the final
 premise and conclusion changed to analysis.
-\\
-Attempting an analogous marking rule runs into trouble. We want any type annotations in the pattern to be canonical, which means analyzing the definition to attribute to it any inconsistencies. But we still must analyze the pattern, incorporating the definition's type to produce the context needed by the body. So we do a 'round trip': Analyze the definition against the pattern's type, and then the pattern against the definition's. Since the first analysis establishes consistency, this second analysis is guaranteed to succeed; we only care about the context produced:
+
+Attempting an analogous marking rule runs into trouble. We want any type annotations in the pattern
+to be canonical, which means analyzing the definition to attribute to it any inconsistencies. But we
+still must analyze the pattern, incorporating the definition's type to produce the context needed by
+the body. So we do a ``round trip'': analyze the definition against the pattern's type, and then
+the pattern against the definition's. Since the first analysis establishes consistency, this second
+analysis is guaranteed to succeed; we only care about the context produced:
 
 \[%
   \judgment{
