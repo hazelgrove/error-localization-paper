@@ -121,6 +121,7 @@ does not mark any uses of \li{x} as erroneous because a type for \li{x} cannot l
 \end{center}
 
 
-The user can interactively explore possible error localizations by hovering over a partially consistent suggestion, which (temporarily) fills the type hole and thus returns the localization decision to the local inference system.
+The user can interactively explore possible error localizations by hovering over a partially consistent suggestion, which (temporarily) fills the type hole and thus returns the localization decision to the bidirectional type system.
 Here, each choice causes a different set of two uses of \li{x} to be marked, e.g. the first and third use for \li{Int -> Int} (shown above). Until the choice is finalized, the type hole continues to operate gradually.
-\cref{sec:thi} describes this distinctively neutral approach to blending local and constraint-based type inference in Hazel, where local inference is used to systematically mark erroneous expressions in the program and constraint-based inference (using entirely standard algorithms, which we do not repeat in this paper) is used exclusively to locate unfillable holes.
+\cref{sec:thi} describes this distinctively neutral approach to blending local and constraint-based
+type inference in Hazel, where bidirectional typing is used to systematically mark erroneous expressions in the program and constraint-based inference (using entirely standard algorithms, which we do not repeat in this paper) is used exclusively to locate unfillable holes.
