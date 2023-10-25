@@ -97,7 +97,7 @@ We leave as future work the task of defining marked versions of even more elabor
 type systems, e.g. \citet{dunfield2013complete}'s rather substantial formulation of implicit type
 application in a bidirectional setting (which would have to handle, for example, the situation where
 no implicit argument can be resolved) or \citet{DBLP:phd/hal/LennonBertrand22}'s gradual bidirectional
-variant of the dependently typed calculus of constructions. 
-
-% TODO cite gradual dependent types papers, etc.
-% DBLP:phd/hal/LennonBertrand22
+variant of the dependently typed calculus of constructions. Languages with operator overloading may
+provide interesting localization decisions. So that overloading can be resolved during typing and
+marking, the modes of one or both operand must be changed to synthesis. If the operator is not
+defined given the synthesized operand type(s), an error might be marked on the operator itself.

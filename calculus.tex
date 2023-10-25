@@ -49,12 +49,13 @@ with numbers, booleans, pairs, and empty expression holes \cite{HazelnutSNAPL}.
 Given in \cref{fig:calculus-syntax}, the syntax consists of two expression languages:
 %
 \begin{itemize}
-  \item The \textbf{unmarked language}, which is the original language. Expressions of this language
+  \item The \emph{unmarked language}, which is the original language. Expressions of this language
     are called \emph{unmarked expressions}, denoted by the metavariable $\EMV$.
 
-  \item The \textbf{marked language}, which mirrors the structure of the unmarked language but is
-    extended with explicit \emph{error marks}. We call expressions of this language
-    \emph{marked expressions}, denoted $\ECMV$.
+  \item The \emph{marked language}, which mirrors the structure of the unmarked language but is
+    extended with explicit \emph{error marks} which, intuitively, may be viewed as exactly the
+    errors marked in an editor. We call expressions of this language \emph{marked expressions},
+    denoted $\ECMV$.
 \end{itemize}
 In this simple setting, we only need one sort for types, $\tau$. 
 The base types $\TNum$ and $\TBool$ classify number and boolean
@@ -66,7 +67,10 @@ $\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ is the boolean conditional. Arrow and product typ
 $\TUnknown$ is a type hole, which we identify with the unknown type from gradual type theory \cite{Siek06a}.
 Finally, to model the edit state of a program in development, $\EEHole$ denotes an \emph{empty expression hole},
 used to represent syntactically incomplete portions of the program à la Hazelnut
-\cite{HazelnutPOPL}. Note, however, that empty expression holes are not semantically critical to the calculus---they are included to emphasize that the system can handle program sketches.
+\cite{HazelnutPOPL}. Note, however, that these empty expression holes are not at all semantically
+critical to the calculus---they are included illustrate how the calculus fits into the larger
+problem of modelling incomplete program states and to discuss polymorphic generalization in
+\cref{sec:polymorphicGlobal}.
 
 \begin{figure}[htbp]
   \[\begin{array}{rrcl}
@@ -113,7 +117,7 @@ give precise semantics for each error mark. Furthermore, when the core is extend
 The marked language possesses its own type system, also formulated bidirectionally. We write
 $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$ for synthesis and $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$ for analysis (in addition to the color difference, note the subscript on the turnstile to distinguish marked from unmarked typing). 
 
-Finally, the key judgement, \emph{marking}, is also of a bidirectional nature. The synthetic marking judgment
+Finally, the \emph{marking} judgment is also of bidirectional nature. The synthetic marking judgment
 $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$ establishes that, under the context $\Gamma$, the
 unmarked expression $\EMV$ is ``marked into'' the marked expression $\ECMV$, which synthesizes type
 $\TMV$. Analogously, the analytic marking judgment $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$
@@ -501,7 +505,10 @@ abstraction was encountered.
 \end{mathpar}
 %
 Though no expected output type is known, we still need to check and mark the body; it is thus
-analyzed against the unknown type in \textsc{MKALam2}.
+analyzed against the unknown type in \textsc{MKALam2}. It is possible to instead synthesize the
+body, but we choose analysis so that the body is always in analytic mode. The guiding design
+principle in this decision is is a notion of ``conservation of mode,'' but it is not critical to the
+calculus.
 
 Note that in this example language, the distinction from the inconsistent type mark is of reduced
 significance---all expressions synthesize a type. However, the addition of unannotated lambda

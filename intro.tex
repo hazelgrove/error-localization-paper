@@ -37,16 +37,16 @@ with little in the way of unifying theory of the sort that grounds the design of
 Consider, for example, the ill-typed program below, which is shown as presented to the user in
 this paper's version of Hazel \cite{hazel}, a typed functional dialect of Elm \cite{elm}. Hazel  
 supports local type inference, specified in the well-established bidirectional style \cite{Localinf,HazelnutPOPL,BidirTyping}:
-\vspace{-3px}
+\\\vspace{-5px}
 \begin{center}
     \includegraphics[scale=0.5]{images/hazel-intro-screenshot-v3.png}
 \end{center}
-\vspace{-3px}
+
 A type checker with no support for error localization or recovery---%
 as students in an undergraduate course might write---%
 would simply report that this program is ill-typed. 
 A more practical approach, and one common even in production type checkers, 
-is to localize the first error that causes local type inference to fail and emit an explanatory error message before terminating.
+is to localize the first error that causes type-checking to fail and emit an explanatory error message before terminating.
 In this example, the system might report that the variable \li{f} located on Line 2 is free, then terminate.
 
 An implementation with support for type error recovery, like Elm's compiler or OCaml's \li{merlin} \cite{bour2018merlin}, would 

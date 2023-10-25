@@ -34,7 +34,8 @@ following:
 \]%
 If the pattern $\PVar{a}$ suggests that the conditional is in synthetic position, it will be marked
 with an inconsistent branches error mark following our development above. If instead it is in
-analytic position against the unknown type, no mark will be produced.
+analytic position against the unknown type, each branch is checked independently against this
+trivial constraint, and no mark will be produced.
 
 To remedy this situation and preserve the semantic distinction between synthesis and analysis
 against the unknown type, we introduce a pattern annotation form, written $\PAsc{\PMV}{\TMV}$, which

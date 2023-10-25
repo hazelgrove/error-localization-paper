@@ -3,11 +3,11 @@
 
 The contributions of this paper build directly on the Hazelnut type system \cite{HazelnutPOPL}, which is discussed extensively throughout. Non-empty holes in Hazelnut generalize to marks in this work. In brief, we contribute a total marking procedure (Section~\ref{sec:calculus}) and type hole inference scheme (Section~\ref{sec:thi}) for a system based closely on Hazelnut, and use it to fix some expressiveness issues in Hazelnut's edit action calculus (Section~\ref{sec:calculus-structured-editing}). 
 
-Hazelnut is in turn rooted in gradual type theory \cite{Siek06a, siek2015refined}, and we make extensive use of (only) the static aspects of gradual typing, namely the universal consistency of the unknown type, to enable recovery from marked errors, which can leave missing type information.
+Hazelnut is in-turn rooted in gradual type theory \cite{Siek06a, siek2015refined}, and we make extensive use of (only) the static aspects of gradual typing, namely the universal consistency of the unknown type, to enable recovery from marked errors, which can leave missing type information.
 
 Our focus was exclusively on static typing in this paper, and the results are relevant to the design of language servers for any statically typed language, but it is worth noting that the results in this paper, taken together with Hazel's support for maintaining syntactic well-formedness using structure editing \cite{DBLP:conf/vl/Moon023,moon2022tylr} and for running programs with holes and marked errors \cite{HazelLive}, allow our implementation of Hazel to achieve \emph{total liveness}: every editor state is syntactically, statically, and dynamically meaningful, without gaps.
 
-Type error localization is a well-studied problem in practice. This paper is the first to formally support the intuition that, in the words of \cite{BidirTyping}, ``bidirectional typing improves error locality''. Although there has been considerable folklore around error localization 
+Type error localization is a well-studied problem in practice. This paper is the first to formally support the intuition that, in the words of \citet{BidirTyping}, ``bidirectional typing improves error locality.'' Although there has been considerable folklore around error localization 
 for systems with local type inference, the problem has received little formal attention. We hope that this paper, with its rigorous formulation
 of type error localization and recovery for bidirectionally typed languages, will provide more rigorous grounding to language server development,
 much as bidirectional typing has done for type checker development.
