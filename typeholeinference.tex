@@ -1,7 +1,7 @@
 \section{Type Hole Inference}
 \label{sec:thi}
 
-Local type inference, which has been our focus so far, reduces the number of necessary annotations and induces a local flow of information particularly well-suited to systematic error localization decisions \cite{BidirTyping,Pierce:2000:LTI:345099.345100}. In contrast, 
+Bidirectional typing, which has been our focus so far, reduces the number of necessary annotations and induces a local flow of information particularly well-suited to systematic error localization decisions \cite{BidirTyping,Pierce:2000:LTI:345099.345100}. In contrast, 
 constraint-based type inference as found in many ML-family languages allows programmers to omit most or all type annotations \cite{Pierce:2000:LTI:345099.345100}. The trade-off is that type error localization and recovery 
 become considerably more difficult, because inconsistencies can now arise between 
 constraints derived from many distant locations in a program. 
@@ -81,7 +81,7 @@ The systems diverge in their capabilities if we explicitly add a type hole annot
 \includegraphics[width=9cm]{images/example-conflict-newnew.png}
 \includegraphics[width=9cm]{images/example_conflict_hover.png}
 \includegraphics[width=9cm]{images/example-conflict-hover-final.png}
-\caption{The error is localized to the conflicted type hole in Hazel. When hovering over the indicated suggestion, the hole is transiently filled, causing the error to be localized to the bound expression, \li{2}.}
+\caption{The error is localized to the conflicted type hole in Hazel. Placing the cursor (\textcolor{red}{$\rangle$}) on the conflicted type hole populates suggestions in the cursor inspector. When hovering over an indicated suggestion, the hole is transiently filled, causing the error to be localized to the bound expression, \li{2}.}
 \label{fig:editor_conflict}
 \end{figure}
 % \begin{figure}[H]
@@ -184,7 +184,9 @@ Since unification will be solving for unknown types, we must ensure we are able 
     \ECMName & \ECMV & \Coloneqq & \dots \mid \ECFreeId{x}{u} \mid \ECInconTypeId{\ECMV}{u} \mid \dots \mid \ECProjLSynNonMatchedProdId{\ECMV}{u} \mid \ECProjRSynNonMatchedProdId{\ECMV}{u} \mid \EEHole^u
 \end{array}\]
 
-Provenance is determined whenever a new unknown type is constructed. For example, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances so that every time a matched arrow type is generated for the same hole, it involves the same constituent unknown types without needing to introduce explicit constraints:
+Provenance is determined whenever a new unknown type is constructed. For example, we update our matched arrow and product rules to add provenances to outputted type holes and introduce the new matched arrow and product provenances so that every time a matched arrow type is generated for the same hole, it involves the same constituent unknown types without necessitating fresh id generation.
+%without needing to introduce explicit constraints:
+%edited in response to reviewer C: "I did not understand this, since the rules seem to be adding explicit constraints." 
 \begin{mathpar}
     \judgment{ }{
       \matchedArrowConstraint{\TUnknown^p}{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}}{\{ \TUnknown^p \approx \tarr{\TUnknown^{\rightarrow_L(p)}}{\TUnknown^{\rightarrow_R(p)}} \}}
@@ -220,9 +222,11 @@ The remaining rules directly follow the intuitions above and are left to the sup
 \subsection{Unification and Potential Type Sets}
 \label{sec:unification}
 
-To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer}, which accumulates constraint information in \textsf{PotentialTypeSet}s.
+To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer}, which accumulates constraint information in \textsf{PotentialTypeSet}s. 
 
-A \textsf{PotentialTypeSet} is a recursive data structure representing the potential solutions for an unknown type, inferred from type constraints. A single \textsf{PotentialTypeSet} describes \emph{all} of the potential fillings for its associated type hole. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously extend the \textsf{PotentialTypeSet}.
+A \textsf{PotentialTypeSet} is a recursive data structure representing \emph{all} of the potential fillings for an associated incomplete type, inferred from type constraints. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously merge \textsf{PotentialTypeSet}s. Since unification treats relations transitively, a property consistency lacks across complete types, we never generate \textsf{PotentialTypeSet}s for complete types and simply add them to existing \textsf{PotentialTypeSet}s  as necessary.
+
+% Edited in response to Reviewer C: "but this algorithm must account for consistency, right?". The reason we didn't discuss this is it quickly leads into the weeds which gets messy. Feel free to change/chop parts of this.
 
 \begin{figure}[hbt!]
 \centering
@@ -233,7 +237,7 @@ $\arraycolsep=4pt\begin{array}{rrcl}
 \label{fig:syntax_possible_type_sets}
 \end{figure}
 
-This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}. 
+This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}.
 
 Note again that the novel contribution of this section is not in the particular unification algorithm but rather the architectural decisions that allow us to neatly blend local and constraint-based type inference systems for orthogonal purposes within the same system, and our focus on how to handle inconsistent constraints. As such, we direct the reader to prior work for the algorithmic, formal, and metatheoretic details of unification \cite{GradualInfer}.
 
@@ -625,7 +629,7 @@ $\arraycolsep=4pt\begin{array}{rrcl}
   \textsf{PotentialType} & t & \Coloneqq & \dots \mid \mathtt{etc}
 \end{array}$
 \end{center}
-When an expression hole appears, all unknown types in the typing context are constrained to $\mathtt{etc}$. This has no impact on unification, but if a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized. 
+When an expression hole appears, all unknown types in the typing context are constrained to $\mathtt{etc}$. This has no impact on unification, but if a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized. As before, more expansive discussion on unification with gradual typing including polymorphism is left to prior work \cite{garcia:2015, GradualInfer}.
 
 % \subsubsection{User Interaction and Conflict Highlighting}
 % To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.
