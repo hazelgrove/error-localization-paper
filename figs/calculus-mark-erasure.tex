@@ -1,27 +1,52 @@
 \newcommand{\erasesToRow}[2]{\erase{#1} & = & #2}
 \begin{figure}[htbp]
-  \[\begin{array}{rcl}
-    \erasesToRow{\ECEHole}{\EEHole} \\
-    \erasesToRow{x}{x} \\
-    \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
-    \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
-    & \cdots & \\
+  % \[\begin{array}{rcl}
+    % \erasesToRow{\ECEHole}{\EEHole} \\
+    % \erasesToRow{x}{x} \\
+    % \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    % \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    % & \cdots & \\
     % \erasesToRow{(\ECLet{x}{\ECMV_1}{\ECMV_2})}{\ELet{x}{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
     % \erasesToRow{\ECNumMV}{\ENumMV} \\
     % \erasesToRow{(\ECPlus{\ECMV_1}{\ECMV_2})}{\EPlus{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
     % \erasesToRow{\ECTrue}{\ETrue} \\
     % \erasesToRow{\ECFalse}{\EFalse} \\
     % \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
-    \erasesToRow{\ECFree{x}}{x} \\
-    \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
-    \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    % \erasesToRow{\ECFree{x}}{x} \\
+    % \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}} \\
+    % \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
     % \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
     % \erasesToRow{\ECSynNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
     % \erasesToRow{\ECSynNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
     % \erasesToRow{\ECAnaNonMatchedArrow{\ECMV}}{\erase{\ECMV}} \\
     % \erasesToRow{\ECAnaNonMatchedProd{\ECMV}}{\erase{\ECMV}} \\
+  % \end{array}\]
+  \[\begin{array}{rcl}
+    \erasesToRow{\ECEHole}{\EEHole} \\
+    \erasesToRow{x}{x} \\
+    \erasesToRow{\ECFree{x}}{x} \\
+    \erasesToRow{(\ECLam{x}{\TMV}{\ECMV})}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    \erasesToRow{\ECLamInconAsc{x}{\TMV}{\ECMV}}{\ELam{x}{\TMV}{(\erase{\ECMV})}} \\
+    \erasesToRow{\ECLamAnaNonMatchedArrow{x}{\TMV}{\ECMV}}{\ECLam{x}{\TMV}{(\erase{\ECMV})}} \\
+    \erasesToRow{(\ECAp{\ECMV_1}{\ECMV_2})}{\EAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{(\ECApSynNonMatchedArrow{\ECMV_1}{\ECMV_2})}{\ECAp{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{(\ECLet{x}{\ECMV_1}{\ECMV_2})}{\ELet{x}{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{\ECNumMV}{\ENumMV} \\
+    \erasesToRow{(\ECPlus{\ECMV_1}{\ECMV_2})}{\EPlus{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}} \\
+    \erasesToRow{\ECTrue}{\ETrue} \\
+    \erasesToRow{\ECFalse}{\EFalse} \\
+    \erasesToRow{(\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3})}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    \erasesToRow{\ECInconBr{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\EIf{(\erase{\ECMV_1})}{(\erase{\ECMV_2})}{(\erase{\ECMV_3})}} \\
+    \erasesToRow{\ECPair{\ECMV_1}{\ECMV_2}}{\ECPair{\erase{\ECMV_1}}{\erase{\ECMV_2}}} \\
+    \erasesToRow{\ECPairAnaNonMatchedProd{\ECMV_1}{\ECMV_2}}{\ECPair{\erase{\ECMV_1}}{\erase{\ECMV_2}}} \\
+    \erasesToRow{(\ECProjL{\ECMV})}{\ECProjL{(\erase{\ECMV})}} \\
+    \erasesToRow{(\ECProjLSynNonMatchedProd{\ECMV})}{\ECProjL{(\erase{\ECMV})}} \\
+    \erasesToRow{(\ECProjR{\ECMV})}{\ECProjR{(\erase{\ECMV})}} \\
+    \erasesToRow{(\ECProjRSynNonMatchedProd{\ECMV})}{\ECProjR{(\erase{\ECMV})}} \\
+    \erasesToRow{\ECInconType{\ECMV}}{\erase{\ECMV}}
   \end{array}\]
+
   %
-  \caption{Mark erasure (selected)}
+  \caption{Mark erasure}
   \label{fig:calculus-mark-erasure}
 \end{figure}

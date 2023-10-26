@@ -51,9 +51,8 @@ Since $\PVar{a}$ has no constraint, the left component is in synthetic position,
 inconsistent branches error. The type annotation on $\PVar{b}$ puts the right component in analytic
 mode against the unknown type, leading to no error marks.
 
-This system is achieved by augmenting the type system with a variant of the unknown type, written
-$\TUnknownSwitch$, that triggers a ``switch'' to synthesis and otherwise behaves identically to
-$\TUnknown$. In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
+This is achieved by adding a ``switch type'', denoted
+$\TUnknownSwitch$, existing entirely to trigger a ``switch'' to synthesis. $\TUnknownSwitch$ represents a trivial constraint, instantiated as a type for the sole purpose of using the existing machinery to propagate the appropriate mode switch to the relevant sub-expression of the definition. This switch type carries over identically to a non-gradual setting, but here we visually represent as a variant of $\TUnknown$ as it behaves identically with respect to type consistency and matched arrow/product judgements. In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
 $\TUnknownSwitch$, and the annotated pattern $\PAsc{\PVar{b}}{\TUnknown}$ synthesizes $\TUnknown$.
 We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesizes type $\TMV$.
 %
@@ -84,7 +83,7 @@ We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesi
  
 Given by the judgment $\ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}$, patterns are also typed analytically,
 in which case they produce an output context $\ctx'$, which extends $\ctx$ with bindings introduced
-by the pattern. Note that $\TUnknownSwitch$ exists entirely to ensure that sub-expressions of the
+by the pattern. Note again that $\TUnknownSwitch$ exists entirely to ensure that sub-expressions of the
 definition are assigned an appropriate typing mode---it is never added to the context, i.e. it
 cannot escape into the rest of the program and cause body expressions to synthesize accidentally.
 %
@@ -143,7 +142,7 @@ analysis is guaranteed to succeed; we only care about the context produced:
     \ctxSynFixedInto{\ctx'}{\EMV_{2}}{\ECMV_{2}}{\TMV_2}
   }{
     \ctxSynFixedInto{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\ELet{\PCMV}{\ECMV_{1}}{\ECMV_{2}}}{\TMV_2}
-  }{ISLetPat}
+  }{MKSLetPat}
 \]%
 
 We omit the marking of patterns---they

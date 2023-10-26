@@ -76,20 +76,20 @@ problem of modelling incomplete program states and to discuss polymorphic genera
   \[\begin{array}{rrcl}
       \TMName  & \TMV  & \Coloneqq & \TUnknown \mid \TNum \mid \TBool \mid \TArrow{\TMV}{\TMV} \mid \TProd{\TMV}{\TMV} \\
       \EMName  & \EMV  & \Coloneqq & x \mid \ELam{x}{\TMV}{\EMV} \mid \EAp{\EMV}{\EMV} \mid \ELet{x}{\EMV}{\EMV}
-                     \mid           \ENumMV \mid \EPlus{\EMV}{\EMV} \\
-           &       & \mid         & \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
-                     \mid           \EPair{\EMV}{\EMV}
-                     \mid           \EProjL{\EMV} \mid \EProjR{\EMV}
-                     \mid           \EEHole \\
+                         \mid           \ENumMV \mid \EPlus{\EMV}{\EMV} \\
+               &       & \mid         & \ETrue \mid \EFalse \mid \EIf{\EMV}{\EMV}{\EMV}
+                         \mid           \EPair{\EMV}{\EMV}
+                         \mid           \EProjL{\EMV} \mid \EProjR{\EMV}
+                         \mid           \EEHole \\
       \ECMName & \ECMV & \Coloneqq & x \mid \ECLam{x}{\TMV}{\ECMV} \mid \ECAp{\ECMV}{\ECMV} \mid \ECLet{x}{\ECMV}{\ECMV}
-                     \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV} \\
-           &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
-                     \mid           \ECPair{\ECMV}{\ECMV} \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
-                     \mid           \ECEHole \\
-           &       & \mid         & \ECFree{x} \mid \ECInconType{\ECMV} \\
-           &       & \mid         & \ECLamInconAsc{x}{\TMV}{\ECMV} \mid \ECLamAnaNonMatchedArrow{x}{\TMV}{\ECMV} \mid \ECApSynNonMatchedArrow{\ECMV}{\ECMV} \\
-           &       & \mid         & \ECInconBr{\ECMV}{\ECMV}{\ECMV} \\
-           &       & \mid         & \ECPairAnaNonMatchedProd{\ECMV}{\ECMV} \mid \ECProjLSynNonMatchedProd{\ECMV} \mid \ECProjRSynNonMatchedProd{\ECMV}
+                         \mid           \ECNumMV \mid \ECPlus{\ECMV}{\ECMV} \\
+               &       & \mid         & \ECTrue \mid \ECFalse \mid \ECIf{\ECMV}{\ECMV}{\ECMV}
+                         \mid           \ECPair{\ECMV}{\ECMV} \mid \ECProjL{\ECMV} \mid \ECProjR{\ECMV}
+                         \mid           \ECEHole \\
+               &       & \mid         & \ECFree{x} \mid \ECInconType{\ECMV} \\
+               &       & \mid         & \ECLamInconAsc{x}{\TMV}{\ECMV} \mid \ECLamAnaNonMatchedArrow{x}{\TMV}{\ECMV} \mid \ECApSynNonMatchedArrow{\ECMV}{\ECMV} \\
+               &       & \mid         & \ECInconBr{\ECMV}{\ECMV}{\ECMV} \\
+               &       & \mid         & \ECPairAnaNonMatchedProd{\ECMV}{\ECMV} \mid \ECProjLSynNonMatchedProd{\ECMV} \mid \ECProjRSynNonMatchedProd{\ECMV}
   \end{array}\]
   \caption{Syntax of the marked lambda calculus.}
   \label{fig:calculus-syntax}
@@ -140,7 +140,7 @@ That is, we may mark \emph{any} syntactically well-formed program in any context
 
 
 Furthermore, since error marks are effectively annotations on top of the program, marking should
-preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} gives selected clauses of the definition of \emph{mark erasure}, which converts marked expressions back into unmarked ones by
+preserve syntactic structure modulo those marks. \cref{fig:calculus-mark-erasure} gives the definition of \emph{mark erasure}, which converts marked expressions back into unmarked ones by
 removing error marks. 
 \input{figs/calculus-mark-erasure}
 
@@ -150,10 +150,12 @@ Then, \cref{thm:calculus-marking-well-formedness} provides the necessary
 \begin{theorem}[name=Marking Well-Formedness] \
   \label{thm:calculus-marking-well-formedness}
   \begin{enumerate}
-    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then 
-      $\erasesTo{\ECMV}{\EMV}$.
-    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$, then
-      $\erasesTo{\ECMV}{\EMV}$.
+    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+      then $\ctxSynTypeM{\ctx}{\ECMV}{\TMV}$
+        and $\erasesTo{\ECMV}{\EMV}$.
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+      then $\ctxAnaTypeM{\ctx}{\ECMV}{\TMV}$
+        and $\erasesTo{\ECMV}{\EMV}$.
   \end{enumerate}
 \end{theorem}
 %
@@ -641,7 +643,7 @@ synthetic and analytic rules:
 \begin{mathpar}
   \judgment{
     \ctxAnaTypeU{\ctx}{\EMV_1}{\TBool} \\
-    \ctxSynTypeU{\ctx}{\EMV_2}{\TMV_1} \\
+    \ctxSynTypeU{\ctx}{\EMV_2}{\TMV_1} \\\\
     \ctxSynTypeU{\ctx}{\EMV_3}{\TMV_2} \\
     \TMV_3 = \TMeet{\TMV_1}{\TMV_2}
   }{
@@ -899,28 +901,34 @@ the marking of empty holes, which are never marked (see Sec.~\ref{sec:thi} for m
 
 \subsubsection{Additional Metatheorems}
 To conclude this section, we present two more metatheorems that help ensure correctness of the
-system. Though \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
+system. Although \cref{thm:calculus-marking-well-formedness} guarantees that marking does not change
 the syntactic structure of a program, it makes no statement about the presence of error marks in the
 resulting marked program. 
-\cref{thm:calculus-marking-well-ill-typed} established that well-typed expressions are left unmarked and ill-typed expressions have at least one mark.
+\cref{thm:calculus-marking-well-ill-typed} establishes that well-typed expressions are left unmarked and ill-typed expressions have at least one mark.
 
 \begin{theorem}[name=Marking of Well-Typed/Ill-Typed Expressions] \
   \label{thm:calculus-marking-well-ill-typed}
   \begin{enumerate}
     \item \begin{enumerate}
-        \item If $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$ and $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+        \item If $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$
+            and $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
           then $\markless{\ECMV}$.
-        \item If $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$ and $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
+        \item If $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$
+            and $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV}$,
           then $\markless{\ECMV}$.
       \end{enumerate}
 
     \item \begin{enumerate}
-        \item If there does not exist $\TMV$ such that $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$, then for
-          all $\ECMV$ and $\TMV'$ such that $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$, it is not
-          the case that $\markless{\ECMV}$.
-        \item If there does not exist $\TMV$ such that $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$, then for
-          all $\ECMV$ and $\TMV'$ such that $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$, it is not
-          the case that $\markless{\ECMV}$.
+        \item If there does not exist $\TMV$
+            such that $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$,
+          then for all $\ECMV$ and $\TMV'$
+            such that $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$,
+            it is not the case that $\markless{\ECMV}$.
+        \item If there does not exist $\TMV$
+            such that $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
+          then for all $\ECMV$ and $\TMV'$
+            such that $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV}{\TMV'}$,
+            it is not the case that $\markless{\ECMV}$.
       \end{enumerate}
   \end{enumerate}
 \end{theorem}
@@ -931,11 +939,13 @@ Finally, no less importantly, marking is deterministic. This is given by
 \begin{theorem}[name=Marking Unicity] \
   \label{thm:calculus-marking-unicity}
   \begin{enumerate}
-    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$ and
-      $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$, then $\ECMV_1 = \ECMV_2$ and $\TMV_1 =
-      \TMV_2$.
-    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV}$ and
-      $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV}$, then $\ECMV_1 = \ECMV_2$.
+    \item If $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV_1}$
+        and $\ctxSynFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV_2}$,
+      then $\ECMV_1 = \ECMV_2$
+        and $\TMV_1 = \TMV_2$.
+    \item If $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_1}{\TMV}$
+        and $\ctxAnaFixedInto{\ctx}{\EMV}{\ECMV_2}{\TMV}$,
+      then $\ECMV_1 = \ECMV_2$.
   \end{enumerate}
 \end{theorem}
 %
@@ -967,7 +977,8 @@ match those presented here.
 \subsection{Hazel Implementation}
 \label{sec:calculus-hazel}
 
-We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of Hazel. % TODO citation and explain what in the world Hazel is (reviewer A stated that the lack of this made this section pretty much impossible to understand)
+We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of Hazel \cite{hazel},
+a live functional programming environment in which incomplete programs, i.e., programs that contain holes, may be type-checked, manipulated, and even executed.
 In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above).
 Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser.
 The supplemental material contains a pre-built implementation.
@@ -983,40 +994,48 @@ In particular, the \li{tylr} editor uses a form of structured syntax error recov
 \subsection{Fixing Holes in Hazelnut}
 \label{sec:calculus-hazelnut}
 
-Earlier versions of Hazel achieved total syntax error recovery by using a term-based structure editor, which maintained delimiter matching by construction, albeit at the cost of some syntactic rigidity. The Hazelnut action calculus introduced by \citet{HazelnutPOPL} specifies such a structure editor formally. Notably, this calculus also supports a form of type error localization and recovery: edit actions can automatically insert non-empty holes around type inconsistencies that appear at the cursor after an edit action. This requires specifying a bidirectionally typed action calculus that propagates type and binding information to the cursor, given by the synthetic action judgment, written
-$\ASEAction{\ctx}{\EMV}{\TMV}{\EMV'}{\TMV'}{\AMV}$, and the analytic action judgment, written
-$\AAEAction{\ctx}{\EMV}{\EMV'}{\TMV}{\AMV}$.
+Earlier versions of Hazel achieved total type error recovery by using a term-based structure editor, which maintained delimiter matching by construction, albeit at the cost of some syntactic rigidity.
+To specify such a structure editor formally, \citet{HazelnutPOPL} introduced the Hazelnut action calculus, which operates over a small bidirectionally typed lambda calculus extended with \emph{holes} and a \emph{cursor}.
+The synthetic action judgment, written $\ASEAction{\ctx}{\ZMV}{\TMV}{\ZMV'}{\TMV'}{\AMV}$, performs some edit action $\AMV$ on some \emph{zippered expression} $\ZMV$ (which is an expression with a superimposed cursor, denoted $\hat{\EMV}$ in the original work) that synthesizes type $\TMV$, producing some new $\ZMV'$ that synthesizes types $\TMV'$.
+Analogously, the analytic action judgment is written $\AAEAction{\ctx}{\ZMV}{\ZMV'}{\TMV}{\AMV}$.
+Type and binding information is propagated to the location of the cursor during these operations, allowing them to insert the necessary error marks (i.e. non-empty holes, in Hazelnut's parlance).
+When, for example, wrapping an expression whose type is inconsistent with $\TNum$ in an arithmetic operation, the calculus inserts an error mark around that operand:
+%
+\begin{mathpar}
+    \inferrule{
+        \inconsistent{\TMV}{\TNum}
+    }{
+        \ASCon{\ctx}{\ZCursor{\EMV}}{\TMV}{\ZPlusL{\ECInconType{\ECMV}}{\ZCursor{\EEHole}}}{\TNum}{\SPlusL}
+    }
+\end{mathpar}
 
-A significant issue with Hazelnut is that it does not allow (i.e. it leaves undefined) actions that require \emph{non-local} mark (i.e. non-empty hole, in Hazelnut's parlance) insertion or removal. For
-example, though the system can wrap an arbitrary expression in an arithmetic operation, it cannot
-wrap an arbitrary expression $\EMV$ in a lambda abstraction, i.e. construct
-$\ELam{x}{\TUnknown}{\EMV}$ directly from $\EMV$. The binding of $x$ with the unknown type may
-shadow a previous declaration and require the removal of error holes in body. The calculus includes manual non-empty hole insertion and removal actions as a workaround.
+However, a significant issue with Hazelnut is that it does not allow---and simply leaves undefined---actions that require \emph{non-local} mark insertions or removals. 
+For example, although the system can wrap an arbitrary expression $\EMV$ in an arithmetic operation, it cannot wrap it in a lambda abstraction, i.e. construct $\ELam{x}{\TUnknown}{\EMV}$ directly from $\EMV$.
+The binding of $x$ with the unknown type may shadow a previous binding and require the removal of error holes in the body.
+As a workaround, the calculus includes manual mark insertion and removal actions.
 
-The fundamental issue is that Hazelnut did not have a total marking system that it could deploy to remark expressions where needed. The marked lambda calculus allows us to solve this problem, in two different ways.
+The fundamental issue is that Hazelnut did not have a total marking system that it could deploy to remark expressions where needed.
+The marked lambda calculus allows us to solve this problem, in two different ways.
 
-One approach is to define an untyped action calculus, \emph{wholly decoupling} edit actions from typing. Under this simplified design, the action calculus, given by a singular action
-judgment, written $\AUEAction{\EMV}{\EMV'}{\AMV}$, is concerned only with the manipulation of
-syntax, and the total marking procedure yields statically meaningful terms with error marks inserted at the appropriate positions as a kind of editor decoration. This solves the problem
-outlined above: since marking operates on the entire program after each action, arbitrary
-constructions are permitted.
+One approach is to define an untyped action calculus, wholly decoupling edit actions from typing.
+Under this simplified design, the action calculus, given by a singular action judgment, written $\AUEAction{\ZMV}{\ZMV'}{\AMV}$, is concerned only with the manipulation of syntax,
+and the total marking procedure developed above yields statically meaningful terms with error marks inserted at the appropriate positions as a kind of editor decoration.
+This solves the problem outlined above: since marking operates on the entire program after each action, arbitrary constructions are permitted.
 
 Alternatively, instead of a wholly untyped action calculus, one may directly integrate re-marking logic into the typed Hazelnut
-calculus, making use of the type and scoping information being propagated to re-mark only in scopes where it might be necessary. For example, we can wrap $\ECMV$ into
-$\ECLam{x}{\TUnknown}{\ECMV}$ by re-marking the body under the context with $x$ binding
-the unknown type:
-\[%
-  \judgment{
+calculus, making use of the type and scoping information being propagated to re-mark only in positions where it might be necessary, in a roughly incremental fashion.
+For example, we can wrap $\ECMV$ into $\ECLam{x}{\TUnknown}{\ECMV}$ by re-marking the body under the context with $x$ binding the unknown type:
+%
+\begin{mathpar}
+  \inferrule[ASEConLam]{
     \ctxSynFixedInto{\extendCtx{\ctx}{x}{\TUnknown}}{\erase{\ECMV}}{\ECMV'}{\TMV'}
   }{
-    \ASCon{\ctx}{\ZCursor{\ECMV}}{\TMV}{\ZLamT{x}{\ZTCursor{\TUnknown}}{\ECMV'}}{\TArrow{\TUnknown}{\TMV'}}{\SLam{x}}
-  }{ASEConLam}
-\]%
-The
-supplemental material contains a complete formal description of both variants, and the untyped
-action semantics and related metatheory are mechanized in Agda. Because of the simplicity of the
-untyped version, and because marking is defined separately, this Agda mechanization can serve
-universally as a baseline for correctness of approaches, like our initial design that aims to make
-use of type and scope information, and perhaps other analyses, to minimize re-marking. We leave a
-complete assessment of this and other re-marking optimization approaches to future work, particularly
-because Hazel is now moving toward the decoupled approach for future development.
+    \ASCon{\ctx}{\ZCCursor{\ECMV}}{\TMV}{\ZCLamT{x}{\ZTCursor{\TUnknown}}{\ECMV'}}{\TArrow{\TUnknown}{\TMV'}}{\SLam{x}}
+  }
+\end{mathpar}
+%
+In this formulation, the action calculus is bidirectional and operates on \emph{zippered marked expressions}, written $\ZCMV$, where the cursor is superimposed atop marked expressions. With an analogous definition of mark erasure on these expressions, the correctness of this typed action calculus may be defined in relation to the behavior of the untyped variant.
+
+The supplemental material contains a complete formal sketch of both variants, and the untyped calculus and its related metatheory are mechanized in Agda.
+Because of the untyped variant's simplicity, and because marking is defined separately, this mechanization can serve universally as a baseline for the correctness of approaches like the typed action calculus and perhaps other analyses that minimize re-marking.
+We leave a complete assessment of this and other re-marking optimization approaches to future work, particular because Hazel is now moving toward the decoupled approach for future development.

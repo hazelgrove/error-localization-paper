@@ -4,8 +4,8 @@
 % zippered types
 %
 \newcommand{\ZTMName}{{\normalfont\textsf{ZType}}}
-\newcommand{\ZTMSet}{\ensuremath{\hat{T}}}
-\newcommand{\ZTMV}{\ensuremath{\hat{\tau}}}
+\newcommand{\ZTMSet}{\ensuremath{\underline{T}}}
+\newcommand{\ZTMV}{\ensuremath{\underline{\tau}}}
 
 % cursor
 \newcommand{\ZTCursor}[1]{\ensuremath{\ZCursor{#1}}}
@@ -20,8 +20,8 @@
 % zippered expressions
 %
 \newcommand{\ZMName}{{\normalfont\textsf{ZExp}}}
-\newcommand{\ZMSet}{\ensuremath{\hat{E}}}
-\newcommand{\ZMV}{\ensuremath{\hat{e}}}
+\newcommand{\ZMSet}{\ensuremath{\underline{E}}}
+\newcommand{\ZMV}{\ensuremath{\underline{e}}}
 
 % cursor
 \definecolor{cursorhighlight}{RGB}{230,255,230}
@@ -37,16 +37,11 @@
 \newcommand{\ZLamE}[3]{\ensuremath{\ECLam{#1}{#2}{#3}}}
 \newcommand{\ZApL}[2]{\ensuremath{\ECAp{#1}{#2}}}
 \newcommand{\ZApR}[2]{\ensuremath{\ECAp{#1}{#2}}}
-\newcommand{\ZApNonMatchedL}[2]{\ensuremath{\ECApNonMatched{#1}{#2}}}
-\newcommand{\ZApNonMatchedR}[2]{\ensuremath{\ECApNonMatched{#1}{#2}}}
 
 % booleans
 \newcommand{\ZIfC}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
 \newcommand{\ZIfL}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
 \newcommand{\ZIfR}[3]{\ensuremath{\ECIf{#1}{#2}{#3}}}
-\newcommand{\ZInconBrC}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
-\newcommand{\ZInconBrL}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
-\newcommand{\ZInconBrR}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
 
 % let
 \newcommand{\ZLetL}[3]{\ensuremath{\ECLet{#1}{#2}{#3}}}
@@ -61,7 +56,25 @@
 % errors
 \newcommand{\ZFree}[1]{\ensuremath{\ECFree{#1}}}
 \newcommand{\ZInconType}[1]{\ensuremath{\ECInconType{#1}}}
-\newcommand{\ZInconBr}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconBrC}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconBrL}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconBrR}[3]{\ensuremath{\ECInconBr{#1}{#2}{#3}}}
+\newcommand{\ZInconAsc}[1]{\ensuremath{\ECInconAsc{#1}}}
+\newcommand{\ZSynNonMatchedArrow}[1]{\ensuremath{\ECSynNonMatchedArrow{#1}}}
+\newcommand{\ZSynNonMatchedProd}[1]{\ensuremath{\ECSynNonMatchedProd{#1}}}
+\newcommand{\ZAnaNonMatchedArrow}[1]{\ensuremath{\ECAnaNonMatchedArrow{#1}}}
+\newcommand{\ZAnaNonMatchedProd}[1]{\ensuremath{\ECAnaNonMatchedProd{#1}}}
+
+\newcommand{\ZLamInconAscT}[3]{\ensuremath{\ECInconAsc{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ZLamInconAscE}[3]{\ensuremath{\ECInconAsc{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ZApSynNonMatchedArrowL}[2]{\ensuremath{\ECAp{\ECSynNonMatchedArrow{#1}}{#2}}}
+\newcommand{\ZApSynNonMatchedArrowR}[2]{\ensuremath{\ECAp{\ECSynNonMatchedArrow{#1}}{#2}}}
+\newcommand{\ZProjLSynNonMatchedProd}[1]{\ensuremath{\ECProjL{\ECSynNonMatchedProd{#1}}}}
+\newcommand{\ZProjRSynNonMatchedProd}[1]{\ensuremath{\ECProjR{\ECSynNonMatchedProd{#1}}}}
+\newcommand{\ZLamAnaNonMatchedArrowT}[3]{\ensuremath{\ECAnaNonMatchedArrow{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ZLamAnaNonMatchedArrowE}[3]{\ensuremath{\ECAnaNonMatchedArrow{\ECLam{#1}{#2}{#3}}}}
+\newcommand{\ZPairAnaNonMatchedProdL}[2]{\ensuremath{\ECAnaNonMatchedProd{\ECPair{#1}{#2}}}}
+\newcommand{\ZPairAnaNonMatchedProdR}[2]{\ensuremath{\ECAnaNonMatchedProd{\ECPair{#1}{#2}}}}
 
 %
 % zipper judgments

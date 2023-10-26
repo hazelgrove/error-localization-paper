@@ -1,15 +1,18 @@
 \section{Type Hole Inference}
 \label{sec:thi}
 
-Bidirectional typing, which has been our focus so far, reduces the number of necessary annotations and induces a local flow of information particularly well-suited to systematic error localization decisions \cite{BidirTyping,Pierce:2000:LTI:345099.345100}. In contrast, 
+Bidirectional typing, which has been our focus so far, reduces the number of necessary type annotations and induces a local flow of information particularly well-suited to systematic error localization decisions \cite{BidirTyping,Pierce:2000:LTI:345099.345100}. In contrast, 
 constraint-based type inference as found in many ML-family languages allows programmers to omit most or all type annotations \cite{Pierce:2000:LTI:345099.345100}. The trade-off is that type error localization and recovery 
 become considerably more difficult, because inconsistencies can now arise between 
 constraints derived from many distant locations in a program. 
 Heuristic approaches, e.g. based on manually tuned weights \cite{DBLP:conf/popl/ZhangM14,DBLP:conf/oopsla/PavlinovicKW14} or machine learning methods \cite{SeidelBlame}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
 
-This situation is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, where biasing one branch over the other requires guessing user intent, whereas the neutral approach is to localize the inconsistency to the conditional expression as a whole. However, there is no such parent expression in the case of inconsistent constraints gathered globally. However,
-this search for neutrality when there are downstream conflicts motivates the approach we introduce in this section, which \emph{gradually} and \emph{neutrally} harmonizes local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints on unknown types that arise during bidirectional marking process as described in Section~\ref{sec:calculus}. After this initial marking is complete, we unify these constraints (using a standard unification algorithm, which we do not detail here \cite{Huet}). When it is discovered that an unknown type is subject to inconsistent constraints, we localize the problem 
-to a hole in the program connected to that unknown type -- either to a \emph{type hole} directly, or to an empty or non-empty expression hole from which that unknown type traces its provenance. The key result is that this approach is neutral by construction: it does not attempt to guess at which relevant locations were consistent with the user intent. In Hazel, the user can instead interactively investigate various partially consistent suggestions to clarify their intent, which returns control to the bidirectional type system.
+This situation is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, where biasing one branch over the other requires guessing user intent, whereas the neutral approach is to localize the inconsistency to the conditional expression as a whole. However, there is no such parent expression in the case of inconsistent constraints gathered globally.
+This search for neutrality when there are downstream conflicts motivates the approach we introduce in this section, which \emph{gradually} and \emph{neutrally} harmonizes local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints on unknown types that arise during the bidirectional marking process as described in Section~\ref{sec:calculus}. After this initial marking is complete, we unify these constraints (using a standard unification algorithm, which we do not detail here \cite{Huet}). When it is discovered that an unknown type is subject to inconsistent constraints, we localize the problem 
+to a hole in the program connected to that unknown type -- either to a \emph{type hole} directly, or to an empty or non-empty expression hole from which that unknown type traces its provenance. The key result is that this approach is neutral by construction: it does not attempt to guess at which relevant locations were consistent with the user intent. In Hazel, the user can instead interactively investigate various partially consistent suggestions to clarify their intent, which returns control to the bidirectional type system. 
+
+% this paragraph is new- want to emphasize the "layer on top" aspect to justify our arguments in later sections that "many constraint solvers exist with approaches that can be applied to type hole inference" (4.4) (in response to a question from revA)
+% In this manner, we retain the guarantees afforded by the marked lambda calculus while gaining access to an interactive suggestion flow through constraint-based type inference without ever relying on it for correctness. In contrast to other systems incorporating constraint-based type inference in gradually typed languages, we need not reason as carefully about preserving the behavior expected of gradually typed programs, nor do we need to implement more complicated abstractions like subtyping \cite{GradualInfer, garcia:2015}. All we require is a unification algorithm that can persist past any encountered inconsistencies, thus allowing it to provide recommendations for expressions with and without marks.
 
 % We define "solving" the constraints associated with a given type hole as the process of (1) identifying all of its possible type fillings and (2) reporting the most informative fillings to the user. If all possible fillings are consistent with each other and do not elicit occurs check failure, the type hole is deemed \emph{solvable}.
 
@@ -33,7 +36,7 @@ to a hole in the program connected to that unknown type -- either to a \emph{typ
 % localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
 % }
 
-Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program, no constraint solving is necessary: bidirectional typing determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1998unification,DBLP:journals/tapos/OderskySW99,DBLP:conf/icfp/Pottier14}.
+Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program in Figure \ref{fig:localComparison}, no constraint solving is necessary: bidirectional typing determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1998unification,DBLP:journals/tapos/OderskySW99,DBLP:conf/icfp/Pottier14}.
 
 % let f = 2 in if ? then {f}(2) else ?
 % \begin{figure}
@@ -91,7 +94,7 @@ The systems diverge in their capabilities if we explicitly add a type hole annot
 % \label{fig:editor_conflict_hover}
 % \end{figure}
 
-If, given this feedback, the user deletes the bound expression, \li{2}, then there are no longer conflicting constraints on the type hole and the system displays the inferred type in gray, to indicate that it has been inferred rather than entered as ``ground truth'' by the user. The user can press the \li{Enter} key to accept the suggestion (turning the text black). At this point the hole has been filled and localization decisions again become local. Note that there are no constraints on the return type of \li{f}, so the suggested filling itself contains a type hole (see \cref{sec:polymorphicGlobal} below on polymorphic generalization).
+If, given this feedback, the user deletes the bound expression, \li{2}, then there are no longer conflicting constraints on the type hole and the system displays the inferred type in gray, to indicate that it has been inferred rather than entered as ``ground truth'' by the user. The user can press the \li{Enter} key to accept the suggestion (turning the text purple). We depict this flow below in \cref{fig:editor_ghost}. At this point the hole has been filled and localization decisions again become local. Note that there are no constraints on the return type of \li{f}, so the suggested filling itself contains a type hole (see \cref{sec:polymorphicGlobal} below on polymorphic generalization).
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_holes_filled.png}
 \includegraphics[width=9cm]{images/example_holes_CI.png}
@@ -126,7 +129,7 @@ If, given this feedback, the user deletes the bound expression, \li{2}, then the
 % \end{enumerate}
 % \end{enumerate}
 
-It is also worth considering the situation where no type annotation is present, but the bound expression is an empty expression hole, because this is also a situation where the type of \li{f} is unknown according to the bidirectional system from Section~\ref{sec:calculus}. Type hole inference solves for this unknown type as well, while tracking its provenance as the type of this expression hole. As such, errors due to conflicting constraints can be localized to expression holes in much the same way as described above. When the user hovers over a suggested type, there must be some way of constraining the type of the expression hole, e.g. by finding a suitable variable to annotate with a type or by adding direct ascription syntax to the language (we have not implemented this particular user interface affordance in Hazel as of yet, but there are no fundamental barriers to doing so.) The lightly mocked up process is illustrated in \cref{fig:expLocal}.
+It is also worth considering the situation where no type annotation is present, but the bound expression is an empty expression hole. As an example of this, consider \cref{fig:expLocal}. Here, the type of \li{x} is unknown according to the bidirectional system from Section~\ref{sec:calculus}. Type hole inference solves for this unknown type as well, while tracking its provenance as the type of this expression hole. As such, errors due to conflicting constraints can be localized to expression holes in much the same way as described above. When the user hovers over a suggested type, there must be some way of constraining the type of the expression hole, e.g. by finding a suitable variable to annotate with a type or by adding direct ascription syntax to the language (we have not implemented this particular user interface affordance in Hazel as of yet, but there are no fundamental barriers to doing so.) The lightly mocked up process of suggestion is also illustrated below in \cref{fig:expLocal}.
 
 \begin{figure}[H]
     \centering
@@ -141,12 +144,13 @@ In order to generate global inference results, we begin with constraint generati
 
 Constraints, written $\constrain{\tau_1}{\tau_2}$, force two incomplete types to be consistent. Consequently, our rules for constraint generation are quite simple. We augment our previous bidirectional typing rules in the marked lambda calculus to accumulate constraints describing necessary type consistencies. For example, when synthesizing the type of an if expression, we constrain the types of expressions in either branch to each other:
 \begin{mathpar}
-    \judgment{
-    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1}\\
+  \judgment{
+    \anaConstraint{\ctx}{\ECMV_1}{\TBool}{C_1} \\
     \synConstraint{\ctx}{\ECMV_2}{\TMV_1}{C_2} \\
-    \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3}
+    \synConstraint{\ctx}{\ECMV_3}{\TMV_2}{C_3} \\
+    \TMV_3 = \TMeet{\TMV_1}{\TMV_2}
   }{
-    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMeet{\TMV_1}{\TMV_2}}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
+    \synConstraint{\ctx}{\ECIf{\ECMV_1}{\ECMV_2}{\ECMV_3}}{\TMV_3}{C_1 \cup C_2 \cup C_3 \cup \{ \TMV_1 \approx \TMV_2 \}}
   }{MSIf-C}
 \end{mathpar}
 
@@ -176,7 +180,7 @@ Since unification will be solving for unknown types, we must ensure we are able 
 
 \begin{enumerate}
     \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program where we assume that id generation is handled by the editor.
-    \item We add provenances $p$ to unknown types. Each provenance links the unknown type to to some (syntactic) hole in the program, perhaps through some intermediate operations. For example, the provenance $exp(3)$ indicates that a type hole must have been synthesized from an expression hole with id $3$ in the program. 
+    \item We add provenances $p$ to unknown types. Each provenance links the unknown type to some (syntactic) hole in the program, perhaps through some intermediate operations. For example, the provenance $exp(3)$ indicates that a type hole must have been synthesized from an expression hole with id $3$ in the program. 
 \end{enumerate}
 \[\begin{array}{rrcl}
     \Prov & \Provp & \Coloneqq & u \mid exp(u) \mid \rightarrow_L(\Provp) \mid \rightarrow_R(\Provp) \mid \times_L(\Provp) \mid \times_R(\Provp)\\
@@ -193,7 +197,7 @@ Provenance is determined whenever a new unknown type is constructed. For example
     }{TMAHole-C}
 
     \judgment{ }{
-      \matchedProdConstraint{\TUnknown^p}{\TUnknown}{\TUnknown}{\{ \TUnknown^p \approx \TProd{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}}
+      \matchedProdConstraint{\TUnknown^p}{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}}{\{ \TUnknown^p \approx \TProd{\TUnknown^{\times_{L}(p)}}{\TUnknown^{\times_{R}(p)}} \}}
     }{TMPHole-C}
 \end{mathpar}
 
@@ -224,7 +228,7 @@ The remaining rules directly follow the intuitions above and are left to the sup
 
 To unify constraints, we use a standard union-find based unification algorithm \cite{Huet, GradualInfer}, which accumulates constraint information in \textsf{PotentialTypeSet}s. 
 
-A \textsf{PotentialTypeSet} is a recursive data structure representing \emph{all} of the potential fillings for an associated incomplete type, inferred from type constraints. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously merge \textsf{PotentialTypeSet}s. Since unification treats relations transitively, a property consistency lacks across complete types, we never generate \textsf{PotentialTypeSet}s for complete types and simply add them to existing \textsf{PotentialTypeSet}s  as necessary.
+A \textsf{PotentialTypeSet} is a recursive data structure representing \emph{all} of the potential fillings for an associated incomplete type, inferred from type constraints. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously merge \textsf{PotentialTypeSet}s. Since unification treats relations transitively, a property consistency lacks across complete types, we avoid generating \textsf{PotentialTypeSet}s for complete types and simply extend existing \textsf{PotentialTypeSet}s with them as needed.
 
 % Edited in response to Reviewer C: "but this algorithm must account for consistency, right?". The reason we didn't discuss this is it quickly leads into the weeds which gets messy. Feel free to change/chop parts of this.
 
@@ -232,12 +236,12 @@ A \textsf{PotentialTypeSet} is a recursive data structure representing \emph{all
 \centering
 $\arraycolsep=4pt\begin{array}{rrcl}
 \textsf{PotentialTypeSet} & s & \Coloneqq & \textsf{single}(t) \mid \textsf{cons}(t, s) \\
-\textsf{PotentialType}    & t & \Coloneqq & \tnum \mid \tbool \mid \tehole^p \mid \tarr{s}{s}
+\textsf{PotentialType}    & t & \Coloneqq & \tnum \mid \tbool \mid \tehole^p \mid \tarr{s}{s} \mid \TProd{s}{s}
 \end{array}$
 \label{fig:syntax_possible_type_sets}
 \end{figure}
 
-This choice allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}.
+These choices allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}.
 
 Note again that the novel contribution of this section is not in the particular unification algorithm but rather the architectural decisions that allow us to neatly blend local and constraint-based type inference systems for orthogonal purposes within the same system, and our focus on how to handle inconsistent constraints. As such, we direct the reader to prior work for the algorithmic, formal, and metatheoretic details of unification \cite{GradualInfer}.
 
@@ -618,7 +622,7 @@ Note again that the novel contribution of this section is not in the particular 
 % \end{center}
 % By representing all type variables this way, we enforce that type variables are only consistent with type holes and each other. 
 In many type inference systems, unconstrained type inference variables (here, unknown types) are automatically polymorphically generalized, so that
-functions can be given the most general type. The same approach can be taken with type hole inference, but with one particularly interesting wrinkle. With the inclusion of expression holes in our system, we need to be a bit more careful in when we generalize. Consider the following expression:
+functions can be given the most general type. The same approach can be taken with type hole inference, but with one particularly interesting wrinkle. With the inclusion of expression holes in our system, we need to be a bit more careful about when we generalize. Consider the following expression:
 $$\ECLam{x}{\TUnknown^1}{\EEHole^2}$$
 We can see that $\TUnknown^1$ is not constrained. Suppose that we were to suggest the implicitly universally quantified type variable $'a$ as a type hole filling for $?^1$. It is unlikely that the user accepts this suggestion because it is unlikely that the user intends to write the identity function!
 The fact there are not yet any constraints does not imply that there will not be once the expression hole is filled.
@@ -629,7 +633,7 @@ $\arraycolsep=4pt\begin{array}{rrcl}
   \textsf{PotentialType} & t & \Coloneqq & \dots \mid \mathtt{etc}
 \end{array}$
 \end{center}
-When an expression hole appears, all unknown types in the typing context are constrained to $\mathtt{etc}$. This has no impact on unification, but if a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized. As before, more expansive discussion on unification with gradual typing including polymorphism is left to prior work \cite{garcia:2015, GradualInfer}.
+When an expression hole appears, all unknown types in the typing context are constrained to $\mathtt{etc}$. This has no impact on unification, but if a type hole $?^p$ is constrained to $\mathtt{etc}$, it cannot be generalized. As before, more expansive discussion on unification with gradual typing including polymorphism is left to prior work \cite{garcia:2015}.
 
 % \subsubsection{User Interaction and Conflict Highlighting}
 % To further the goal of helping users repair their programs, it would be beneficial to assign blame by highlighting the portions of the program responsible for the unsolved status of a \textit{PotentialTypeSet}. To allow this, constraints could be extended to contain the unique identifier of the expression from which they originated. Highlighting all expressions of the program which resulted in an unsolved \textit{PotentialTypeSet}, rather than attempting to localize the error to one particular expression, would result in less confusion and give the user more clues to discover the true source of a type error.
