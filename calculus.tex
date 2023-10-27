@@ -30,7 +30,7 @@ be localized, and how to recover, in all cases, from such errors.
 then goes through the rules, organized by syntactic form rather than judgement, to build intuition
 about how the various judgements relate to one another.
 All rules and theorems may be found organized by judgement form in the supplementary appendix for
-reference, alongside a complete mechanization in the Agda proof assistant \cite{norell:thesis}
+reference, alongside a complete mechanization in the Agda proof assistant \cite{norell2007}
 (discussed in \cref{sec:calculus-agda}).
 We intentionally keep the marked lambda calculus minimal, because it is intended to capture the
 essential idea and introduce a general pattern that language designers can employ to created marked
@@ -44,8 +44,8 @@ complex judgemental structures, such as parametric polymorphism.
 \subsection{The Core Calculus}
 \label{sec:calculus-calculus}
 
-The marked lambda calculus is based on the gradually typed lambda calculus \cite{Siek06a} extended
-with numbers, booleans, pairs, and empty expression holes \cite{HazelnutSNAPL}.
+The marked lambda calculus is based on the gradually typed lambda calculus \cite{siek2006} extended
+with numbers, booleans, pairs, and empty expression holes \cite{omar2017a}.
 Given in \cref{fig:calculus-syntax}, the syntax consists of two expression languages:
 %
 \begin{itemize}
@@ -64,10 +64,10 @@ and there is a single arithmetic operation, addition. $\ETrue$ and
 $\EFalse$ are the boolean values and
 $\EIf{\EMV_1}{\EMV_2}{\EMV_3}$ is the boolean conditional. Arrow and product types classify lambda abstractions and pairs, respectively, in the usual way.
 
-$\TUnknown$ is a type hole, which we identify with the unknown type from gradual type theory \cite{Siek06a}.
+$\TUnknown$ is a type hole, which we identify with the unknown type from gradual type theory \cite{siek2006}.
 Finally, to model the edit state of a program in development, $\EEHole$ denotes an \emph{empty expression hole},
 used to represent syntactically incomplete portions of the program à la Hazelnut
-\cite{HazelnutPOPL}. Note, however, that these empty expression holes are not at all semantically
+\cite{omar2017b}. Note, however, that these empty expression holes are not at all semantically
 critical to the calculus---they are included illustrate how the calculus fits into the larger
 problem of modelling incomplete program states and to discuss polymorphic generalization in
 \cref{sec:polymorphicGlobal}.
@@ -97,7 +97,7 @@ problem of modelling incomplete program states and to discuss polymorphic genera
 
 Before giving any of the rules, let us summarize the overall judgemental structure of the calculus. Note that colors in the judgement forms below are entirely redundant reading aids---color has no semantic significance.
 
-As our starting point, types classify unmarked expressions by a completely standard \emph{bidirectional type system} \cite{BidirTyping,Localinf}, which employs
+As our starting point, types classify unmarked expressions by a completely standard \emph{bidirectional type system} \cite{dunfield2019,pierce2000}, which employs
 two mutually defined judgments. \emph{Type synthesis}, written $\ctxSynTypeU{\ctx}{\EMV}{\TMV}$,
 establishes that, under the typing context $\ctx$, the expression $e$ synthesizes or locally infers the type $\TMV$. \emph{Type analysis}, written $\ctxAnaTypeU{\ctx}{\EMV}{\TMV}$,
 states that the expression $\EMV$ may appear where an expression of type $\TMV$ is expected.
@@ -422,9 +422,9 @@ type annotation and body match them.
 \end{mathpar}
 %
 The synthesis rule is standard. Analysis employs the judgment $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$,
-which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini:2016}, i.e. it may be
+which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini2016}, i.e. it may be
 considered an arrow type. Defined in \cref{fig:calculus-matched-arrow}, this notion is purely a
-technical mechanism to avoid duplication of rules related to arrow types \cite{siek2015refined}.
+technical mechanism to avoid duplication of rules related to arrow types \cite{siek2015}.
 
 \begin{figure}[htbp]
   \raggedright
@@ -980,22 +980,22 @@ match those presented here.
 We have implemented a marking system based on the marked lambda calculus as the foundation for a new version of Hazel \cite{hazel},
 a live functional programming environment in which incomplete programs, i.e., programs that contain holes, may be type-checked, manipulated, and even executed.
 In particular, we have implemented marking for all of the features in the previous section as well as Hazel's $n$-tuples, lists, algebraic datatypes, general pattern matching, strings, and explicit polymorphism (all following the same recipe we developed above).
-Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{jsoo} for use in the browser.
+Hazel is implemented in OCaml and compiles to Javascript via \li{js_of_ocaml} \cite{vouillon2014} for use in the browser.
 The supplemental material contains a pre-built implementation.
 
-The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter2020hazel}, semantic navigation, semantic code completion \cite{potter2020hazel,blinn2022integrative}, contextualized documentation \cite{potter2022contextualized}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{HazelLive}, even semantic services that require run-time information, like testing.
+The result of this effort is the first full-scale typed functional language equipped with a language server that solves the semantic gap problem: all of Hazel's semantic services are available as long as the program sketch is syntactically well-formed, which include type hints \cite{potter2020}, semantic navigation, semantic code completion \cite{potter2020,blinn2022}, contextualized documentation \cite{potter2022}, and, because Hazel is able to evaluate programs with empty and non-empty holes due to prior work \cite{omar2019}, even semantic services that require run-time information, like testing.
 % 
 
 Hazel offers both a textual syntax, with explicit empty holes, and more interestingly,
 a structure editor that is able to additionally offer partial syntactic error recovery.
-In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automatically insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{moon2022tylr,DBLP:conf/vl/Moon023}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
+In particular, the \li{tylr} editor uses a form of structured syntax error recovery that automatically insert empty holes to maintain syntactic well-formedness as long as matching delimiters are placed by the user \cite{moon2022,moon2023}. Efforts outside of the scope of this paper are underway to define syntactic error recovery mechanisms that can handle unmatched delimiters as well, which would achieve total syntax error recovery. In combination with our contributions, this would achieve the Hazel project's stated goal of ensuring that \emph{there are no meaningless editor states}.
 
 
 \subsection{Fixing Holes in Hazelnut}
 \label{sec:calculus-hazelnut}
 
 Earlier versions of Hazel achieved total type error recovery by using a term-based structure editor, which maintained delimiter matching by construction, albeit at the cost of some syntactic rigidity.
-To specify such a structure editor formally, \citet{HazelnutPOPL} introduced the Hazelnut action calculus, which operates over a small bidirectionally typed lambda calculus extended with \emph{holes} and a \emph{cursor}.
+To specify such a structure editor formally, \citet{omar2017b} introduced the Hazelnut action calculus, which operates over a small bidirectionally typed lambda calculus extended with \emph{holes} and a \emph{cursor}.
 The synthetic action judgment, written $\ASEAction{\ctx}{\ZMV}{\TMV}{\ZMV'}{\TMV'}{\AMV}$, performs some edit action $\AMV$ on some \emph{zippered expression} $\ZMV$ (which is an expression with a superimposed cursor, denoted $\hat{\EMV}$ in the original work) that synthesizes type $\TMV$, producing some new $\ZMV'$ that synthesizes types $\TMV'$.
 Analogously, the analytic action judgment is written $\AAEAction{\ctx}{\ZMV}{\ZMV'}{\TMV}{\AMV}$.
 Type and binding information is propagated to the location of the cursor during these operations, allowing them to insert the necessary error marks (i.e. non-empty holes, in Hazelnut's parlance).
