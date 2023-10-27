@@ -5,7 +5,7 @@ Bidirectional typing, which has been our focus so far, reduces the number of nec
 constraint-based type inference as found in many ML-family languages allows programmers to omit most or all type annotations \cite{pierce2000}. The trade-off is that type error localization and recovery 
 become considerably more difficult, because inconsistencies can now arise between 
 constraints derived from many distant locations in a program. 
-Heuristic approaches, e.g. based on manually tuned weights \cite{zhang2014,pavlinovic2014} or machine learning methods \cite{seidel2017}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
+Heuristic approaches, e.g., based on manually tuned weights \cite{zhang2014,pavlinovic2014} or machine learning methods \cite{seidel2017}, are necessary to guess which uses of a variable are consistent with the user's intent and which should be marked erroneous.
 
 This situation is reminiscent of the situation considered in \cref{sec:calculus-booleans} of inconsistent branches in a conditional, where biasing one branch over the other requires guessing user intent, whereas the neutral approach is to localize the inconsistency to the conditional expression as a whole. However, there is no such parent expression in the case of inconsistent constraints gathered globally.
 This search for neutrality when there are downstream conflicts motivates the approach we introduce in this section, which \emph{gradually} and \emph{neutrally} harmonizes local and constraint-based type inference. In particular, our \emph{type hole inference} approach generates constraints on unknown types that arise during the bidirectional marking process as described in Section~\ref{sec:calculus}. After this initial marking is complete, we unify these constraints (using a standard unification algorithm, which we do not detail here \cite{huet1976}). When it is discovered that an unknown type is subject to inconsistent constraints, we localize the problem 
@@ -13,9 +13,9 @@ to a hole in the program connected to that unknown type -- either to a \emph{typ
 
 % TODO: review this it feels clunky here; paragraph is new- want to emphasize the "layer on top" aspect to justify our arguments in later sections that "many constraint solvers exist with approaches that can be applied to type hole inference" (4.4) (in response to a question from revA)
 % basically trying to explain that our unification algorithm really is, effectively, a standard one. This is in contr
-It is worth emphasizing once again that the primary goal of type hole inference is not to act as a
+The primary goal of type hole inference is not to act as a
 standalone typechecker, but to provide comprehensive suggestions for filling type holes in marked
-expressions. This requires that the unification procedure succeeds regardless of type
+expressions. This requires that the unification procedure succeed regardless of type
 inconsistencies encountered in marked expressions. However, once this requirement is accounted for,
 we may use standard unification algorithms by treating our type holes as type variables
 \cite{huet1976}.
@@ -45,7 +45,8 @@ we may use standard unification algorithms by treating our type holes as type va
 % localize errors to expression holes: for fig 7 except without type annotation, and assuming f was also used elsewhere with a different type expectation, then can show definition hole is unfillable.
 % }
 
-Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel constraint solving is \emph{optional} (i.e. it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program in Figure \ref{fig:localComparison}, no constraint solving is necessary: bidirectional typing determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1999,odersky1999,pottier2014}.
+Unlike in ML-family languages where constraint solving is an obligate part of typing, in Hazel
+constraint solving is \emph{optional} (i.e., it can be turned off) and is only invoked for solving for unknown types. For example, in the following Hazel program in Figure \ref{fig:localComparison}, no constraint solving is necessary: bidirectional typing determines that \li{f : Int} and the error is localized to the application of \li{f} as a function, as described in Section~\ref{sec:calculus}. This coincidentally is also how the corresponding OCaml program would localize the error, but for different reasons: OCaml would detect inconsistent constraints and favor the constraints arising lexically first \cite{mcadam1999,odersky1999,pottier2014}.
 
 % let f = 2 in if ? then {f}(2) else ?
 % \begin{figure}
@@ -87,7 +88,11 @@ Unlike in ML-family languages where constraint solving is an obligate part of ty
 %     \label{fig:ocaml}
 % \end{figure}
 
-The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}, the bidirectional system treats this as an unknown type and operates gradually, taking this as a signal that the user has not yet determined the intended type of \li{f}. To help the user fill this type hole, the system generates and attempts to unify the relevant constraints (see \cref{sec:unification} below). In this case, the constraints are inconsistent, i.e. there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
+The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}, the
+bidirectional system treats this as an unknown type and operates gradually, taking this as a signal
+that the user has not yet determined the intended type of \li{f}. To help the user fill this type
+hole, the system generates and attempts to unify the relevant constraints (see
+\cref{sec:unification} below). In this case, the constraints are inconsistent, i.e., there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
 
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
@@ -134,12 +139,25 @@ If, given this feedback, the user deletes the bound expression, \li{2}, then the
 %     \item We add a unique id $u$ to all expression holes and type holes that appear directly in the program. We assume that id generation is handled by the editor.
 %     \item Type holes can also arise internally during constraint generation, below. To identify these, we generalize unique IDs to \emph{provenances}, $p$. These serve two useful but non-critical purposes:
 % \begin{enumerate}
-%     \item Provenances establish how each type hole connects to some type hole or expression hole that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole is the synthesized type of the expression hole with id 3 \todo[inline]{this feels somewhat unclear to me; presumably this is the prospective synthesized type of what ends up filling the hole rather than the type of an expression hole (unknown)?}. We discuss the matched arrow provenances below. Future user interface affordances could use provenances to better identify holes, e.g. when internal holes appear in the type or context inspector.\todo[inline]{this is unclear to me. does it mean e.g. jump-to-exp-hole from clicking on a constraint in the CI?}
+%     \item Provenances establish how each type hole connects to some type hole or expression hole
+%     that lies in the program. For instance, the provenance $exp(3)$ tells us that this type hole
+%     is the synthesized type of the expression hole with id 3 \todo[inline]{this feels somewhat
+%     unclear to me; presumably this is the prospective synthesized type of what ends up filling the
+%     hole rather than the type of an expression hole (unknown)?}. We discuss the matched arrow
+%     provenances below. Future user interface affordances could use provenances to better identify
+%     holes, e.g., when internal holes appear in the type or context inspector.\todo[inline]{this is
+%     unclear to me. does it mean e.g., jump-to-exp-hole from clicking on a constraint in the CI?}
 %     \item Provenances allow increased efficiency when compared to generating fresh type hole ids (which spawns larger constraint graphs during constraint generation.) 
 % \end{enumerate}
 % \end{enumerate}
 
-It is also worth considering the situation where no type annotation is present, but the bound expression is an empty expression hole. As an example of this, consider \cref{fig:expLocal}. Here, the type of \li{x} is unknown according to the bidirectional system from Section~\ref{sec:calculus}. Type hole inference solves for this unknown type as well, while tracking its provenance as the type of this expression hole. As such, errors due to conflicting constraints can be localized to expression holes in much the same way as described above. When the user hovers over a suggested type, there must be some way of constraining the type of the expression hole, e.g. by finding a suitable variable to annotate with a type or by adding direct ascription syntax to the language (we have not implemented this particular user interface affordance in Hazel as of yet, but there are no fundamental barriers to doing so.) The lightly mocked up process of suggestion is also illustrated below in \cref{fig:expLocal}.
+It is also worth considering the situation where no type annotation is present, but the bound
+expression is an empty expression hole. As an example of this, consider \cref{fig:expLocal}. Here,
+the type of \li{x} is unknown according to the bidirectional system from Section~\ref{sec:calculus}.
+Type hole inference solves for this unknown type as well, while tracking its provenance as the type
+of this expression hole. As such, errors due to conflicting constraints can be localized to
+expression holes in much the same way as described above. When the user hovers over a suggested
+type, there must be some way of constraining the type of the expression hole, e.g., by finding a suitable variable to annotate with a type or by adding direct ascription syntax to the language (we have not implemented this particular user interface affordance in Hazel as of yet, but there are no fundamental barriers to doing so.) The lightly mocked up process of suggestion is also illustrated below in \cref{fig:expLocal}.
 
 \begin{figure}[H]
     \centering
@@ -273,7 +291,11 @@ Note again that the novel contribution of this section is not in the particular 
 % \end{mathpar}
 % % Notice that we also accumulate constraints generated in each premise in our conclusion.
 
-% One key question is how one should manage constraints whenever marked expressions are marked with errors. Should an expected type pass through the mark, which would necessarily create an unsolvable constraint? We assert that the answer is no: marks  act as quarantines. We can, however, take advantage of the interpretation of marks as non-empty holes to infer a type for the marked expression, i.e. the type that mark repair needs to target.
+% One key question is how one should manage constraints whenever marked expressions are marked with
+% errors. Should an expected type pass through the mark, which would necessarily create an
+% unsolvable constraint? We assert that the answer is no: marks  act as quarantines. We can,
+% however, take advantage of the interpretation of marks as non-empty holes to infer a type for the
+% marked expression, i.e., the type that mark repair needs to target.
 
 % With this guiding principle in hand, let us approach constraint generation for subsumption when \inconsistent{\TMV}{\TMV'} by extending MAInconsistentTypes:
 % \begin{mathpar}

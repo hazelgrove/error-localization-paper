@@ -7,7 +7,11 @@ This paper addresses this problem, contributing the first comprehensive formal a
 % (though marking itself does not require a structure editor).
 
 The marked lambda calculus is bidirectionally typed, so localization decisions are systematically predictable based on a local flow of typing information. 
-Constraint-based type inference can bring more distant information to bear in discovering inconsistencies but this notoriously complicates error localization. We approach this problem by deploying constraint solving as a type-hole-filling layer atop this gradual bidirectionally typed core. Errors arising from inconsistent unification constraints are localized exclusively to type and expression holes, i.e. the system identifies unfillable holes using a system of traced  provenances, rather than localized in an \emph{ad hoc} manner to particular expressions. The user can then interactively shift these errors to particular downstream expressions by selecting from suggested partially consistent type hole fillings, which returns control back to the bidirectional system. We implement this type hole inference system in Hazel. 
+Constraint-based type inference can bring more distant information to bear in discovering
+inconsistencies but this notoriously complicates error localization. We approach this problem by
+deploying constraint solving as a type-hole-filling layer atop this gradual bidirectionally typed
+core. Errors arising from inconsistent unification constraints are localized exclusively to type and
+expression holes, i.e., the system identifies unfillable holes using a system of traced  provenances, rather than localized in an \emph{ad hoc} manner to particular expressions. The user can then interactively shift these errors to particular downstream expressions by selecting from suggested partially consistent type hole fillings, which returns control back to the bidirectional system. We implement this type hole inference system in Hazel. 
 \end{abstract}
 
 % Lacking formal foundations, error localization has largely become a matter of folklore in the community. 

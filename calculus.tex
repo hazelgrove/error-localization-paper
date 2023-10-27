@@ -313,10 +313,10 @@ of ``subsumability'' for marked expressions, written $\subsumable{\ECMV}$.
 \end{mathpar}
 
 But what happens when the synthesized type of an expression is \emph{not} consistent with the
-expected type, i.e. that the premise $\consistent{\TMV}{\TMV'}$ fails? Recalling the example of
+expected type, i.e., that the premise $\consistent{\TMV}{\TMV'}$ fails? Recalling the example of
 \cref{fig:calculus-examples-inconsistent-types}, subsumption would be used to analyze $\ETrue$
-against $\TNum$ when checking $\EPlus{\ETrue}{1}$, which fails since $\inconsistent{\TNum}{\TBool}$, i.e.
-\textsc{UASubsume} does not apply. At this point, traditional typing semantics would simply fail the type
+against $\TNum$ when checking $\EPlus{\ETrue}{1}$, which fails since
+$\inconsistent{\TNum}{\TBool}$---\textsc{UASubsume} does not apply. At this point, traditional typing semantics would simply fail the type
 checking process. \textsc{MKASubsume} would also not be applicable, leaving marking
 undefined in those cases.
 
@@ -421,7 +421,7 @@ type annotation and body match them.
 \end{mathpar}
 %
 The synthesis rule is standard. Analysis employs the judgment $\matchedArrow{\TMV}{\TMV_1}{\TMV_2}$,
-which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini2016}, i.e. it may be
+which establishes that $\TMV$ is a \emph{matched arrow type} \cite{cimini2016}, i.e., it may be
 considered an arrow type. Defined in \cref{fig:calculus-matched-arrow}, this notion is purely a
 technical mechanism to avoid duplication of rules related to arrow types \cite{siek2015}.
 
@@ -516,7 +516,7 @@ significance---all expressions synthesize a type. However, the addition of unann
 abstractions, for example, would necessitate such a distinction.
 
 Another error arises when $\matchedArrow{\TMV_3}{\TMV_1}{\TMV_2}$, but
-$\inconsistent{\TMV}{\TMV_1}$, i.e. the actual type annotation for $x$ is inconsistent with the
+$\inconsistent{\TMV}{\TMV_1}$, i.e., the actual type annotation for $x$ is inconsistent with the
 expected input type. The \emph{inconsistent ascription mark} $\ECLamInconAsc{x}{\TMV}{\ECMV}$ indicates exactly this
 error, and we add a final pair of analytic rules:
 %
@@ -995,7 +995,7 @@ In particular, the \li{tylr} editor uses a form of structured syntax error recov
 
 Earlier versions of Hazel achieved total type error recovery by using a term-based structure editor, which maintained delimiter matching by construction, albeit at the cost of some syntactic rigidity.
 To specify such a structure editor formally, \citet{omar2017b} introduced the Hazelnut action calculus, which operates over a small bidirectionally typed lambda calculus extended with \emph{holes} and a \emph{cursor}.
-The synthetic action judgment, written $\ASEAction{\ctx}{\ZMV}{\TMV}{\ZMV'}{\TMV'}{\AMV}$, performs some edit action $\AMV$ on some \emph{zippered expression} $\ZMV$ (which is an expression with a superimposed cursor, denoted $\hat{\EMV}$ in the original work) that synthesizes type $\TMV$, producing some new $\ZMV'$ that synthesizes types $\TMV'$.
+The synthetic action judgment, written $\ASEAction{\ctx}{\ZMV}{\TMV}{\ZMV'}{\TMV'}{\AMV}$, performs an edit action $\AMV$ on some \emph{zippered expression} $\ZMV$ (which is an expression with a superimposed cursor, denoted $\hat{\EMV}$ in the original work) that synthesizes type $\TMV$, producing some new $\ZMV'$ that synthesizes types $\TMV'$.
 Type and binding information is propagated to the location of the cursor during these operations, allowing them to insert the necessary error marks (i.e. non-empty holes, in Hazelnut's parlance).
 When, for example, wrapping an expression whose type is inconsistent with $\TNum$ in an arithmetic operation, the calculus inserts an error mark around that operand:
 %
