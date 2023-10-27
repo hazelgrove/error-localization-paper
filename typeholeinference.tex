@@ -54,7 +54,7 @@ Unlike in ML-family languages where constraint solving is an obligate part of ty
 %   \includegraphics[width=9cm]{images/localExCI.png}
 % \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 \centering
 \begin{subfigure}{.5\textwidth}
   \centering
@@ -88,6 +88,7 @@ Unlike in ML-family languages where constraint solving is an obligate part of ty
 % \end{figure}
 
 The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}, the bidirectional system treats this as an unknown type and operates gradually, taking this as a signal that the user has not yet determined the intended type of \li{f}. To help the user fill this type hole, the system generates and attempts to unify the relevant constraints (see \cref{sec:unification} below). In this case, the constraints are inconsistent, i.e. there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
+
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
 \includegraphics[width=9cm]{images/example-conflict-newnew.png}
@@ -239,18 +240,12 @@ The remaining rules directly follow the intuitions above and are left to the sup
 To unify constraints, we use a standard union-find based unification algorithm \cite{huet1976, siek2008}, which accumulates constraint information in \textsf{PotentialTypeSet}s. 
 
 A \textsf{PotentialTypeSet} is a recursive data structure representing \emph{all} of the potential fillings for an associated incomplete type, inferred from type constraints. To facilitate this, rather than  substituting types during unification, which results in a loss of information, we continuously merge \textsf{PotentialTypeSet}s. Since unification treats relations transitively, a property consistency lacks across complete types, we avoid generating \textsf{PotentialTypeSet}s for complete types and simply extend existing \textsf{PotentialTypeSet}s with them as needed.
-
-% Edited in response to Reviewer C: "but this algorithm must account for consistency, right?". The reason we didn't discuss this is it quickly leads into the weeds which gets messy. Feel free to change/chop parts of this.
-
-\begin{figure}[hbt!]
-\centering
-$\arraycolsep=4pt\begin{array}{rrcl}
+%
+\[\arraycolsep=4pt\begin{array}{rrcl}
 \textsf{PotentialTypeSet} & s & \Coloneqq & \textsf{single}(t) \mid \textsf{cons}(t, s) \\
 \textsf{PotentialType}    & t & \Coloneqq & \tnum \mid \tbool \mid \tehole^p \mid \tarr{s}{s} \mid \TProd{s}{s}
-\end{array}$
-\label{fig:syntax_possible_type_sets}
-\end{figure}
-
+\end{array}\]
+%
 These choices allows us to continue past failures and unify any constraints, yielding an accumulated corpus of information on each type hole’s potential solutions and errors through their associated \textsf{PotentialTypeSet}s. Each \textsf{PotentialTypeSet} can be scanned by the editor to identify potential solutions or localize errors as illustrated in \cref{fig:editor_conflict} and \cref{fig:editor_ghost}.
 
 Note again that the novel contribution of this section is not in the particular unification algorithm but rather the architectural decisions that allow us to neatly blend local and constraint-based type inference systems for orthogonal purposes within the same system, and our focus on how to handle inconsistent constraints. As such, we direct the reader to prior work for the algorithmic, formal, and metatheoretic details of unification \cite{siek2008}.

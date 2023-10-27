@@ -42,7 +42,6 @@ against the unknown type, we introduce a pattern annotation form, written $\PAsc
 allows the explicit imposition of typing constraints. That is, the absence of any type annotation on
 a variable pattern places the corresponding definition in synthetic mode, while the programmer may
 impose typing constraints---the trivial constraint, if they wish---on the definition.
-
 As illustration, consider the following program:
 \[%
   \ELet{\PPair{\PVar{a}}{\PAsc{\PVar{b}}{\TUnknown}}}{\EPair{\EIf{\ETrue}{1}{\EFalse}}{\EIf{\ETrue}{2}{\EFalse}}}{\EMV}
@@ -51,12 +50,9 @@ Since $\PVar{a}$ has no constraint, the left component is in synthetic position,
 inconsistent branches error. The type annotation on $\PVar{b}$ puts the right component in analytic
 mode against the unknown type, leading to no error marks.
 
-This is achieved by adding a ``switch type'', denoted
-$\TUnknownSwitch$, existing entirely to trigger a ``switch'' to synthesis. $\TUnknownSwitch$ represents a trivial constraint, instantiated as a type for the sole purpose of using the existing machinery to propagate the appropriate mode switch to the relevant sub-expression of the definition. This switch type carries over identically to a non-gradual setting, but here we represent it as a variant of $\TUnknown$ as it behaves identically with respect to consistency and matched arrow/product judgements. 
-%Note that in a non-gradual setting, the matched product rule (or equivalent) would still be required to support the cases such as $\ELet{\PVar{a}}{\EPair{1}{2}}{a}$.
-In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
-$\TUnknownSwitch$, and the annotated pattern $\PAsc{\PVar{b}}{\TUnknown}$ synthesizes $\TUnknown$.
-We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesizes type $\TMV$.
+This is achieved by adding a ``switch type'', denoted $\TUnknownSwitch$, which exists entirely to trigger a ``switch'' to synthesis.
+$\TUnknownSwitch$ represents a trivial constraint, instantiated as a type for the sole purpose of using the existing machinery to propagate the appropriate mode switch to the relevant sub-expression of the definition.
+This is expressed by the following rule:
 %
 \begin{mathpar}
   \judgment{
@@ -64,7 +60,16 @@ We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesi
   }{
     \ctxAnaTypeU{\ctx}{\EMV}{\TUnknownSwitch}
   }{UASynSwitch}
+\end{mathpar}
+%
+This switch type carries over identically to a non-gradual setting, but here we represent it as a variant of $\TUnknown$ as it behaves identically with respect to consistency and our notions of matched arrow/product. 
+% Note that in a non-gradual setting, the matched product rule (or equivalent) would still be required to support the cases such as $\ELet{\PVar{a}}{\EPair{1}{2}}{a}$.
 
+In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
+$\TUnknownSwitch$, and the annotated pattern $\PAsc{\PVar{b}}{\TUnknown}$ synthesizes $\TUnknown$.
+We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesizes type $\TMV$.
+%
+\begin{mathpar}
   \judgment{ }{
     \ctxSynPatU{\ctx}{\PVar{x}}{\TUnknownSwitch}
   }{USPVar}
@@ -84,18 +89,18 @@ We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesi
 \end{mathpar}
  
 Given by the judgment $\ctxAnaPatU{\ctx}{\PMV}{\TMV}{\ctx'}$, patterns are also typed analytically,
-in which case they produce an output context $\ctx'$, which extends $\ctx$ with bindings introduced
+in which case they produce an output context $\ctx'$ that extends $\ctx$ with bindings introduced
 by the pattern. Note again that $\TUnknownSwitch$ exists entirely to ensure that sub-expressions of the
-definition are assigned an appropriate typing mode---it is never added to the context, i.e. it
+definition are assigned an appropriate typing mode---it is never added to the context, i.e., it
 cannot escape into the rest of the program and cause body expressions to synthesize accidentally.
 %
 \begin{mathpar}
   \judgment{ }{
     \ctxAnaPatU{\ctx}{\PVar{x}}{\TMV}{\extendCtx{\ctx}{x}{\TMV}}
   }{UAPVar}
-  
+
   \inferrule[UAPPair]{
-    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\
+    \matchedProd{\TMV}{\TMV_1}{\TMV_2} \\\\
     \ctxAnaPatU{\ctx}{\PMV_1}{\TMV_1}{\ctx_1} \\
     \ctxAnaPatU{\ctx_1}{\PMV_2}{\TMV_2}{\ctx_2}
   }{
@@ -103,16 +108,14 @@ cannot escape into the rest of the program and cause body expressions to synthes
   }
  
   \judgment{
-    \ctxAnaPatU{\ctx}{\PMV}{\TMV'}{\ctx'} \\
+    \ctxAnaPatU{\ctx}{\PMV}{\TMV'}{\ctx'} \\\\
     \consistent{\TMV}{\TMV'}
   }{
     \ctxAnaPatU{\ctx}{\PAsc{\PMV}{\TMV'}}{\TMV}{\ctx'}
   }{UAPAnn}
 \end{mathpar}
 
-
-Synthesis for let expressions is straightforward: we synthesize the definition's type, then analyze the pattern against it:
-
+Synthesis for let expressions is straightforward: we synthesize the type of the definition and analyze the pattern against it. We then synthesize the body under the new context:
 \[%
   \judgment{
     %\ctxSynPatU{\ctx}{\PMV}{\TMV_p} \\
@@ -124,17 +127,13 @@ Synthesis for let expressions is straightforward: we synthesize the definition's
     \ctxSynTypeU{\ctx}{\ELet{\PMV}{\EMV_{1}}{\EMV_{2}}}{\TMV_2}
   }{USLetPat}
 \]%
+The analytic rule is similar, with the final premise and conclusion changed to analysis.
 
-The analytic rule is similar, with the final
-premise and conclusion changed to analysis.
-
-Attempting an analogous marking rule runs into trouble. We want any type annotations in the pattern
-to be canonical, which means analyzing the definition to attribute to it any inconsistencies. But we
-still must analyze the pattern, incorporating the definition's type to produce the context needed by
-the body. So we do a ``round trip'': analyze the definition against the pattern's type, and then
-the pattern against the definition's. Since the first analysis establishes consistency, this second
-analysis is guaranteed to succeed; we only care about the context produced:
-
+Unfortunately, attempting an analogous marking rule runs into some trouble.
+We want any type annotations in the pattern to be canonical, which means analyzing the definition to attribute to it any inconsistencies.
+But we still must analyze the pattern, incorporating the definition's type to produce the context needed by the body.
+So we do a ``round trip'': analyze the definition against the pattern's type, and then the pattern against the definition's.
+Since the first analysis establishes consistency, this second analysis is guaranteed to succeed; we only care about the context produced:
 \[%
   \judgment{
     \ctxSynFixedInto{\ctx}{\PMV}{\PCMV}{\TMV_p} \\
@@ -151,5 +150,8 @@ We omit the marking of patterns---they
 may be derived in the same way as those for expressions and are governed by similar metatheorems (again, totality guides the derivation).
 In the analytic cases, we introduce error marks that parallel to $\ECInconType{\ECMV}$ and 
 $\ECAnaNonMatchedProd{\ECMV}$.
-\\\\
-Note that both let rules assume the let definition synthesizes. In our system this is always the case, but if we added (e.g.) unannotated lambdas, we might wish to relax this restriction. We can freely add variations of the rules where if the definition fails to synthesize, it is instead analyzed against the synthesized type of the pattern. To avoid an additional redundant analysis, we would further want to modify the pattern synthesis judgement to produce a context as well.
+
+Note that both \textsc{USLetPat} and \textsc{MKSLetPat} assume that the definition synthesizes.
+In our system this is always the case, but if we added, for example, unannotated lambda abstractions, we might wish to relax this restriction.
+We can freely add variations of the rules where if the definition fails to synthesize, it is instead analyzed against the synthesized type of the pattern.
+To avoid an additional redundant analysis, we would further want to modify the pattern synthesis judgement to produce a context as well.
