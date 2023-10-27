@@ -52,7 +52,9 @@ inconsistent branches error. The type annotation on $\PVar{b}$ puts the right co
 mode against the unknown type, leading to no error marks.
 
 This is achieved by adding a ``switch type'', denoted
-$\TUnknownSwitch$, existing entirely to trigger a ``switch'' to synthesis. $\TUnknownSwitch$ represents a trivial constraint, instantiated as a type for the sole purpose of using the existing machinery to propagate the appropriate mode switch to the relevant sub-expression of the definition. This switch type carries over identically to a non-gradual setting, but here we visually represent as a variant of $\TUnknown$ as it behaves identically with respect to type consistency and matched arrow/product judgements. In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
+$\TUnknownSwitch$, existing entirely to trigger a ``switch'' to synthesis. $\TUnknownSwitch$ represents a trivial constraint, instantiated as a type for the sole purpose of using the existing machinery to propagate the appropriate mode switch to the relevant sub-expression of the definition. This switch type carries over identically to a non-gradual setting, but here we represent it as a variant of $\TUnknown$ as it behaves identically with respect to consistency and matched arrow/product judgements. 
+%Note that in a non-gradual setting, the matched product rule (or equivalent) would still be required to support the cases such as $\ELet{\PVar{a}}{\EPair{1}{2}}{a}$.
+In the previous example, the unannotated pattern variable $\PVar{a}$ synthesizes
 $\TUnknownSwitch$, and the annotated pattern $\PAsc{\PVar{b}}{\TUnknown}$ synthesizes $\TUnknown$.
 We write $\ctxSynPatU{\ctx}{\PMV}{\TMV}$ to say that the pattern $\PMV$ synthesizes type $\TMV$.
 %
@@ -149,3 +151,5 @@ We omit the marking of patterns---they
 may be derived in the same way as those for expressions and are governed by similar metatheorems (again, totality guides the derivation).
 In the analytic cases, we introduce error marks that parallel to $\ECInconType{\ECMV}$ and 
 $\ECAnaNonMatchedProd{\ECMV}$.
+\\\\
+Note that both let rules assume the let definition synthesizes. In our system this is always the case, but if we added (e.g.) unannotated lambdas, we might wish to relax this restriction. We can freely add variations of the rules where if the definition fails to synthesize, it is instead analyzed against the synthesized type of the pattern. To avoid an additional redundant analysis, we would further want to modify the pattern synthesis judgement to produce a context as well.
