@@ -155,3 +155,8 @@ Note that both \textsc{USLetPat} and \textsc{MKSLetPat} assume that the definiti
 In our system this is always the case, but if we added, for example, unannotated lambda abstractions, we might wish to relax this restriction.
 We can freely add variations of the rules where if the definition fails to synthesize, it is instead analyzed against the synthesized type of the pattern.
 To avoid an additional redundant analysis, we would further want to modify the pattern synthesis judgement to produce a context as well.
+
+Recent work by \citet{yuan2023} addresses the problem of general pattern matching with typed holes,
+providing mechanisms to reason statically about redundancy and exhaustiveness in the presence of
+pattern holes. A comprehensive account incorporating the marked lambda calculus would employ error
+marks indicating inexhaustive matches and redundant patterns.
