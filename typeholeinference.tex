@@ -88,11 +88,11 @@ constraint solving is \emph{optional} (i.e., it can be turned off) and is only i
 %     \label{fig:ocaml}
 % \end{figure}
 
-The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}, the
+The systems diverge in their capabilities if we explicitly add a type hole annotation to \li{f}. The
 bidirectional system treats this as an unknown type and operates gradually, taking this as a signal
 that the user has not yet determined the intended type of \li{f}. To help the user fill this type
 hole, the system generates and attempts to unify the relevant constraints (see
-\cref{sec:unification} below). In this case, the constraints are inconsistent, i.e., there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
+\cref{sec:unification} below). In this case, the constraints are inconsistent, i.e., there is no hole filling that satisfies all relevant constraints. Rather than favoring constraints arising first, as in OCaml, the type hole itself is highlighted in red and marked with a bang (\li{!}). The user is informed via the Type Inspector that the type hole cannot be solved due to conflicting information from constraints. \Cref{fig:editor_conflict} shows how the editor temporarily fills the type hole when the user hovers over a constraint, deferring to bidirectional error localization as described in Section~\ref{sec:calculus} from there to cause the error to be marked on the \li{2} when hovering over the arrow type.
 
 \begin{figure}[H]
 \includegraphics[width=9cm]{images/example_conflict.png}
