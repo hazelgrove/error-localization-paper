@@ -1,5 +1,5 @@
 build/
-*.pdf
+/*.pdf
 *.bbl
 
 *.agdai

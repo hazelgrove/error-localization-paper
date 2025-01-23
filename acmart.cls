@@ -1649,7 +1649,8 @@
 \def\acmDOI#1{\def\@acmDOI{#1}}
 \acmDOI{10.1145/nnnnnnn.nnnnnnn}
 \newlength\@ACM@badge@width
-\setlength\@ACM@badge@width{3pc}
+% \setlength\@ACM@badge@width{3pc}
+\setlength\@ACM@badge@width{65pt}
 \newlength\@ACM@title@width
 \newlength\@ACM@badge@skip
 \setlength\@ACM@badge@skip{1pt}
@@ -1659,13 +1660,15 @@
   \ifx\@acmBadgeR\@empty
     \gdef\@acmBadgeR{%
       \smash{%
-        \raisebox{0.5\height}{%
+        % \raisebox{0.5\height}{%
+        \raisebox{-10pt}{%
           \href{#1}{\includegraphics[width=\@ACM@badge@width]{#2}}}}}%
   \else
     \g@addto@macro{\@acmBadgeR}{%
       \hspace{\@ACM@badge@skip}%
       \smash{%
-        \raisebox{0.5\height}{%
+        % \raisebox{0.5\height}{%
+        \raisebox{-10pt}{%
           \href{#1}{\includegraphics[width=\@ACM@badge@width]{#2}}}}}%
   \fi}
 \newcommand\acmBadgeL[2][]{%
